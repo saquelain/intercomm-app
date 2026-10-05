@@ -2,6 +2,7 @@ package com.ridecomm.app.ride
 
 import android.content.Context
 import com.ridecomm.app.Prefs
+import com.ridecomm.app.music.MusicManager
 import io.livekit.android.LiveKit
 import io.livekit.android.RoomOptions
 import io.livekit.android.events.DisconnectReason
@@ -58,6 +59,7 @@ object RideManager {
     fun leave() {
         rideJob?.cancel()
         rideJob = null
+        MusicManager.release()
         _state.value = RideState()
     }
 
@@ -127,6 +129,7 @@ object RideManager {
             ),
         )
         room = r
+        MusicManager.attach(appContext, r)
         val ended = CompletableDeferred<DisconnectReason>()
         val events = launch(start = CoroutineStart.UNDISPATCHED) {
             r.events.collect { event ->
@@ -134,6 +137,7 @@ object RideManager {
                     is RoomEvent.Reconnecting -> _state.update { it.copy(status = RideStatus.RECONNECTING) }
                     is RoomEvent.Reconnected -> _state.update { it.copy(status = RideStatus.CONNECTED) }
                     is RoomEvent.Disconnected -> ended.complete(event.reason)
+                    is RoomEvent.ActiveSpeakersChanged -> MusicManager.onSpeakersChanged(event.speakers)
                     else -> Unit
                 }
                 refreshRiders()
@@ -143,11 +147,13 @@ object RideManager {
             r.connect(details.serverUrl, details.participantToken)
             r.localParticipant.setMicrophoneEnabled(!_state.value.micMuted)
             onConnected()
+            MusicManager.onConnected()
             _state.update { it.copy(status = RideStatus.CONNECTED) }
             refreshRiders()
             ended.await()
         } finally {
             events.cancel()
+            MusicManager.detach()
             room = null
             r.disconnect()
             r.release()
@@ -156,6 +162,7 @@ object RideManager {
 
     private fun endWithError(message: String) {
         rideJob = null
+        MusicManager.release()
         _state.value = RideState(error = message)
     }
 

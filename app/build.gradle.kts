@@ -15,7 +15,7 @@ val buildNumber: Int = System.getenv("BUILD_NUMBER")?.toIntOrNull() ?: 1
 
 android {
     namespace = "com.ridecomm.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.ridecomm.app"
@@ -71,6 +71,7 @@ kotlin {
 
 dependencies {
     implementation("io.livekit:livekit-android:2.29.0")
+    implementation("androidx.media3:media3-exoplayer:1.11.1")
 
     implementation(platform("androidx.compose:compose-bom:2025.12.01"))
     implementation("androidx.compose.ui:ui")

@@ -8,7 +8,7 @@ other over mobile internet through their helmet headset.
 | Step | Feature | State |
 |---|---|---|
 | 1 | Group voice call (4–6 riders), background audio, Bluetooth headset, auto-reconnect | ✅ Built |
-| 2 | Shared music from one "DJ" phone, music ducks when someone talks | Planned |
+| 2 | Shared music from one "DJ" phone, music ducks when someone talks | ✅ Built |
 | 3 | Glove-friendly floating slide panel over other apps | Planned |
 | 4 | Quick votes (break, fuel, food…) with spoken results | Planned |
 | 5 | SOS / caution stop with alarm, location and SMS fallback | Planned |
@@ -21,6 +21,10 @@ other over mobile internet through their helmet headset.
   Mute and Leave buttons.
 - **Dead zones:** if the connection drops, the app keeps retrying (up to every 15 s) until the rider leaves.
 - **Audio route:** Bluetooth headset → wired headset → speaker → earpiece, switched automatically.
+- **Music:** the DJ picks songs from their phone. Each song file is sent once to every rider over LiveKit data
+  streams (the next song is sent ahead while the current one plays), and every phone plays it locally, kept in
+  sync by small "playing at position X" messages. Because playback is local, music keeps going through dead zones
+  and each phone turns it down to 25% within ~0.2 s whenever anyone talks, then fades it back ~1 s after.
 
 ## One-time setup
 

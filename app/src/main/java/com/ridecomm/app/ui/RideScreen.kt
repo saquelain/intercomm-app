@@ -38,6 +38,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.ride.Rider
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideState
@@ -48,6 +50,7 @@ import com.ridecomm.app.ride.Signal
 fun RideScreen(state: RideState) {
     val context = LocalContext.current
     var confirmLeave by remember { mutableStateOf(false) }
+    val music by MusicManager.state.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -72,11 +75,13 @@ fun RideScreen(state: RideState) {
             items(state.riders, key = { it.id }) { RiderCard(it) }
         }
 
+        MusicCard(music)
+
         MuteButton(muted = state.micMuted, onClick = RideManager::toggleMute)
 
         OutlinedButton(
             onClick = { confirmLeave = true },
-            modifier = Modifier.fillMaxWidth().height(64.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = Danger),
         ) { Text("Leave ride", fontSize = 20.sp, fontWeight = FontWeight.Bold) }
     }
