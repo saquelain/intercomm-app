@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ridecomm.app.music.MusicManager
+import com.ridecomm.app.vote.VoteManager
 import com.ridecomm.app.ride.Rider
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideState
@@ -51,6 +52,7 @@ fun RideScreen(state: RideState) {
     val context = LocalContext.current
     var confirmLeave by remember { mutableStateOf(false) }
     val music by MusicManager.state.collectAsStateWithLifecycle()
+    val vote by VoteManager.state.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -76,6 +78,8 @@ fun RideScreen(state: RideState) {
         }
 
         OverlayPermissionCard()
+
+        VoteCard(vote)
 
         MusicCard(music)
 

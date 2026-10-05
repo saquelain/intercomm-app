@@ -21,6 +21,9 @@ import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
 import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.ride.RideManager
+import com.ridecomm.app.vote.QuickMessage
+import com.ridecomm.app.vote.VoteKind
+import com.ridecomm.app.vote.VoteManager
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
@@ -87,6 +90,11 @@ class BubbleOverlay(private val context: Context) {
         bubble?.muted = muted
     }
 
+    /** Thick yellow ring while a vote is waiting for this rider's answer. */
+    fun setVotePending(pending: Boolean) {
+        bubble?.votePending = pending
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     private fun onTouch(view: View, event: MotionEvent): Boolean {
         when (event.actionMasked) {
@@ -144,8 +152,9 @@ class BubbleOverlay(private val context: Context) {
 
     private fun run(option: SlideOption) {
         haptics.confirm()
-        option.run()
+        // Confirm first: the action may queue its own announcement (e.g. a vote result).
         Announcer.speak(context, option.spoken)
+        option.run()
     }
 
     // ---- Menu ----
@@ -154,8 +163,8 @@ class BubbleOverlay(private val context: Context) {
 
     private fun showMenu() {
         val b = bubble ?: return
-        currentOptions = buildOptions()
-        val view = SlideMenuView(context, currentOptions)
+        val view = SlideMenuView(context, innerOptions(), outerOptions())
+        currentOptions = view.options
         val location = IntArray(2)
         b.getLocationOnScreen(location)
         view.centerX = location[0] + sizePx / 2f
@@ -176,8 +185,15 @@ class BubbleOverlay(private val context: Context) {
         menu = null
     }
 
-    /** Options reflect the current state (e.g. "Unmute" while muted; DJ controls only for the DJ). */
-    private fun buildOptions(): List<SlideOption> = buildList {
+    /**
+     * Short-slide ring: the things used most. While a vote waits for my answer, Yes/No take the
+     * place of the music controls so they're the easiest to reach.
+     */
+    private fun innerOptions(): List<SlideOption> = buildList {
+        if (VoteManager.state.value.needsMyVote) {
+            add(SlideOption("👍", "Yes", GREEN, "Voted yes") { VoteManager.cast(yes = true) })
+            add(SlideOption("👎", "No", RED, "Voted no") { VoteManager.cast(yes = false) })
+        }
         val muted = RideManager.state.value.micMuted
         add(
             if (muted) {
@@ -187,7 +203,7 @@ class BubbleOverlay(private val context: Context) {
             },
         )
         val music = MusicManager.state.value
-        if (music.title != null) {
+        if (music.title != null && !VoteManager.state.value.needsMyVote) {
             if (music.iAmDj) {
                 add(
                     SlideOption(
@@ -210,6 +226,18 @@ class BubbleOverlay(private val context: Context) {
             }
         }
         add(SlideOption("📱", "Open app", BLUE, "Opening RideComm") { openApp() })
+    }
+
+    /** Long-slide ring: start a vote (one at a time) and quick messages to the group. */
+    private fun outerOptions(): List<SlideOption> = buildList {
+        if (VoteManager.state.value.active == null) {
+            VoteKind.entries.forEach { kind ->
+                add(SlideOption(kind.emoji, "${kind.label}?", YELLOW, "${kind.label} vote sent") { VoteManager.startVote(kind) })
+            }
+        }
+        QuickMessage.entries.forEach { message ->
+            add(SlideOption(message.emoji, message.label, YELLOW, "Sent: ${message.label}") { VoteManager.sendQuick(message) })
+        }
     }
 
     private fun openApp() {
@@ -241,7 +269,7 @@ class BubbleOverlay(private val context: Context) {
 
     /** Keeps the button far enough from the top and bottom for the whole fan to fit on screen. */
     private fun clampY(y: Int): Int {
-        val margin = ((SlideMenuView.RADIUS_DP + SlideMenuView.ITEM_RADIUS_DP * 1.6f) * density).roundToInt() - sizePx / 2
+        val margin = ((SlideMenuView.OUTER_RADIUS_DP + SlideMenuView.ITEM_RADIUS_DP * 1.6f) * density).roundToInt() - sizePx / 2
         val max = (screenHeight() - margin - sizePx).coerceAtLeast(margin)
         return y.coerceIn(margin, max)
     }
@@ -268,6 +296,11 @@ class BubbleOverlay(private val context: Context) {
                 field = value
                 invalidate()
             }
+        var votePending = false
+            set(value) {
+                field = value
+                invalidate()
+            }
         private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
         private val border = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
@@ -279,8 +312,10 @@ class BubbleOverlay(private val context: Context) {
         override fun onDraw(canvas: Canvas) {
             val r = width / 2f
             fill.color = if (muted) RED else ORANGE
-            canvas.drawCircle(r, r, r - border.strokeWidth, fill)
-            canvas.drawCircle(r, r, r - border.strokeWidth, border)
+            border.color = if (votePending) YELLOW else Color.WHITE
+            border.strokeWidth = (if (votePending) 7 else 3) * resources.displayMetrics.density
+            canvas.drawCircle(r, r, r - border.strokeWidth / 2, fill)
+            canvas.drawCircle(r, r, r - border.strokeWidth / 2, border)
             val inset = (width * 0.25f).roundToInt()
             icon.setBounds(inset, inset, width - inset, height - inset)
             icon.setTint(if (muted) Color.WHITE else Color.BLACK)
@@ -298,5 +333,6 @@ class BubbleOverlay(private val context: Context) {
         private val RED = Color.rgb(0xFF, 0x4D, 0x4D)
         private val GREEN = Color.rgb(0x3D, 0xDC, 0x84)
         private val BLUE = Color.rgb(0x4D, 0x9F, 0xFF)
+        private val YELLOW = Color.rgb(0xFF, 0xC8, 0x2E)
     }
 }

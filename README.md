@@ -10,7 +10,7 @@ other over mobile internet through their helmet headset.
 | 1 | Group voice call (4–6 riders), background audio, Bluetooth headset, auto-reconnect | ✅ Built |
 | 2 | Shared music from one "DJ" phone, music ducks when someone talks | ✅ Built |
 | 3 | Glove-friendly floating slide panel over other apps | ✅ Built |
-| 4 | Quick votes (break, fuel, food…) with spoken results | Planned |
+| 4 | Quick votes (break, fuel, food…) with spoken results | ✅ Built |
 | 5 | SOS / caution stop with alarm, location and SMS fallback | Planned |
 
 ## How it works
@@ -30,7 +30,13 @@ other over mobile internet through their helmet headset.
   "Display over other apps"). Touch it and slide toward an option — Mute/Unmute, music controls, Open app — then
   lift to choose. The option is picked by direction, not by exact position, so it works with gloves; the phone
   buzzes when an option is highlighted and a voice confirms the action. Tap opens the app; hold still ~0.6 s to
-  drag the button, and it snaps to the nearest edge.
+  drag the button, and it snaps to the nearest edge. A short slide reaches the inner ring (mute, music, Yes/No when
+  a vote is open); a long slide reaches the outer ring (start a vote, quick messages).
+- **Votes & quick messages:** ☕ Break? ⛽ Fuel? 🍔 Food? start a group vote: everyone hears "Rahul wants a break.
+  Slide to vote." and answers from the floating button, the notification or the ride screen. Every phone tallies
+  the ballots itself and announces the result. A vote ends early once either side has a majority of the riders,
+  otherwise after everyone voted or 45 s (then decided by the votes cast). 🐢 Slow down and ✋ Wait for me are
+  announced to everyone without a vote. Music turns down while announcements play.
 
 ## One-time setup
 

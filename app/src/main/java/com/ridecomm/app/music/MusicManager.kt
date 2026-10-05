@@ -9,6 +9,7 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import com.ridecomm.app.Announcer
 import com.ridecomm.app.Prefs
 import io.livekit.android.room.Room
 import io.livekit.android.room.datastream.StreamBytesOptions
@@ -155,8 +156,26 @@ object MusicManager {
 
     // ---- Ducking ----
 
+    private var voicesActive = false
+    private var announcing = false
+
+    init {
+        scope.launch {
+            Announcer.speaking.collect {
+                announcing = it
+                updateDucking()
+            }
+        }
+    }
+
     fun onSpeakersChanged(speakers: List<Participant>) {
-        if (speakers.isNotEmpty()) {
+        voicesActive = speakers.isNotEmpty()
+        updateDucking()
+    }
+
+    /** Music goes down while anyone talks or an announcement plays, and comes back shortly after. */
+    private fun updateDucking() {
+        if (voicesActive || announcing) {
             duckReleaseJob?.cancel()
             duckReleaseJob = null
             setDucked(true)

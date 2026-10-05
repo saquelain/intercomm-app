@@ -20,6 +20,8 @@ import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
 import com.ridecomm.app.overlay.AppVisibility
 import com.ridecomm.app.overlay.BubbleOverlay
+import com.ridecomm.app.vote.VoteManager
+import com.ridecomm.app.vote.VoteState
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
@@ -42,7 +44,7 @@ class RideService : Service() {
         ServiceCompat.startForeground(
             this,
             NOTIFICATION_ID,
-            buildNotification(RideManager.state.value),
+            buildNotification(RideManager.state.value, VoteManager.state.value),
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0,
         )
         wakeLock = (getSystemService(POWER_SERVICE) as PowerManager)
@@ -52,21 +54,23 @@ class RideService : Service() {
         bubble = BubbleOverlay(this)
         scope.launch {
             // Floating button: only during a ride, only while RideComm itself isn't on screen.
-            combine(RideManager.state, AppVisibility.inForeground) { ride, appVisible -> ride to appVisible }
-                .collect { (ride, appVisible) ->
-                    val wanted = ride.status != RideStatus.IDLE && !appVisible && Prefs.bubbleEnabled(this@RideService)
-                    if (wanted) bubble.show() else bubble.hide()
-                    bubble.setMuted(ride.micMuted)
-                }
+            combine(RideManager.state, AppVisibility.inForeground, VoteManager.state) { ride, appVisible, vote ->
+                Triple(ride, appVisible, vote)
+            }.collect { (ride, appVisible, vote) ->
+                val wanted = ride.status != RideStatus.IDLE && !appVisible && Prefs.bubbleEnabled(this@RideService)
+                if (wanted) bubble.show() else bubble.hide()
+                bubble.setMuted(ride.micMuted)
+                bubble.setVotePending(vote.needsMyVote)
+            }
         }
         scope.launch {
-            RideManager.state.collect { state ->
-                if (state.status == RideStatus.IDLE) {
+            combine(RideManager.state, VoteManager.state) { ride, vote -> ride to vote }.collect { (ride, vote) ->
+                if (ride.status == RideStatus.IDLE) {
                     // Only the latest start may stop us, so a quick leave-then-rejoin isn't killed.
                     stopSelfResult(lastStartId)
                 } else if (NotificationManagerCompat.from(this@RideService).areNotificationsEnabled()) {
                     getSystemService(NotificationManager::class.java)
-                        .notify(NOTIFICATION_ID, buildNotification(state))
+                        .notify(NOTIFICATION_ID, buildNotification(ride, vote))
                 }
             }
         }
@@ -77,6 +81,8 @@ class RideService : Service() {
         when (intent?.action) {
             ACTION_TOGGLE_MUTE -> RideManager.toggleMute()
             ACTION_LEAVE -> RideManager.leave()
+            ACTION_VOTE_YES -> VoteManager.cast(yes = true)
+            ACTION_VOTE_NO -> VoteManager.cast(yes = false)
         }
         // The ride may have ended before this start was delivered.
         if (RideManager.state.value.status == RideStatus.IDLE) stopSelfResult(startId)
@@ -93,20 +99,23 @@ class RideService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    private fun buildNotification(state: RideState): android.app.Notification {
-        val title = when (state.status) {
-            RideStatus.CONNECTING -> "Joining ride ${state.code}…"
-            RideStatus.RECONNECTING -> "Reconnecting to ride ${state.code}…"
+    private fun buildNotification(state: RideState, vote: VoteState): android.app.Notification {
+        val pending = vote.active?.takeIf { vote.needsMyVote }
+        val title = when {
+            pending != null -> "${pending.kind.emoji} ${pending.starterName} ${pending.kind.asking}"
+            state.status == RideStatus.CONNECTING -> "Joining ride ${state.code}…"
+            state.status == RideStatus.RECONNECTING -> "Reconnecting to ride ${state.code}…"
             else -> "On ride ${state.code}"
         }
         val text = buildString {
+            if (pending != null) append("Vote now · ")
             append(if (state.micMuted) "Mic off" else "Mic on")
             if (state.riders.isNotEmpty()) append(" · ${state.riders.size} riders")
         }
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
         )
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(text)
@@ -114,9 +123,14 @@ class RideService : Service() {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_CALL)
-            .addAction(0, if (state.micMuted) "Unmute" else "Mute", actionIntent(ACTION_TOGGLE_MUTE, 1))
-            .addAction(0, "Leave ride", actionIntent(ACTION_LEAVE, 2))
-            .build()
+        if (pending != null) {
+            builder
+                .addAction(0, "👍 Yes", actionIntent(ACTION_VOTE_YES, 3))
+                .addAction(0, "👎 No", actionIntent(ACTION_VOTE_NO, 4))
+        }
+        builder.addAction(0, if (state.micMuted) "Unmute" else "Mute", actionIntent(ACTION_TOGGLE_MUTE, 1))
+        if (pending == null) builder.addAction(0, "Leave ride", actionIntent(ACTION_LEAVE, 2))
+        return builder.build()
     }
 
     private fun actionIntent(action: String, requestCode: Int): PendingIntent = PendingIntent.getService(
@@ -131,6 +145,8 @@ class RideService : Service() {
         private const val NOTIFICATION_ID = 1
         private const val ACTION_TOGGLE_MUTE = "com.ridecomm.app.TOGGLE_MUTE"
         private const val ACTION_LEAVE = "com.ridecomm.app.LEAVE"
+        private const val ACTION_VOTE_YES = "com.ridecomm.app.VOTE_YES"
+        private const val ACTION_VOTE_NO = "com.ridecomm.app.VOTE_NO"
         private const val WAKE_LOCK_TIMEOUT_MS = 12 * 60 * 60 * 1000L // longer than any day ride
 
         fun createNotificationChannel(context: Context) {

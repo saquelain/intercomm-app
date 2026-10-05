@@ -3,6 +3,10 @@ package com.ridecomm.app
 import android.content.Context
 import android.media.AudioAttributes
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Speaks short confirmations ("Mic off") so riders know what happened without looking.
@@ -11,38 +15,52 @@ import android.speech.tts.TextToSpeech
 object Announcer {
     private var tts: TextToSpeech? = null
     private var ready = false
-    private var pending: String? = null
+    /** Lines asked for before the speech engine finished starting. */
+    private val pending = mutableListOf<String>()
+
+    private val _speaking = MutableStateFlow(false)
+    /** True while an announcement is playing; shared music turns down meanwhile. */
+    val speaking: StateFlow<Boolean> = _speaking.asStateFlow()
 
     fun speak(context: Context, text: String) {
         val engine = tts
         if (engine == null) {
-            pending = text
+            pending += text
             tts = TextToSpeech(context.applicationContext) { status ->
                 ready = status == TextToSpeech.SUCCESS
                 if (ready) {
+                    tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                        override fun onStart(utteranceId: String?) { _speaking.value = true }
+                        override fun onDone(utteranceId: String?) { _speaking.value = false }
+                        @Deprecated("Deprecated in Java")
+                        override fun onError(utteranceId: String?) { _speaking.value = false }
+                        override fun onStop(utteranceId: String?, interrupted: Boolean) { _speaking.value = false }
+                    })
                     tts?.setAudioAttributes(
                         AudioAttributes.Builder()
                             .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
                             .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                             .build(),
                     )
-                    pending?.let { say(it) }
+                    pending.forEach { say(it) }
                 }
-                pending = null
+                pending.clear()
             }
             return
         }
-        if (ready) say(text) else pending = text
+        if (ready) say(text) else pending += text
     }
 
     private fun say(text: String) {
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "ridecomm")
+        // Queue rather than cut off: a confirmation can be followed by a vote result.
+        tts?.speak(text, TextToSpeech.QUEUE_ADD, null, "ridecomm")
     }
 
     fun shutdown() {
         tts?.shutdown()
         tts = null
         ready = false
-        pending = null
+        pending.clear()
+        _speaking.value = false
     }
 }
