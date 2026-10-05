@@ -3,6 +3,7 @@ package com.ridecomm.app.ride
 import android.content.Context
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.music.MusicManager
+import com.ridecomm.app.sos.SosManager
 import com.ridecomm.app.vote.VoteManager
 import io.livekit.android.LiveKit
 import io.livekit.android.RoomOptions
@@ -62,6 +63,7 @@ object RideManager {
         rideJob = null
         MusicManager.release()
         VoteManager.release()
+        SosManager.release()
         _state.value = RideState()
     }
 
@@ -133,6 +135,7 @@ object RideManager {
         room = r
         MusicManager.attach(appContext, r)
         VoteManager.attach(appContext, r)
+        SosManager.attach(r)
         val ended = CompletableDeferred<DisconnectReason>()
         val events = launch(start = CoroutineStart.UNDISPATCHED) {
             r.events.collect { event ->
@@ -158,6 +161,7 @@ object RideManager {
             events.cancel()
             MusicManager.detach()
             VoteManager.detach()
+            SosManager.detach()
             room = null
             r.disconnect()
             r.release()
@@ -168,6 +172,7 @@ object RideManager {
         rideJob = null
         MusicManager.release()
         VoteManager.release()
+        SosManager.release()
         _state.value = RideState(error = message)
     }
 

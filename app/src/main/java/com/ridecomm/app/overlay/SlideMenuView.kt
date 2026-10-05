@@ -44,6 +44,8 @@ class SlideMenuView(
     var centerY = 0f
     /** The fan opens away from the screen edge the button sits on. */
     var onLeftEdge = false
+    /** Text on the button in the middle ("Slide" or "Close"). */
+    var hint = "Slide"
 
     var selected = -1
         set(value) {
@@ -102,7 +104,7 @@ class SlideMenuView(
         circlePaint.color = Color.rgb(0xFF, 0x8A, 0x1F)
         canvas.drawCircle(cx, cy, centerRadius, circlePaint)
         canvas.drawCircle(cx, cy, centerRadius, ringPaint)
-        canvas.drawText("Slide", cx, cy + labelPaint.textSize / 3, hintPaint)
+        canvas.drawText(hint, cx, cy + labelPaint.textSize / 3, hintPaint)
         val rings = rings
         options.forEachIndexed { i, option ->
             val a = Math.toRadians(rings.angleOf(i).toDouble())

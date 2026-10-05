@@ -12,6 +12,7 @@ object Prefs {
     private const val KEY_BUBBLE_ENABLED = "bubble_enabled"
     private const val KEY_BUBBLE_Y = "bubble_y"
     private const val KEY_BUBBLE_LEFT = "bubble_left"
+    private const val KEY_EMERGENCY_NUMBERS = "emergency_numbers"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -48,6 +49,12 @@ object Prefs {
         prefs(context).getInt(KEY_BUBBLE_Y, -1).takeIf { it >= 0 }
 
     fun bubbleOnLeft(context: Context): Boolean = prefs(context).getBoolean(KEY_BUBBLE_LEFT, false)
+
+    /** Phone numbers that get an SOS by SMS when there's no internet, as typed ("98…, +91 99…"). */
+    fun emergencyNumbers(context: Context): String = prefs(context).getString(KEY_EMERGENCY_NUMBERS, "") ?: ""
+
+    fun setEmergencyNumbers(context: Context, numbers: String) =
+        prefs(context).edit().putString(KEY_EMERGENCY_NUMBERS, numbers.trim()).apply()
 
     fun setBubblePosition(context: Context, y: Int, onLeft: Boolean) =
         prefs(context).edit().putInt(KEY_BUBBLE_Y, y).putBoolean(KEY_BUBBLE_LEFT, onLeft).apply()

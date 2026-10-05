@@ -15,6 +15,12 @@
     <!-- Floating ride button over other apps (e.g. Maps). -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- SOS: share location with the group, SMS backup without internet. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
 
     <!-- Added by the LiveKit SDK for video/screen share; RideComm is voice only. -->
     <uses-permission
@@ -46,7 +52,7 @@
         <service
             android:name=".ride.RideService"
             android:exported="false"
-            android:foregroundServiceType="microphone" />
+            android:foregroundServiceType="microphone|location" />
 
         <service
             android:name="io.livekit.android.room.track.screencapture.ScreenCaptureService"

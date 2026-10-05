@@ -11,6 +11,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.ridecomm.app.Announcer
 import com.ridecomm.app.Prefs
+import com.ridecomm.app.sos.SosManager
 import io.livekit.android.room.Room
 import io.livekit.android.room.datastream.StreamBytesOptions
 import io.livekit.android.room.datastream.StreamTextOptions
@@ -159,11 +160,20 @@ object MusicManager {
     private var voicesActive = false
     private var announcing = false
 
+    private var emergency = false
+
     init {
         scope.launch {
             Announcer.speaking.collect {
                 announcing = it
                 updateDucking()
+            }
+        }
+        scope.launch {
+            // An incoming SOS silences the music completely.
+            SosManager.alarming.collect {
+                emergency = it
+                applyVolume(fadeMs = 0)
             }
         }
     }
@@ -206,7 +216,7 @@ object MusicManager {
 
     private fun targetVolume(): Float {
         val s = _state.value
-        if (s.offForMe) return 0f
+        if (s.offForMe || emergency) return 0f
         return s.volume * if (s.ducked) DUCK_LEVEL else 1f
     }
 

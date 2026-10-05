@@ -20,6 +20,9 @@ import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
 import com.ridecomm.app.overlay.AppVisibility
 import com.ridecomm.app.overlay.BubbleOverlay
+import com.ridecomm.app.sos.LocationHelper
+import com.ridecomm.app.sos.SosManager
+import com.ridecomm.app.sos.SosOverlay
 import com.ridecomm.app.vote.VoteManager
 import com.ridecomm.app.vote.VoteState
 import kotlinx.coroutines.MainScope
@@ -38,6 +41,7 @@ class RideService : Service() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var lastStartId = 0
     private lateinit var bubble: BubbleOverlay
+    private lateinit var sosOverlay: SosOverlay
 
     override fun onCreate() {
         super.onCreate()
@@ -45,13 +49,18 @@ class RideService : Service() {
             this,
             NOTIFICATION_ID,
             buildNotification(RideManager.state.value, VoteManager.state.value),
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0,
+            foregroundTypes(),
         )
         wakeLock = (getSystemService(POWER_SERVICE) as PowerManager)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "RideComm:ride")
             .apply { acquire(WAKE_LOCK_TIMEOUT_MS) }
 
         bubble = BubbleOverlay(this)
+        sosOverlay = SosOverlay(this)
+        scope.launch {
+            combine(SosManager.state, AppVisibility.inForeground) { sos, appVisible -> sos to appVisible }
+                .collect { (sos, appVisible) -> sosOverlay.update(sos, appVisible) }
+        }
         scope.launch {
             // Floating button: only during a ride, only while RideComm itself isn't on screen.
             combine(RideManager.state, AppVisibility.inForeground, VoteManager.state) { ride, appVisible, vote ->
@@ -92,12 +101,21 @@ class RideService : Service() {
     override fun onDestroy() {
         scope.cancel()
         bubble.hide()
+        sosOverlay.hide()
         Announcer.shutdown()
         wakeLock?.takeIf { it.isHeld }?.release()
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /** Microphone for the call; location too (if allowed) so an SOS can get a GPS fix from the background. */
+    private fun foregroundTypes(): Int {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return 0
+        var types = ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        if (LocationHelper.hasPermission(this)) types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+        return types
+    }
 
     private fun buildNotification(state: RideState, vote: VoteState): android.app.Notification {
         val pending = vote.active?.takeIf { vote.needsMyVote }

@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ridecomm.app.music.MusicManager
+import com.ridecomm.app.sos.SosManager
 import com.ridecomm.app.vote.VoteManager
 import com.ridecomm.app.ride.Rider
 import com.ridecomm.app.ride.RideManager
@@ -53,43 +54,53 @@ fun RideScreen(state: RideState) {
     var confirmLeave by remember { mutableStateOf(false) }
     val music by MusicManager.state.collectAsStateWithLifecycle()
     val vote by VoteManager.state.collectAsStateWithLifecycle()
+    val sos by SosManager.state.collectAsStateWithLifecycle()
 
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("RIDE CODE", fontSize = 13.sp, color = Muted, fontWeight = FontWeight.Bold)
-                Text(state.code, fontSize = 40.sp, fontWeight = FontWeight.Black, letterSpacing = 6.sp)
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("RIDE CODE", fontSize = 13.sp, color = Muted, fontWeight = FontWeight.Bold)
+                    Text(state.code, fontSize = 40.sp, fontWeight = FontWeight.Black, letterSpacing = 6.sp)
+                }
+                OutlinedButton(
+                    onClick = {
+                        val share = Intent(Intent.ACTION_SEND)
+                            .setType("text/plain")
+                            .putExtra(Intent.EXTRA_TEXT, "Join my RideComm ride! Code: ${state.code}")
+                        context.startActivity(Intent.createChooser(share, "Share ride code"))
+                    },
+                    modifier = Modifier.height(56.dp),
+                ) { Text("Share", fontSize = 18.sp) }
+                Spacer(Modifier.width(8.dp))
+                SosButton(sos)
             }
+
+            StatusLine(state)
+
+            SosCards(sos)
+
+            LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(state.riders, key = { it.id }) { RiderCard(it) }
+            }
+
+            OverlayPermissionCard()
+
+            VoteCard(vote)
+
+            MusicCard(music)
+
+            MuteButton(muted = state.micMuted, onClick = RideManager::toggleMute)
+
             OutlinedButton(
-                onClick = {
-                    val share = Intent(Intent.ACTION_SEND)
-                        .setType("text/plain")
-                        .putExtra(Intent.EXTRA_TEXT, "Join my RideComm ride! Code: ${state.code}")
-                    context.startActivity(Intent.createChooser(share, "Share ride code"))
-                },
-                modifier = Modifier.height(56.dp),
-            ) { Text("Share", fontSize = 18.sp) }
+                onClick = { confirmLeave = true },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Danger),
+            ) { Text("Leave ride", fontSize = 20.sp, fontWeight = FontWeight.Bold) }
         }
 
-        StatusLine(state)
-
-        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            items(state.riders, key = { it.id }) { RiderCard(it) }
-        }
-
-        OverlayPermissionCard()
-
-        VoteCard(vote)
-
-        MusicCard(music)
-
-        MuteButton(muted = state.micMuted, onClick = RideManager::toggleMute)
-
-        OutlinedButton(
-            onClick = { confirmLeave = true },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Danger),
-        ) { Text("Leave ride", fontSize = 20.sp, fontWeight = FontWeight.Bold) }
+        // Drawn last so it covers the whole ride screen.
+        sos.countdown?.let { SosCountdown(it) }
     }
 
     if (confirmLeave) {

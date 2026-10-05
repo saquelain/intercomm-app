@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,6 +45,7 @@ import com.ridecomm.app.Prefs
 import com.ridecomm.app.ride.RideCode
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideState
+import com.ridecomm.app.sos.SmsSender
 
 @Composable
 fun HomeScreen(state: RideState) {
@@ -59,6 +61,9 @@ fun HomeScreen(state: RideState) {
             add(Manifest.permission.RECORD_AUDIO)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) add(Manifest.permission.BLUETOOTH_CONNECT)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.POST_NOTIFICATIONS)
+            // Optional: lets an SOS include where you are.
+            add(Manifest.permission.ACCESS_FINE_LOCATION)
+            add(Manifest.permission.ACCESS_COARSE_LOCATION)
         }.toTypedArray()
     }
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -71,6 +76,10 @@ fun HomeScreen(state: RideState) {
         } else if (code != null) {
             Toast.makeText(context, "RideComm needs the microphone to talk to your group", Toast.LENGTH_LONG).show()
         }
+    }
+
+    val smsPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (!granted) Toast.makeText(context, "Without SMS permission, SOS works only with internet", Toast.LENGTH_LONG).show()
     }
 
     fun startRide(code: String) {
@@ -151,6 +160,7 @@ fun HomeScreen(state: RideState) {
     if (showSettings) {
         var draft by remember { mutableStateOf(tokenServerId) }
         var bubbleOn by remember { mutableStateOf(Prefs.bubbleEnabled(context)) }
+        var numbers by remember { mutableStateOf(Prefs.emergencyNumbers(context)) }
         AlertDialog(
             onDismissRequest = { showSettings = false },
             title = { Text("Settings") },
@@ -162,12 +172,25 @@ fun HomeScreen(state: RideState) {
                         Text("Floating ride button over other apps", modifier = Modifier.weight(1f))
                         Switch(checked = bubbleOn, onCheckedChange = { bubbleOn = it })
                     }
+                    Text("Emergency SMS numbers (used for SOS when there's no internet), comma separated")
+                    OutlinedTextField(
+                        value = numbers,
+                        onValueChange = { numbers = it },
+                        singleLine = true,
+                        placeholder = { Text("+91 98xxxxxxxx, …") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             },
             confirmButton = {
                 TextButton(onClick = {
                     Prefs.setTokenServerId(context, draft)
                     Prefs.setBubbleEnabled(context, bubbleOn)
+                    Prefs.setEmergencyNumbers(context, numbers)
+                    if (SmsSender.parseNumbers(numbers).isNotEmpty() && !SmsSender.canSend(context)) {
+                        smsPermission.launch(Manifest.permission.SEND_SMS)
+                    }
                     tokenServerId = Prefs.tokenServerId(context)
                     showSettings = false
                 }) { Text("Save") }

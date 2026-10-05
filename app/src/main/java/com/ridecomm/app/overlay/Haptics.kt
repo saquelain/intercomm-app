@@ -22,6 +22,9 @@ class Haptics(context: Context) {
     /** Option chosen. */
     fun confirm() = vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 40, 60, 40), -1))
 
+    /** Incoming SOS: long, repeated, impossible to miss. */
+    fun sos() = vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 600, 200, 600, 200, 600, 200, 600), -1))
+
     /** Entered move mode. */
     fun longPress() = buzz(60)
 

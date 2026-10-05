@@ -2,10 +2,12 @@ package com.ridecomm.app
 
 import android.app.Application
 import com.ridecomm.app.ride.RideService
+import com.ridecomm.app.sos.SosManager
 
 class RideCommApp : Application() {
     override fun onCreate() {
         super.onCreate()
         RideService.createNotificationChannel(this)
+        SosManager.init(this)
     }
 }

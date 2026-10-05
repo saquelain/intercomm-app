@@ -21,6 +21,7 @@ import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
 import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.ride.RideManager
+import com.ridecomm.app.sos.SosManager
 import com.ridecomm.app.vote.QuickMessage
 import com.ridecomm.app.vote.VoteKind
 import com.ridecomm.app.vote.VoteManager
@@ -30,9 +31,9 @@ import kotlin.math.roundToInt
 /**
  * The floating ride button shown over other apps (e.g. Maps) during a ride.
  *
- * - Touch it and slide toward an option, then lift to choose it.
- * - Tap it to open RideComm.
- * - Hold it still for a moment to drag it somewhere else; it snaps to the nearest edge.
+ * - Tap it to open the options, then tap an option (or roughly toward it). Tap empty space to close.
+ * - Or touch it and slide toward an option, then lift to choose it.
+ * - Long-press it to drag it somewhere else; it snaps to the nearest edge.
  */
 class BubbleOverlay(private val context: Context) {
 
@@ -49,7 +50,6 @@ class BubbleOverlay(private val context: Context) {
 
     private var downX = 0f
     private var downY = 0f
-    private var downTime = 0L
     private var moving = false
     private val enterMoveMode = Runnable {
         moving = true
@@ -69,7 +69,7 @@ class BubbleOverlay(private val context: Context) {
             x = edgeX()
             y = clampY(Prefs.bubbleY(context) ?: (screenHeight() * 0.45f).roundToInt())
         }
-        view.setOnClickListener { openApp() }
+        view.setOnClickListener { showMenu(tapMode = true) }
         view.setOnTouchListener { v, event -> onTouch(v, event) }
         runCatching { windowManager.addView(view, params) }.onSuccess {
             bubble = view
@@ -101,68 +101,86 @@ class BubbleOverlay(private val context: Context) {
             MotionEvent.ACTION_DOWN -> {
                 downX = event.rawX
                 downY = event.rawY
-                downTime = event.eventTime
                 moving = false
+                hideMenu()
                 handler.postDelayed(enterMoveMode, MOVE_HOLD_MS)
-                showMenu()
             }
             MotionEvent.ACTION_MOVE -> {
                 if (moving) {
                     dragTo(event.rawX, event.rawY)
-                } else {
-                    if (hypot(event.rawX - downX, event.rawY - downY) > HOLD_TOLERANCE_DP * density) {
-                        handler.removeCallbacks(enterMoveMode)
-                    }
-                    menu?.let { m ->
-                        val pick = m.pick(event.rawX, event.rawY)
-                        if (pick != m.selected) {
-                            m.selected = pick
-                            if (pick >= 0) haptics.tick()
-                        }
-                    }
+                } else if (hypot(event.rawX - downX, event.rawY - downY) > HOLD_TOLERANCE_DP * density) {
+                    // Sliding straight off the button: show the fan and follow the finger.
+                    handler.removeCallbacks(enterMoveMode)
+                    if (menu == null) showMenu(tapMode = false)
+                    updateSelection(event)
                 }
             }
             MotionEvent.ACTION_UP -> {
                 handler.removeCallbacks(enterMoveMode)
-                if (moving) {
-                    snapToEdge(event.rawX)
-                } else {
-                    val chosen = menu?.selected ?: -1
-                    val options = currentOptions
-                    hideMenu()
-                    when {
-                        chosen >= 0 -> run(options[chosen])
-                        isTap(event) -> view.performClick()
-                    }
+                when {
+                    moving -> snapToEdge(event.rawX)
+                    menu != null -> chooseAndClose()
+                    else -> view.performClick()
                 }
                 moving = false
             }
             MotionEvent.ACTION_CANCEL -> {
                 handler.removeCallbacks(enterMoveMode)
-                hideMenu()
+                if (!menuTapMode) hideMenu()
                 moving = false
             }
         }
         return true
     }
 
-    private fun isTap(event: MotionEvent) =
-        event.eventTime - downTime < TAP_MAX_MS &&
-            hypot(event.rawX - downX, event.rawY - downY) < HOLD_TOLERANCE_DP * density
+    /** Touches on the open (tapped) menu: highlight by direction, choose on lift, close on empty space. */
+    @SuppressLint("ClickableViewAccessibility")
+    private fun onMenuTouch(event: MotionEvent): Boolean {
+        handler.removeCallbacks(closeMenu)
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> updateSelection(event)
+            MotionEvent.ACTION_UP -> chooseAndClose()
+            MotionEvent.ACTION_CANCEL -> hideMenu()
+        }
+        return true
+    }
+
+    private fun updateSelection(event: MotionEvent) {
+        val m = menu ?: return
+        val pick = m.pick(event.rawX, event.rawY)
+        if (pick != m.selected) {
+            m.selected = pick
+            if (pick >= 0) haptics.tick()
+        }
+    }
+
+    private fun chooseAndClose() {
+        val chosen = menu?.selected ?: -1
+        val options = currentOptions
+        hideMenu()
+        if (chosen >= 0) run(options[chosen])
+    }
 
     private fun run(option: SlideOption) {
         haptics.confirm()
         // Confirm first: the action may queue its own announcement (e.g. a vote result).
-        Announcer.speak(context, option.spoken)
+        if (option.spoken.isNotEmpty()) Announcer.speak(context, option.spoken)
         option.run()
     }
 
     // ---- Menu ----
 
     private var currentOptions: List<SlideOption> = emptyList()
+    private var menuTapMode = false
+    private val closeMenu = Runnable { hideMenu() }
 
-    private fun showMenu() {
+    /**
+     * [tapMode]: the menu stays open and takes touches itself (closes after a few idle seconds).
+     * Otherwise it only draws, while the finger that slid off the button keeps driving it.
+     */
+    private fun showMenu(tapMode: Boolean) {
         val b = bubble ?: return
+        hideMenu()
         val view = SlideMenuView(context, innerOptions(), outerOptions())
         currentOptions = view.options
         val location = IntArray(2)
@@ -170,19 +188,27 @@ class BubbleOverlay(private val context: Context) {
         view.centerX = location[0] + sizePx / 2f
         view.centerY = location[1] + sizePx / 2f
         view.onLeftEdge = onLeftEdge
+        view.hint = if (tapMode) "Close" else "Slide"
+        if (tapMode) view.setOnTouchListener { _, event -> onMenuTouch(event) }
         val params = overlayParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
-            touchable = false,
+            touchable = tapMode,
         )
-        // The menu window doesn't take touches: the finger's movement keeps going to the button's
-        // window, which received the touch-down. Re-adding the button above it would cancel the gesture.
-        runCatching { windowManager.addView(view, params) }.onSuccess { menu = view }
+        // In slide mode the menu window must not take touches: the gesture keeps going to the
+        // button's window, which received the touch-down.
+        runCatching { windowManager.addView(view, params) }.onSuccess {
+            menu = view
+            menuTapMode = tapMode
+            if (tapMode) handler.postDelayed(closeMenu, MENU_IDLE_CLOSE_MS)
+        }
     }
 
     private fun hideMenu() {
+        handler.removeCallbacks(closeMenu)
         menu?.let { runCatching { windowManager.removeView(it) } }
         menu = null
+        menuTapMode = false
     }
 
     /**
@@ -228,8 +254,14 @@ class BubbleOverlay(private val context: Context) {
         add(SlideOption("📱", "Open app", BLUE, "Opening RideComm") { openApp() })
     }
 
-    /** Long-slide ring: start a vote (one at a time) and quick messages to the group. */
+    /** Long-slide ring: SOS, start a vote (one at a time) and quick messages to the group. */
     private fun outerOptions(): List<SlideOption> = buildList {
+        if (SosManager.state.value.mySosActive) {
+            add(SlideOption("✅", "I'm OK", GREEN, "") { SosManager.imOk() })
+        } else {
+            // Starts a cancellable countdown, which announces itself.
+            add(SlideOption("🚨", "SOS", RED, "") { SosManager.startCountdown() })
+        }
         if (VoteManager.state.value.active == null) {
             VoteKind.entries.forEach { kind ->
                 add(SlideOption(kind.emoji, "${kind.label}?", YELLOW, "${kind.label} vote sent") { VoteManager.startVote(kind) })
@@ -326,7 +358,7 @@ class BubbleOverlay(private val context: Context) {
     companion object {
         private const val BUBBLE_DP = 68f
         private const val MOVE_HOLD_MS = 600L
-        private const val TAP_MAX_MS = 350L
+        private const val MENU_IDLE_CLOSE_MS = 8_000L
         private const val HOLD_TOLERANCE_DP = 14f
 
         private val ORANGE = Color.rgb(0xFF, 0x8A, 0x1F)

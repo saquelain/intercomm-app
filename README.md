@@ -11,7 +11,7 @@ other over mobile internet through their helmet headset.
 | 2 | Shared music from one "DJ" phone, music ducks when someone talks | ✅ Built |
 | 3 | Glove-friendly floating slide panel over other apps | ✅ Built |
 | 4 | Quick votes (break, fuel, food…) with spoken results | ✅ Built |
-| 5 | SOS / caution stop with alarm, location and SMS fallback | Planned |
+| 5 | SOS / caution stop with alarm, location and SMS fallback | ✅ Built |
 
 ## How it works
 
@@ -27,16 +27,22 @@ other over mobile internet through their helmet headset.
   and each phone turns it down to 25% within ~0.2 s whenever anyone talks, then fades it back ~1 s after.
 
 - **Floating ride button:** during a ride, a round button sits on the screen edge over any app (needs
-  "Display over other apps"). Touch it and slide toward an option — Mute/Unmute, music controls, Open app — then
-  lift to choose. The option is picked by direction, not by exact position, so it works with gloves; the phone
-  buzzes when an option is highlighted and a voice confirms the action. Tap opens the app; hold still ~0.6 s to
-  drag the button, and it snaps to the nearest edge. A short slide reaches the inner ring (mute, music, Yes/No when
+  "Display over other apps"). Tap it to open the options, then tap an option (or anywhere in its direction);
+  tap empty space to close. Sliding straight off the button and lifting also works. Options are picked by
+  direction, not exact position, so it works with gloves; the phone buzzes when an option is highlighted and a
+  voice confirms the action. Long-press to drag the button; it snaps to the nearest edge. A short slide reaches the inner ring (mute, music, Yes/No when
   a vote is open); a long slide reaches the outer ring (start a vote, quick messages).
 - **Votes & quick messages:** ☕ Break? ⛽ Fuel? 🍔 Food? start a group vote: everyone hears "Rahul wants a break.
   Slide to vote." and answers from the floating button, the notification or the ride screen. Every phone tallies
   the ballots itself and announces the result. A vote ends early once either side has a majority of the riders,
   otherwise after everyone voted or 45 s (then decided by the votes cast). 🐢 Slow down and ✋ Wait for me are
   announced to everyone without a vote. Music turns down while announcements play.
+- **SOS:** 🚨 SOS (ride screen or outer ring of the floating button) starts a 5-second countdown — tap anywhere
+  to cancel. Then every rider gets a siren in the headset (music muted), a spoken "S O S. Rahul needs help.
+  1.2 kilometers away.", a full-screen red alert over other apps and a high-priority notification, both with
+  Open map. The sender's last known location goes out at once, followed by a fresh GPS fix. Without internet,
+  the SOS is sent by SMS (with a maps link) to the emergency numbers set in Settings. "I'm OK" stops everyone's
+  alarm.
 
 ## One-time setup
 
