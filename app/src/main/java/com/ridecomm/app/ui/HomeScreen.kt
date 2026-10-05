@@ -45,7 +45,6 @@ import com.ridecomm.app.Prefs
 import com.ridecomm.app.ride.RideCode
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideState
-import com.ridecomm.app.sos.SmsSender
 
 @Composable
 fun HomeScreen(state: RideState) {
@@ -76,10 +75,6 @@ fun HomeScreen(state: RideState) {
         } else if (code != null) {
             Toast.makeText(context, "RideComm needs the microphone to talk to your group", Toast.LENGTH_LONG).show()
         }
-    }
-
-    val smsPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (!granted) Toast.makeText(context, "Without SMS permission, SOS works only with internet", Toast.LENGTH_LONG).show()
     }
 
     fun startRide(code: String) {
@@ -188,9 +183,6 @@ fun HomeScreen(state: RideState) {
                     Prefs.setTokenServerId(context, draft)
                     Prefs.setBubbleEnabled(context, bubbleOn)
                     Prefs.setEmergencyNumbers(context, numbers)
-                    if (SmsSender.parseNumbers(numbers).isNotEmpty() && !SmsSender.canSend(context)) {
-                        smsPermission.launch(Manifest.permission.SEND_SMS)
-                    }
                     tokenServerId = Prefs.tokenServerId(context)
                     showSettings = false
                 }) { Text("Save") }

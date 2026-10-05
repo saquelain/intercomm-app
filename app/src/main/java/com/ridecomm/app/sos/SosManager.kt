@@ -53,7 +53,7 @@ data class SosState(
 /**
  * Emergency stop. The rider confirms through a short cancellable countdown, then every phone in
  * the ride gets a siren, a spoken alert and the rider's location. Without internet it falls back
- * to SMS to the rider's emergency numbers.
+ * to an SMS to the rider's emergency numbers, ready to send in the Messages app.
  */
 object SosManager {
     private const val TOPIC = "rc-sos"
@@ -146,11 +146,11 @@ object SosManager {
             var status = if (sentOnline) "Sent to the group" else null
             if (!sentOnline) {
                 val numbers = SmsSender.parseNumbers(Prefs.emergencyNumbers(appContext))
-                val count = SmsSender.send(appContext, numbers, smsText(name, quick))
+                val opened = SmsSender.compose(appContext, numbers, smsText(name, quick))
                 status = when {
-                    count > 0 -> "No internet: sent by SMS to $count number(s)"
+                    opened -> "No internet: SOS text is ready in Messages, tap Send"
                     numbers.isEmpty() -> "No internet and no emergency numbers set"
-                    else -> "No internet and SMS failed"
+                    else -> "No internet and couldn't open Messages"
                 }
             }
             _state.update { it.copy(mySosStatus = status) }

@@ -41,7 +41,8 @@ other over mobile internet through their helmet headset.
   to cancel. Then every rider gets a siren in the headset (music muted), a spoken "S O S. Rahul needs help.
   1.2 kilometers away.", a full-screen red alert over other apps and a high-priority notification, both with
   Open map. The sender's last known location goes out at once, followed by a fresh GPS fix. Without internet,
-  the SOS is sent by SMS (with a maps link) to the emergency numbers set in Settings. "I'm OK" stops everyone's
+  the Messages app opens with the SOS text (with a maps link) to the emergency numbers set in Settings, ready to
+  send with one tap (sending silently needs SEND_SMS, which Play Protect blocks for sideloaded apps). "I'm OK" stops everyone's
   alarm.
 
 ## One-time setup
