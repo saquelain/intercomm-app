@@ -14,10 +14,15 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import com.ridecomm.app.Announcer
 import com.ridecomm.app.MainActivity
+import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
+import com.ridecomm.app.overlay.AppVisibility
+import com.ridecomm.app.overlay.BubbleOverlay
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 /**
@@ -30,6 +35,7 @@ class RideService : Service() {
     private val scope = MainScope()
     private var wakeLock: PowerManager.WakeLock? = null
     private var lastStartId = 0
+    private lateinit var bubble: BubbleOverlay
 
     override fun onCreate() {
         super.onCreate()
@@ -43,6 +49,16 @@ class RideService : Service() {
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "RideComm:ride")
             .apply { acquire(WAKE_LOCK_TIMEOUT_MS) }
 
+        bubble = BubbleOverlay(this)
+        scope.launch {
+            // Floating button: only during a ride, only while RideComm itself isn't on screen.
+            combine(RideManager.state, AppVisibility.inForeground) { ride, appVisible -> ride to appVisible }
+                .collect { (ride, appVisible) ->
+                    val wanted = ride.status != RideStatus.IDLE && !appVisible && Prefs.bubbleEnabled(this@RideService)
+                    if (wanted) bubble.show() else bubble.hide()
+                    bubble.setMuted(ride.micMuted)
+                }
+        }
         scope.launch {
             RideManager.state.collect { state ->
                 if (state.status == RideStatus.IDLE) {
@@ -69,6 +85,8 @@ class RideService : Service() {
 
     override fun onDestroy() {
         scope.cancel()
+        bubble.hide()
+        Announcer.shutdown()
         wakeLock?.takeIf { it.isHeld }?.release()
         super.onDestroy()
     }

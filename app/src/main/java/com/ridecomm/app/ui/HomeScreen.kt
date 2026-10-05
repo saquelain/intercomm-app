@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,6 +22,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -148,6 +150,7 @@ fun HomeScreen(state: RideState) {
 
     if (showSettings) {
         var draft by remember { mutableStateOf(tokenServerId) }
+        var bubbleOn by remember { mutableStateOf(Prefs.bubbleEnabled(context)) }
         AlertDialog(
             onDismissRequest = { showSettings = false },
             title = { Text("Settings") },
@@ -155,11 +158,16 @@ fun HomeScreen(state: RideState) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("LiveKit token server ID (LiveKit Cloud → Settings → Development token server). Everyone in the group must use the same one.")
                     OutlinedTextField(value = draft, onValueChange = { draft = it }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Floating ride button over other apps", modifier = Modifier.weight(1f))
+                        Switch(checked = bubbleOn, onCheckedChange = { bubbleOn = it })
+                    }
                 }
             },
             confirmButton = {
                 TextButton(onClick = {
                     Prefs.setTokenServerId(context, draft)
+                    Prefs.setBubbleEnabled(context, bubbleOn)
                     tokenServerId = Prefs.tokenServerId(context)
                     showSettings = false
                 }) { Text("Save") }

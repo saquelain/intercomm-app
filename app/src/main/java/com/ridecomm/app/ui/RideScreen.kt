@@ -75,6 +75,8 @@ fun RideScreen(state: RideState) {
             items(state.riders, key = { it.id }) { RiderCard(it) }
         }
 
+        OverlayPermissionCard()
+
         MusicCard(music)
 
         MuteButton(muted = state.micMuted, onClick = RideManager::toggleMute)

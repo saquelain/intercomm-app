@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ridecomm.app.overlay.AppVisibility
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideStatus
 import com.ridecomm.app.ui.HomeScreen
@@ -35,5 +36,15 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        AppVisibility.set(true)
+    }
+
+    override fun onStop() {
+        AppVisibility.set(false)
+        super.onStop()
     }
 }

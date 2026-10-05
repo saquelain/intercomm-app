@@ -29,7 +29,7 @@ jobs:
           LIVEKIT_TOKEN_SERVER_ID: ${{ secrets.LIVEKIT_TOKEN_SERVER_ID }}
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
-          ./gradlew assembleRelease --console=plain
+          ./gradlew testReleaseUnitTest assembleRelease --console=plain
           mv app/build/outputs/apk/release/app-release.apk RideComm.apk
 
       - uses: actions/upload-artifact@v4

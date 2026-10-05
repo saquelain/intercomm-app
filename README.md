@@ -9,7 +9,7 @@ other over mobile internet through their helmet headset.
 |---|---|---|
 | 1 | Group voice call (4–6 riders), background audio, Bluetooth headset, auto-reconnect | ✅ Built |
 | 2 | Shared music from one "DJ" phone, music ducks when someone talks | ✅ Built |
-| 3 | Glove-friendly floating slide panel over other apps | Planned |
+| 3 | Glove-friendly floating slide panel over other apps | ✅ Built |
 | 4 | Quick votes (break, fuel, food…) with spoken results | Planned |
 | 5 | SOS / caution stop with alarm, location and SMS fallback | Planned |
 
@@ -25,6 +25,12 @@ other over mobile internet through their helmet headset.
   streams (the next song is sent ahead while the current one plays), and every phone plays it locally, kept in
   sync by small "playing at position X" messages. Because playback is local, music keeps going through dead zones
   and each phone turns it down to 25% within ~0.2 s whenever anyone talks, then fades it back ~1 s after.
+
+- **Floating ride button:** during a ride, a round button sits on the screen edge over any app (needs
+  "Display over other apps"). Touch it and slide toward an option — Mute/Unmute, music controls, Open app — then
+  lift to choose. The option is picked by direction, not by exact position, so it works with gloves; the phone
+  buzzes when an option is highlighted and a voice confirms the action. Tap opens the app; hold still ~0.6 s to
+  drag the button, and it snaps to the nearest edge.
 
 ## One-time setup
 
