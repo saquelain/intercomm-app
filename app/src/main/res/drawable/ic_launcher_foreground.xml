@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Helmet-style headset with sound waves -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,30c-13.25,0 -24,10.75 -24,24v12c0,2.2 1.8,4 4,4h6c2.2,0 4,-1.8 4,-4v-10c0,-2.2 -1.8,-4 -4,-4h-4c0,-11 8.95,-18 18,-18s18,7 18,18h-4c-2.2,0 -4,1.8 -4,4v10c0,2.2 1.8,4 4,4h6c2.2,0 4,-1.8 4,-4v-12c0,-13.25 -10.75,-24 -24,-24z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M50,50h8v20h-8z" />
+</vector>

@@ -1,0 +1,50 @@
+# RideComm
+
+Group intercom app for bike riders (Android). Riders join a ride with a 6-letter code and talk to each
+other over mobile internet through their helmet headset.
+
+## Status
+
+| Step | Feature | State |
+|---|---|---|
+| 1 | Group voice call (4–6 riders), background audio, Bluetooth headset, auto-reconnect | ✅ Built |
+| 2 | Shared music from one "DJ" phone, music ducks when someone talks | Planned |
+| 3 | Glove-friendly floating slide panel over other apps | Planned |
+| 4 | Quick votes (break, fuel, food…) with spoken results | Planned |
+| 5 | SOS / caution stop with alarm, location and SMS fallback | Planned |
+
+## How it works
+
+- **Voice:** [LiveKit](https://livekit.io) (WebRTC). Opus at ~24 kbps with DTX (near zero data while silent) and
+  RED (redundancy for patchy highway networks). WebRTC noise suppression, echo cancellation and auto gain are on.
+- **Background:** a foreground service keeps the call alive with the screen off or Maps open; the notification has
+  Mute and Leave buttons.
+- **Dead zones:** if the connection drops, the app keeps retrying (up to every 15 s) until the rider leaves.
+- **Audio route:** Bluetooth headset → wired headset → speaker → earpiece, switched automatically.
+
+## One-time setup
+
+1. Create a free project at [cloud.livekit.io](https://cloud.livekit.io).
+2. In the project's **Settings**, switch on **Development token server** and copy the **Token server ID**.
+3. Either:
+   - add it as a GitHub Actions secret named `LIVEKIT_TOKEN_SERVER_ID` (repo → Settings → Secrets and variables →
+     Actions), so every APK has it built in, **or**
+   - paste it in the app under **Settings** on each phone.
+
+> The development token server is fine for a private group but lets anyone with the ID join rooms.
+> Before sharing the app publicly we'll switch to our own token endpoint.
+
+## Getting the APK
+
+Every push builds an APK on GitHub Actions. Download `RideComm.apk` from the
+[`latest` release](../../releases/tag/latest) on your phone and install it (allow "Install unknown apps" for your
+browser once). Builds are signed with the same test key, so new versions install over old ones.
+
+## Building locally
+
+```sh
+./gradlew assembleRelease -PlivekitTokenServerId=<your id>
+# APK: app/build/outputs/apk/release/app-release.apk
+```
+
+Requires JDK 17+ and the Android SDK (platform 35).
