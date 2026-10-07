@@ -208,6 +208,7 @@ private fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit) {
     var bubbleOn by remember { mutableStateOf(Prefs.bubbleEnabled(context)) }
     var numbers by remember { mutableStateOf(Prefs.emergencyNumbers(context)) }
     var shareLocation by remember { mutableStateOf(Prefs.shareLocation(context)) }
+    var keepMusic by remember { mutableStateOf(Prefs.keepOtherMusic(context)) }
 
     GlassDialog(onDismiss = onClose) {
         Text("Settings", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp))
@@ -235,6 +236,9 @@ private fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit) {
         SettingSwitch("Share my location", "Distances and separation alerts for the group", shareLocation) {
             shareLocation = it
         }
+        SettingSwitch("Keep music apps playing", "Spotify, YouTube Music… get quieter when someone talks", keepMusic) {
+            keepMusic = it
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             GlassButton("Cancel", modifier = Modifier.weight(1f), onClick = onClose)
             PrimaryButton("Save", modifier = Modifier.weight(1f), height = 56.dp) {
@@ -242,6 +246,7 @@ private fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit) {
                 Prefs.setBubbleEnabled(context, bubbleOn)
                 Prefs.setEmergencyNumbers(context, numbers)
                 Prefs.setShareLocation(context, shareLocation)
+                Prefs.setKeepOtherMusic(context, keepMusic)
                 onSaved()
                 onClose()
             }

@@ -106,6 +106,11 @@ class ScreenshotTest {
     }
 
     @Test
+    fun musicCardEmpty() = shot("9_music_card") {
+        Box(Modifier.padding(16.dp)) { MusicCard(MusicState()) }
+    }
+
+    @Test
     fun sosCountdown() = shot("5_sos_countdown") { SosCountdown(3) }
 
     @Test

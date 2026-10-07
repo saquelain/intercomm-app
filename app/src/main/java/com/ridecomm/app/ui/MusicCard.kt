@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
 import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.music.MusicState
@@ -67,7 +69,8 @@ fun MusicCard(music: MusicState) {
         }
 
         if (music.title == null) {
-            GlassButton("Play music for the group", R.drawable.ms_library_music, Modifier.fillMaxWidth(), height = 58.dp, onClick = pickSongs)
+            GlassButton("Share songs from this phone", R.drawable.ms_library_music, Modifier.fillMaxWidth(), height = 58.dp, onClick = pickSongs)
+            MusicAppsRow()
             return@GlassCard
         }
 
@@ -131,8 +134,41 @@ private fun VolumeBar(volume: Float, modifier: Modifier) {
     }
 }
 
+/**
+ * Shortcuts to the music apps installed on this phone. Their music keeps playing during the ride
+ * and goes quieter whenever someone talks.
+ */
+@Composable
+private fun MusicAppsRow() {
+    val context = LocalContext.current
+    if (!Prefs.keepOtherMusic(context)) return
+    val apps = remember {
+        MUSIC_APPS.mapNotNull { (label, pkg) ->
+            context.packageManager.getLaunchIntentForPackage(pkg)?.let { label to it }
+        }
+    }
+    Text(
+        "Or play Spotify / YouTube Music as usual. It turns down whenever someone talks.",
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    if (apps.isEmpty()) return
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        apps.forEach { (label, intent) ->
+            GlassButton(label, R.drawable.ms_play_arrow, Modifier.weight(1f), height = 52.dp) {
+                context.startActivity(intent)
+            }
+        }
+    }
+}
+
+/** Music apps offered as shortcuts (also listed under <queries> in the manifest). */
+private val MUSIC_APPS = listOf(
+    "Spotify" to "com.spotify.music",
+    "YT Music" to "com.google.android.apps.youtube.music",
+)
+
 private fun subtitle(music: MusicState): String = when {
-    music.title == null -> "Pick songs from your phone; everyone hears them"
+    music.title == null -> "DJ mode: songs from one phone, played on everyone's"
     else -> buildString {
         append(music.status ?: if (music.playing) "Playing" else "Paused")
         append(" · DJ ")

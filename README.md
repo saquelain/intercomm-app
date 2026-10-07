@@ -26,6 +26,10 @@ other over mobile internet through their helmet headset.
   sync by small "playing at position X" messages. Because playback is local, music keeps going through dead zones
   and each phone turns it down to 25% within ~0.2 s whenever anyone talks, then fades it back ~1 s after.
 
+- **Spotify / YouTube Music / any music app:** a call normally takes full audio focus, which pauses other
+  music apps. RideComm keeps them playing instead and turns them down (Android audio-focus ducking) whenever
+  anyone talks or an announcement plays. For the same songs on every phone use Spotify Jam. Can be switched back
+  to "pause other music" in Settings.
 - **Floating ride button:** during a ride, a round button sits on the screen edge over any app (needs
   "Display over other apps"). Tap it to open the options, then tap an option (or anywhere in its direction);
   tap empty space to close. Sliding straight off the button and lifting also works. Options are picked by

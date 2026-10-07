@@ -27,6 +27,12 @@
         tools:node="remove" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" tools:node="remove" />
 
+    <!-- Shortcuts in the music card open these apps if installed. -->
+    <queries>
+        <package android:name="com.spotify.music" />
+        <package android:name="com.google.android.apps.youtube.music" />
+    </queries>
+
     <application
         android:name=".RideCommApp"
         android:allowBackup="false"

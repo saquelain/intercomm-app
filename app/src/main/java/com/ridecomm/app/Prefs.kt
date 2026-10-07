@@ -14,6 +14,7 @@ object Prefs {
     private const val KEY_BUBBLE_LEFT = "bubble_left"
     private const val KEY_EMERGENCY_NUMBERS = "emergency_numbers"
     private const val KEY_SHARE_LOCATION = "share_location"
+    private const val KEY_KEEP_OTHER_MUSIC = "keep_other_music"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -62,6 +63,15 @@ object Prefs {
 
     fun setShareLocation(context: Context, share: Boolean) =
         prefs(context).edit().putBoolean(KEY_SHARE_LOCATION, share).apply()
+
+    /**
+     * Let Spotify / YouTube Music keep playing during rides (turned down while someone talks)
+     * instead of pausing them like a phone call does.
+     */
+    fun keepOtherMusic(context: Context): Boolean = prefs(context).getBoolean(KEY_KEEP_OTHER_MUSIC, true)
+
+    fun setKeepOtherMusic(context: Context, keep: Boolean) =
+        prefs(context).edit().putBoolean(KEY_KEEP_OTHER_MUSIC, keep).apply()
 
     fun setBubblePosition(context: Context, y: Int, onLeft: Boolean) =
         prefs(context).edit().putInt(KEY_BUBBLE_Y, y).putBoolean(KEY_BUBBLE_LEFT, onLeft).apply()

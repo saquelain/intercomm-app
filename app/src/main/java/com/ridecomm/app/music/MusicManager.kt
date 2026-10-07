@@ -136,6 +136,7 @@ object MusicManager {
     /** The rider left the ride: stop everything and delete downloaded songs. */
     fun release() {
         room = null
+        if (::appContext.isInitialized) OtherAppsDucker.setDucked(appContext, false)
         resyncJob?.cancel()
         duckReleaseJob?.cancel()
         fadeJob?.cancel()
@@ -203,6 +204,8 @@ object MusicManager {
         if (_state.value.ducked == ducked) return
         _state.update { it.copy(ducked = ducked) }
         applyVolume()
+        // Spotify, YouTube Music etc. playing alongside the ride go down too.
+        if (::appContext.isInitialized && Prefs.keepOtherMusic(appContext)) OtherAppsDucker.setDucked(appContext, ducked)
     }
 
     fun setVolume(volume: Float) {

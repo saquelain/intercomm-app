@@ -6,8 +6,11 @@ import com.ridecomm.app.group.GroupTracker
 import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.sos.SosManager
 import com.ridecomm.app.vote.VoteManager
+import io.livekit.android.AudioOptions
 import io.livekit.android.LiveKit
+import io.livekit.android.LiveKitOverrides
 import io.livekit.android.RoomOptions
+import io.livekit.android.audio.AudioSwitchHandler
 import io.livekit.android.events.DisconnectReason
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.events.collect
@@ -132,6 +135,15 @@ object RideManager {
                 audioTrackCaptureDefaults = LocalAudioTrackOptions(),
                 // DTX sends almost nothing while you're silent; RED adds redundancy for lossy networks.
                 audioTrackPublishDefaults = AudioTrackPublishDefaults(audioBitrate = VOICE_BITRATE, dtx = true, red = true),
+            ),
+            LiveKitOverrides(
+                audioOptions = AudioOptions(
+                    audioHandler = AudioSwitchHandler(appContext).apply {
+                        // A call normally takes full audio focus, which pauses Spotify and other
+                        // music apps. Keep them playing; MusicManager turns them down for voices.
+                        manageAudioFocus = !Prefs.keepOtherMusic(appContext)
+                    },
+                ),
             ),
         )
         room = r
