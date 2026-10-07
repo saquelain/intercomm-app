@@ -333,6 +333,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var speakerOverlay by remember { mutableStateOf(Prefs.speakerOverlay(context)) }
     var headsetButtons by remember { mutableStateOf(Prefs.headsetButtons(context)) }
     var windGate by remember { mutableStateOf(Prefs.windGate(context)) }
+    var riderAlerts by remember { mutableStateOf(Prefs.riderAlerts(context)) }
 
     GlassDialog(onDismiss = onClose) {
         Text("Settings", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp))
@@ -399,6 +400,11 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             "1 press: mute/unmute · 2: next song or music off · 3: SOS. While Spotify plays, the button may control Spotify instead.",
             headsetButtons,
         ) { headsetButtons = it }
+        SettingSwitch(
+            "Rider alerts",
+            "Speaks when someone joins, drops out or is back, and when a phone's battery gets low",
+            riderAlerts,
+        ) { riderAlerts = it }
         SettingSwitch("Show who's talking", "Small photos at the top-left over Maps and other apps", speakerOverlay) {
             speakerOverlay = it
         }
@@ -428,6 +434,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setSpeakerOverlay(context, speakerOverlay)
                 Prefs.setHeadsetButtons(context, headsetButtons)
                 Prefs.setWindGate(context, windGate)
+                Prefs.setRiderAlerts(context, riderAlerts)
                 MicGate.setSensitivity(windGate)
                 HeadsetButtons.applySettings(context)
                 CrashDetector.applySettings(context)

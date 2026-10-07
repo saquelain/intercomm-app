@@ -2,6 +2,7 @@ package com.ridecomm.app.ride
 
 import android.content.Context
 import com.ridecomm.app.Prefs
+import com.ridecomm.app.alerts.RiderAlerts
 import com.ridecomm.app.audio.MicGate
 import com.ridecomm.app.crash.CrashDetector
 import com.ridecomm.app.group.GroupTracker
@@ -52,15 +53,19 @@ object RideManager {
     private lateinit var appContext: Context
     private var room: Room? = null
     private var rideJob: Job? = null
+    /** The ride just left, kept connected for a moment to say bye. */
+    private var leavingRide: Job? = null
 
     private class RideError(message: String) : Exception(message)
 
     fun start(context: Context, code: String) {
         if (rideJob != null) return
+        leavingRide?.cancel()
         appContext = context.applicationContext
         _state.value = RideState(status = RideStatus.CONNECTING, code = code)
         DataUsage.start()
         Prefs.rideStarted(appContext, code)
+        RiderAlerts.start(appContext)
         RideService.start(appContext)
         CrashDetector.start(appContext)
         rideJob = scope.launch { runRide(code) }
@@ -68,13 +73,23 @@ object RideManager {
 
     fun leave() {
         if (::appContext.isInitialized) Prefs.clearUnfinishedRide(appContext)
-        rideJob?.cancel()
+        val job = rideJob
+        val r = room
         rideJob = null
+        // Say bye before disconnecting, so the others hear "left the ride" rather than "dropped out".
+        leavingRide = scope.launch {
+            try {
+                if (r != null) RiderAlerts.sayBye(r)
+            } finally {
+                job?.cancel()
+            }
+        }
         MusicManager.release()
         VoteManager.release()
         SosManager.release()
         GroupTracker.release()
         ProfileSync.release()
+        RiderAlerts.release()
         CrashDetector.stop()
         _state.value = RideState()
     }
@@ -154,6 +169,7 @@ object RideManager {
         SosManager.attach(r)
         GroupTracker.attach(appContext, r)
         ProfileSync.attach(appContext, r)
+        RiderAlerts.attach(r)
         val ended = CompletableDeferred<DisconnectReason>()
         val events = launch(start = CoroutineStart.UNDISPATCHED) {
             r.events.collect { event ->
@@ -162,8 +178,14 @@ object RideManager {
                     is RoomEvent.Reconnected -> _state.update { it.copy(status = RideStatus.CONNECTED) }
                     is RoomEvent.Disconnected -> ended.complete(event.reason)
                     is RoomEvent.ActiveSpeakersChanged -> MusicManager.onSpeakersChanged(event.speakers)
-                    is RoomEvent.ParticipantDisconnected -> event.participant.identity?.let { GroupTracker.forget(it.value) }
-                    is RoomEvent.ParticipantConnected -> event.participant.identity?.let { ProfileSync.onRiderJoined(it) }
+                    is RoomEvent.ParticipantDisconnected -> {
+                        event.participant.identity?.let { GroupTracker.forget(it.value) }
+                        RiderAlerts.onRiderLeft(event.participant)
+                    }
+                    is RoomEvent.ParticipantConnected -> {
+                        event.participant.identity?.let { ProfileSync.onRiderJoined(it) }
+                        RiderAlerts.onRiderJoined(event.participant)
+                    }
                     else -> Unit
                 }
                 refreshRiders()
@@ -178,6 +200,7 @@ object RideManager {
             MusicManager.onConnected()
             GroupTracker.onConnected()
             ProfileSync.onConnected()
+            RiderAlerts.onConnected()
             _state.update { it.copy(status = RideStatus.CONNECTED) }
             refreshRiders()
             ended.await()
@@ -188,7 +211,8 @@ object RideManager {
             SosManager.detach()
             GroupTracker.detach()
             ProfileSync.detach()
-            room = null
+            RiderAlerts.detach()
+            if (room === r) room = null
             r.disconnect()
             r.release()
         }
@@ -202,6 +226,7 @@ object RideManager {
         SosManager.release()
         GroupTracker.release()
         ProfileSync.release()
+        RiderAlerts.release()
         CrashDetector.stop()
         _state.value = RideState(error = message)
     }

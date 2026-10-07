@@ -27,6 +27,7 @@ object Prefs {
     private const val KEY_WIND_GATE = "wind_gate"
     private const val KEY_RECENT_RIDES = "recent_rides"
     private const val KEY_UNFINISHED_RIDE = "unfinished_ride"
+    private const val KEY_RIDER_ALERTS = "rider_alerts"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -155,4 +156,10 @@ object Prefs {
         RecentRides.parse(prefs(context).getString(KEY_UNFINISHED_RIDE, "") ?: "").firstOrNull()
 
     fun clearUnfinishedRide(context: Context) = prefs(context).edit().remove(KEY_UNFINISHED_RIDE).apply()
+
+    /** Speak when riders join, drop out or come back, and when a phone's battery runs low. */
+    fun riderAlerts(context: Context): Boolean = prefs(context).getBoolean(KEY_RIDER_ALERTS, true)
+
+    fun setRiderAlerts(context: Context, on: Boolean) =
+        prefs(context).edit().putBoolean(KEY_RIDER_ALERTS, on).apply()
 }

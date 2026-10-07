@@ -1,5 +1,8 @@
 package com.ridecomm.app.ui
 
+import com.ridecomm.app.alerts.BatteryInfo
+import com.ridecomm.app.alerts.BatteryWatch
+import com.ridecomm.app.alerts.RiderAlerts
 import com.ridecomm.app.ride.DataUsage
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.produceState
@@ -83,13 +86,14 @@ fun RideScreen(state: RideState) {
     val sent by VoteManager.sent.collectAsStateWithLifecycle()
     val photos by ProfileSync.photos.collectAsStateWithLifecycle()
     val myPhoto by Profile.photo.collectAsStateWithLifecycle()
+    val batteries by RiderAlerts.batteries.collectAsStateWithLifecycle()
     val dataUsed by produceState(DataUsage.usedBytes()) {
         while (true) {
             delay(DATA_REFRESH_MS)
             value = DataUsage.usedBytes()
         }
     }
-    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed)
+    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed, batteries)
 }
 
 /** The ride screen for given states (split out so screenshots can render any situation). */
@@ -104,6 +108,7 @@ fun RideContent(
     photos: Map<String, Bitmap> = emptyMap(),
     myPhoto: Bitmap? = null,
     dataUsed: Long? = null,
+    batteries: Map<String, BatteryInfo> = emptyMap(),
 ) {
     val context = LocalContext.current
     var confirmLeave by remember { mutableStateOf(false) }
@@ -154,7 +159,7 @@ fun RideContent(
 
                 StatusLine(state, dataUsed)
                 SosCards(sos)
-                RidersCard(state.riders, group) { rider -> if (rider.isMe) myPhoto else photos[rider.id] }
+                RidersCard(state.riders, group, batteries) { rider -> if (rider.isMe) myPhoto else photos[rider.id] }
                 VoteCard(vote)
                 MusicCard(music)
                 OverlayPermissionCard()
@@ -217,18 +222,18 @@ private fun StatusLine(state: RideState, dataUsed: Long?) {
 private const val DATA_REFRESH_MS = 5_000L
 
 @Composable
-private fun RidersCard(riders: List<Rider>, group: GroupState, photoOf: (Rider) -> Bitmap?) {
+private fun RidersCard(riders: List<Rider>, group: GroupState, batteries: Map<String, BatteryInfo>, photoOf: (Rider) -> Bitmap?) {
     GlassCard(spacing = 14.dp) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             SectionLabel("Riders", Modifier.weight(1f))
             if (group.sharing) StatusPill("Location (beta)", Palette.Cyan)
         }
-        riders.forEach { RiderRow(it, if (it.isMe) null else group.positions[it.id], photoOf(it)) }
+        riders.forEach { RiderRow(it, if (it.isMe) null else group.positions[it.id], photoOf(it), batteries[it.id]) }
     }
 }
 
 @Composable
-private fun RiderRow(rider: Rider, position: RiderPosition?, photo: Bitmap?) {
+private fun RiderRow(rider: Rider, position: RiderPosition?, photo: Bitmap?, battery: BatteryInfo?) {
     val context = LocalContext.current
     val ring by animateColorAsState(if (rider.isSpeaking) Palette.Go else Color.Transparent, label = "ring")
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -248,6 +253,10 @@ private fun RiderRow(rider: Rider, position: RiderPosition?, photo: Bitmap?) {
         }
         if (rider.isMuted) {
             Ico(R.drawable.ms_mic_off, 20.dp, Palette.Stop, "Mic off")
+            Spacer(Modifier.width(10.dp))
+        }
+        if (battery != null && !battery.charging && battery.level <= BatteryWatch.SHOW_AT_OR_BELOW) {
+            LowBattery(battery.level)
             Spacer(Modifier.width(10.dp))
         }
         SignalIcon(rider.signal)
@@ -287,6 +296,16 @@ private fun DistanceChip(position: RiderPosition, onClick: () -> Unit) {
             Relation.NEARBY -> if (distance != null && distance < GroupMath.TOGETHER_M) "with you" else null
         }
         if (label != null) Text(label, style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
+    }
+}
+
+/** Battery icon with "18%", amber when low and red when nearly empty. */
+@Composable
+private fun LowBattery(level: Int) {
+    val color = if (level <= 10) Palette.Stop else Palette.Amber
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Ico(R.drawable.ms_battery_alert, 20.dp, color, "Battery low")
+        Text("$level%", style = MaterialTheme.typography.labelSmall, color = color)
     }
 }
 

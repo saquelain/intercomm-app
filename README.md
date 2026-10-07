@@ -26,6 +26,11 @@ other over mobile internet through their helmet headset.
 - **Background:** a foreground service keeps the call alive with the screen off or Maps open; the notification has
   Mute and Leave buttons.
 - **Dead zones:** if the connection drops, the app keeps retrying (up to every 15 s) until the rider leaves.
+- **Rider alerts:** spoken heads-ups so nobody has to look: "Rahul joined the ride", "Rahul dropped out" (signal
+  lost; a rider who taps Leave says bye first, so the others hear "left the ride" instead), "Rahul is back", and
+  "Amit's phone battery is at 15 percent" (once each at 20%, 10% and 5%, not while charging). Phones share their
+  battery level only when it changes by 5%. Low batteries (30% or less) also show on rider cards. Switchable in
+  Settings.
 - **Quick rejoin:** if a ride ends without the rider leaving (app closed, phone restarted or out of battery), the
   home screen offers "Back to ride CODE?" with a one-tap Rejoin for 12 hours. The join card also lists up to three
   recent ride codes from the past week ("Ride again"); one tap joins that ride again.

@@ -111,6 +111,11 @@ class ScreenshotTest {
                 ),
             ),
             dataUsed = 18_400_000,
+            batteries = mapOf(
+                "r" to com.ridecomm.app.alerts.BatteryInfo(8, charging = false),
+                "v" to com.ridecomm.app.alerts.BatteryInfo(24, charging = false),
+                "a" to com.ridecomm.app.alerts.BatteryInfo(60, charging = false),
+            ),
         )
     }
 
