@@ -151,6 +151,7 @@ class ScreenshotTest {
                 ),
             ),
             dataUsed = 18_400_000,
+            onCall = setOf("v"),
             trip = com.ridecomm.app.trip.TripState(
                 active = true,
                 startedAtMs = System.currentTimeMillis() - 74 * 60_000L,

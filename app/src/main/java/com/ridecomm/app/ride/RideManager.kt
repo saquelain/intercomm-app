@@ -1,6 +1,9 @@
 package com.ridecomm.app.ride
 
 import android.content.Context
+import android.os.SystemClock
+import android.util.Log
+import com.ridecomm.app.Announcer
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.alerts.RiderAlerts
 import com.ridecomm.app.audio.MicGate
@@ -24,7 +27,10 @@ import io.livekit.android.room.Room
 import io.livekit.android.room.participant.AudioTrackPublishDefaults
 import io.livekit.android.room.participant.ConnectionQuality
 import io.livekit.android.room.participant.Participant
+import io.livekit.android.room.track.LocalAudioTrack
 import io.livekit.android.room.track.LocalAudioTrackOptions
+import io.livekit.android.room.track.Track
+import livekit.org.webrtc.RtpSender
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -35,6 +41,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -44,9 +51,13 @@ import kotlinx.coroutines.launch
  */
 object RideManager {
 
-    /** Voice-only bitrate: clear speech while staying light on mobile data (~24 kbps). */
-    private const val VOICE_BITRATE = 24_000
     private const val MAX_RETRY_DELAY_MS = 15_000L
+    private const val NETWORK_CHECK_MS = 2_000L
+    /** Let the phone hand audio back to the ride before speaking. */
+    private const val CALL_END_SETTLE_MS = 1_500L
+    private const val CATCH_UP_MARGIN_MS = 5_000L
+    /** Only say "Back online" after a real drop, not a blip. */
+    private const val BACK_ONLINE_ANNOUNCE_MS = 5_000L
 
     private val scope = safeMainScope()
     private val _state = MutableStateFlow(RideState())
@@ -57,6 +68,11 @@ object RideManager {
     private var rideJob: Job? = null
     /** The ride just left, kept connected for a moment to say bye. */
     private var leavingRide: Job? = null
+    /** When the connection last dropped (wall clock), until we're back and have caught up. */
+    private var offlineSinceMs: Long? = null
+    private var callWatch: Job? = null
+    /** I muted the mic because a phone call started, so unmute when it ends. */
+    private var mutedForCall = false
 
     private class RideError(message: String) : Exception(message)
 
@@ -66,13 +82,49 @@ object RideManager {
         appContext = context.applicationContext
         _state.value = RideState(status = RideStatus.CONNECTING, code = code)
         DataUsage.start()
+        DataSaver.reset(appContext)
+        offlineSinceMs = null
         Prefs.rideStarted(appContext, code)
         MicGate.resetTotals()
         RiderAlerts.start(appContext)
         TripTracker.start(appContext)
         RideService.start(appContext)
         CrashDetector.start(appContext)
+        watchPhoneCalls()
         rideJob = scope.launch { runRide(code) }
+    }
+
+    /**
+     * A regular phone call doesn't end the ride: my ride mic goes off for the call (so the group
+     * doesn't hear it), the group is told, and the mic comes back afterwards.
+     */
+    private fun watchPhoneCalls() {
+        mutedForCall = false
+        PhoneCalls.start(appContext)
+        callWatch?.cancel()
+        callWatch = scope.launch {
+            PhoneCalls.inCall.drop(1).collect { inCall ->
+                if (inCall) {
+                    if (!_state.value.micMuted) {
+                        toggleMute()
+                        mutedForCall = true
+                    }
+                } else {
+                    if (mutedForCall && _state.value.micMuted) toggleMute()
+                    mutedForCall = false
+                    delay(CALL_END_SETTLE_MS)
+                    Announcer.speak(appContext, "Back on the ride")
+                }
+                RiderAlerts.setMyPhoneCall(inCall)
+            }
+        }
+    }
+
+    private fun stopWatchingPhoneCalls() {
+        callWatch?.cancel()
+        callWatch = null
+        PhoneCalls.stop()
+        mutedForCall = false
     }
 
     fun leave() {
@@ -96,6 +148,7 @@ object RideManager {
         RiderAlerts.release()
         VoiceCommands.stop()
         TripTracker.stop()
+        stopWatchingPhoneCalls()
         CrashDetector.stop()
         _state.value = RideState()
     }
@@ -109,7 +162,10 @@ object RideManager {
         scope.launch {
             r.localParticipant.setMicrophoneEnabled(!muted)
             // Joining muted publishes the mic only now, so hook the gate onto it here too.
-            if (!muted) MicGate.attach(r)
+            if (!muted) {
+                MicGate.attach(r)
+                applyVoiceQuality(r, DataSaver.active.value)
+            }
             refreshRiders()
         }
     }
@@ -157,7 +213,11 @@ object RideManager {
                 // WebRTC's built-in noise suppression, echo cancellation and auto gain.
                 audioTrackCaptureDefaults = LocalAudioTrackOptions(),
                 // DTX sends almost nothing while you're silent; RED adds redundancy for lossy networks.
-                audioTrackPublishDefaults = AudioTrackPublishDefaults(audioBitrate = VOICE_BITRATE, dtx = true, red = true),
+                audioTrackPublishDefaults = AudioTrackPublishDefaults(
+                    audioBitrate = if (DataSaver.active.value) DataSaver.SAVING_VOICE_BPS else DataSaver.NORMAL_VOICE_BPS,
+                    dtx = true,
+                    red = true,
+                ),
             ),
             LiveKitOverrides(
                 audioOptions = AudioOptions(
@@ -180,8 +240,16 @@ object RideManager {
         val events = launch(start = CoroutineStart.UNDISPATCHED) {
             r.events.collect { event ->
                 when (event) {
-                    is RoomEvent.Reconnecting -> _state.update { it.copy(status = RideStatus.RECONNECTING) }
-                    is RoomEvent.Reconnected -> _state.update { it.copy(status = RideStatus.CONNECTED) }
+                    is RoomEvent.Reconnecting -> {
+                        if (offlineSinceMs == null) offlineSinceMs = System.currentTimeMillis()
+                        _state.update { it.copy(status = RideStatus.RECONNECTING) }
+                        checkNetwork(r)
+                    }
+                    is RoomEvent.Reconnected -> {
+                        _state.update { it.copy(status = RideStatus.CONNECTED) }
+                        catchUp()
+                    }
+                    is RoomEvent.ConnectionQualityChanged -> if (event.participant === r.localParticipant) checkNetwork(r)
                     is RoomEvent.Disconnected -> ended.complete(event.reason)
                     is RoomEvent.ActiveSpeakersChanged -> MusicManager.onSpeakersChanged(event.speakers)
                     is RoomEvent.ParticipantDisconnected -> {
@@ -210,8 +278,23 @@ object RideManager {
             RiderAlerts.onConnected()
             _state.update { it.copy(status = RideStatus.CONNECTED) }
             refreshRiders()
-            ended.await()
+            catchUp()
+            // Data saving reacts to how the connection has been over the last seconds.
+            val networkWatch = launch {
+                while (true) {
+                    checkNetwork(r)
+                    delay(NETWORK_CHECK_MS)
+                }
+            }
+            val quality = launch { DataSaver.active.collect { applyVoiceQuality(r, it) } }
+            try {
+                ended.await()
+            } finally {
+                networkWatch.cancel()
+                quality.cancel()
+            }
         } finally {
+            if (offlineSinceMs == null) offlineSinceMs = System.currentTimeMillis()
             events.cancel()
             MusicManager.detach()
             VoteManager.detach()
@@ -225,6 +308,40 @@ object RideManager {
         }
     }
 
+    /** Back online after a drop: get what the others said meanwhile, and send anything that waited. */
+    private fun catchUp() {
+        val since = offlineSinceMs ?: return
+        offlineSinceMs = null
+        // A little earlier than the drop, in case the phones' clocks differ slightly.
+        val from = since - CATCH_UP_MARGIN_MS
+        VoteManager.requestCatchUp(from)
+        SosManager.onBackOnline(from)
+        if (System.currentTimeMillis() - since > BACK_ONLINE_ANNOUNCE_MS) Announcer.speak(appContext, "Back online")
+    }
+
+    /**
+     * Sets the voice bitrate on the live call without re-publishing the mic (no gap in my voice).
+     * LiveKit keeps the WebRTC sender internal, so it's reached by its compiled name; if that ever
+     * fails, the call just stays at its current quality.
+     */
+    private fun applyVoiceQuality(r: Room, saving: Boolean) {
+        val track = r.localParticipant.getTrackPublication(Track.Source.MICROPHONE)?.track as? LocalAudioTrack ?: return
+        val bps = if (saving) DataSaver.SAVING_VOICE_BPS else DataSaver.NORMAL_VOICE_BPS
+        runCatching {
+            val sender = LocalAudioTrack::class.java.getMethod("getSender\$livekit_android_sdk_release").invoke(track) as RtpSender
+            val params = sender.parameters
+            params.encodings.forEach { it.maxBitrateBps = bps }
+            sender.setParameters(params)
+        }.onFailure { Log.w("RideComm", "Couldn't change the voice bitrate", it) }
+    }
+
+    private fun checkNetwork(r: Room) {
+        val weak = _state.value.status != RideStatus.CONNECTED ||
+            r.localParticipant.connectionQuality == ConnectionQuality.POOR ||
+            r.localParticipant.connectionQuality == ConnectionQuality.LOST
+        DataSaver.onConnection(SystemClock.elapsedRealtime(), weak)
+    }
+
     private fun endWithError(message: String) {
         Prefs.clearUnfinishedRide(appContext)
         rideJob = null
@@ -236,6 +353,7 @@ object RideManager {
         RiderAlerts.release()
         VoiceCommands.stop()
         TripTracker.stop()
+        stopWatchingPhoneCalls()
         CrashDetector.stop()
         _state.value = RideState(error = message)
     }

@@ -12,6 +12,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.ridecomm.app.Announcer
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.sos.SosManager
+import com.ridecomm.app.ride.DataSaver
 import com.ridecomm.app.ride.safeMainScope
 import com.ridecomm.app.ride.trySendText
 import io.livekit.android.room.Room
@@ -29,6 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -95,9 +97,12 @@ object MusicManager {
     private val broadcastIds = mutableSetOf<String>()
     private val broadcastsInFlight = mutableMapOf<String, Deferred<Unit>>()
     private var resyncJob: Job? = null
+    /** Riders saving data: song files skip them until they ask with a Need. */
+    private val savers = mutableSetOf<String>()
 
     // Listener side
     private var lastNow: MusicMessage.Now? = null
+    private var lastNowFrom: Participant.Identity? = null
     private val songFiles = LinkedHashMap<String, File>()
     private val downloading = mutableSetOf<String>()
     /** Song id → when we last asked the DJ for it. */
@@ -124,7 +129,26 @@ object MusicManager {
     /** After (re)joining: the DJ re-announces the song, everyone else asks what's playing. */
     fun onConnected() {
         scope.launch {
+            if (DataSaver.active.value) send(MusicMessage.Saving(true))
             if (_state.value.iAmDj) broadcastNow() else send(MusicMessage.Sync)
+        }
+    }
+
+    /**
+     * Data saving switched on or off. On: the DJ stops sending me song files. Off: catch up by
+     * asking for the song that's playing now.
+     */
+    private fun onDataSaverChanged(saving: Boolean) {
+        if (room == null) return
+        scope.launch {
+            send(MusicMessage.Saving(saving))
+            val now = lastNow ?: return@launch
+            val dj = lastNowFrom ?: return@launch
+            if (!saving && !_state.value.iAmDj && now.songId !in songFiles && now.songId !in downloading) {
+                requested[now.songId] = System.currentTimeMillis()
+                send(MusicMessage.Need(now.songId), listOf(dj))
+                _state.update { it.copy(status = "Getting song…") }
+            }
         }
     }
 
@@ -150,6 +174,8 @@ object MusicManager {
         broadcastsInFlight.values.forEach { it.cancel() }
         broadcastsInFlight.clear()
         lastNow = null
+        lastNowFrom = null
+        savers.clear()
         songFiles.clear()
         downloading.clear()
         requested.clear()
@@ -165,6 +191,7 @@ object MusicManager {
     private var emergency = false
 
     init {
+        scope.launch { DataSaver.active.drop(1).collect { onDataSaverChanged(it) } }
         scope.launch {
             Announcer.speaking.collect {
                 announcing = it
@@ -323,6 +350,17 @@ object MusicManager {
 
     private suspend fun streamSong(song: Song, to: List<Participant.Identity>) {
         val r = room ?: return
+        // Riders saving data are left out; they ask for the song once they stop saving.
+        val destinations = if (to.isEmpty() && savers.isNotEmpty()) {
+            val wanted = r.remoteParticipants.keys.filter { it.value !in savers }
+            if (wanted.isEmpty()) {
+                broadcastIds += song.id
+                return
+            }
+            wanted
+        } else {
+            to
+        }
         try {
             val input = withContext(Dispatchers.IO) { appContext.contentResolver.openInputStream(song.uri) }
                 ?: return
@@ -331,7 +369,7 @@ object MusicManager {
                     StreamBytesOptions(
                         topic = FILE_TOPIC,
                         attributes = mapOf(ATTR_ID to song.id, ATTR_TITLE to song.title),
-                        destinationIdentities = to,
+                        destinationIdentities = destinations,
                         mimeType = "audio/*",
                         name = song.title,
                         totalSize = song.size,
@@ -389,6 +427,7 @@ object MusicManager {
             is MusicMessage.Need -> if (_state.value.iAmDj) {
                 djSongs[message.songId]?.let { sendSong(it, to = listOf(from)) }
             }
+            is MusicMessage.Saving -> if (message.on) savers += from.value else savers -= from.value
         }
     }
 
@@ -401,9 +440,14 @@ object MusicManager {
             _state.update { it.copy(iAmDj = false, queued = 0) }
         }
         lastNow = now
+        lastNowFrom = from
         _state.update { it.copy(title = now.title, djName = now.djName, playing = now.playing) }
         if (now.songId in songFiles) {
             syncToDj(now)
+        } else if (DataSaver.active.value) {
+            // Don't download songs while saving data; this catches up when saving ends.
+            if (loadedId != now.songId) stopPlayer()
+            _state.update { it.copy(status = "Music paused to save data") }
         } else {
             val askedAt = requested[now.songId]
             val t = System.currentTimeMillis()

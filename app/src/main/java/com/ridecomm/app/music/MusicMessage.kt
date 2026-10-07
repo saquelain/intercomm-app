@@ -30,6 +30,9 @@ sealed class MusicMessage {
     /** Rider → DJ: "send me this song file, I don't have it". */
     data class Need(val songId: String) : MusicMessage()
 
+    /** Rider → everyone: "I'm saving data, don't send me song files" (or "I am again"). */
+    data class Saving(val on: Boolean) : MusicMessage()
+
     fun encode(): String = when (this) {
         is Now -> JSONObject()
             .put("t", "now")
@@ -42,6 +45,7 @@ sealed class MusicMessage {
         Stop -> JSONObject().put("t", "stop")
         Sync -> JSONObject().put("t", "sync")
         is Need -> JSONObject().put("t", "need").put("id", songId)
+        is Saving -> JSONObject().put("t", "saving").put("on", on)
     }.toString()
 
     companion object {
@@ -59,6 +63,7 @@ sealed class MusicMessage {
                 "stop" -> Stop
                 "sync" -> Sync
                 "need" -> Need(o.getString("id"))
+                "saving" -> Saving(o.getBoolean("on"))
                 else -> null
             }
         }.getOrNull()

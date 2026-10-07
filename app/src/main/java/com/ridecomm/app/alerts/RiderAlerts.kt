@@ -41,6 +41,10 @@ object RiderAlerts {
     private val _batteries = MutableStateFlow<Map<String, BatteryInfo>>(emptyMap())
     /** Rider identity → battery, mine included. */
     val batteries: StateFlow<Map<String, BatteryInfo>> = _batteries.asStateFlow()
+    private val _onCall = MutableStateFlow<Set<String>>(emptySet())
+    /** Riders on a regular phone call right now (still in the ride, mic off). */
+    val onCall: StateFlow<Set<String>> = _onCall.asStateFlow()
+    private var meOnCall = false
 
     private lateinit var appContext: Context
     private var room: Room? = null
@@ -77,6 +81,7 @@ object RiderAlerts {
         val r = room ?: return
         r.remoteParticipants.keys.forEach { presence.known(it.value) }
         sendBattery(to = emptyList())
+        if (meOnCall) sendCall(to = emptyList())
     }
 
     fun onRiderJoined(participant: Participant) {
@@ -84,6 +89,19 @@ object RiderAlerts {
         val event = presence.joined(id.value)
         announce(Presence.spoken(nameOf(participant), event))
         sendBattery(to = listOf(id))
+        if (meOnCall) sendCall(to = listOf(id))
+    }
+
+    /** I started or ended a regular phone call: let the group know why I'm quiet. */
+    fun setMyPhoneCall(onCall: Boolean) {
+        if (meOnCall == onCall) return
+        meOnCall = onCall
+        sendCall(to = emptyList())
+    }
+
+    private fun sendCall(to: List<Participant.Identity>) {
+        val r = room ?: return
+        scope.launch { r.trySendText(JSONObject().put("t", "call").put("on", meOnCall).toString(), TOPIC, to) }
     }
 
     fun onRiderLeft(participant: Participant) {
@@ -92,6 +110,7 @@ object RiderAlerts {
         val r = room
         val event = presence.left(id, SystemClock.elapsedRealtime())
         _batteries.value = _batteries.value - id
+        _onCall.value = _onCall.value - id
         watches.remove(id)
         if (event == PresenceEvent.LEFT) {
             announce(Presence.spoken(name, event))
@@ -120,6 +139,8 @@ object RiderAlerts {
         presence = Presence()
         watches.clear()
         _batteries.value = emptyMap()
+        _onCall.value = emptySet()
+        meOnCall = false
         lastSent = null
         receiver?.let { runCatching { appContext.unregisterReceiver(it) } }
         receiver = null
@@ -143,6 +164,13 @@ object RiderAlerts {
     private fun onMessage(o: JSONObject, from: String) {
         when (o.optString("t")) {
             "bye" -> presence.bye(from, SystemClock.elapsedRealtime())
+            "call" -> {
+                val on = o.getBoolean("on")
+                if (on == from in _onCall.value) return
+                _onCall.value = if (on) _onCall.value + from else _onCall.value - from
+                val name = room?.remoteParticipants?.entries?.firstOrNull { it.key.value == from }?.value?.let { nameOf(it) } ?: "A rider"
+                announce(if (on) "$name is on a phone call" else "$name is back from the phone call")
+            }
             "battery" -> {
                 val name = room?.remoteParticipants?.entries?.firstOrNull { it.key.value == from }?.value?.let { nameOf(it) } ?: return
                 onBattery(from, name, BatteryInfo(o.getInt("level").coerceIn(0, 100), o.optBoolean("charging")))

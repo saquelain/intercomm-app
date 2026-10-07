@@ -3,6 +3,7 @@ package com.ridecomm.app
 import android.content.Context
 import com.ridecomm.app.audio.GateSettings
 import com.ridecomm.app.ride.RecentRide
+import com.ridecomm.app.ride.DataSaverMode
 import com.ridecomm.app.ride.RecentRides
 import com.ridecomm.app.trip.UpdateEvery
 import java.util.UUID
@@ -36,6 +37,7 @@ object Prefs {
     private const val KEY_VOICE_COMMANDS = "voice_commands"
     private const val KEY_SPEED_LIMIT = "speed_limit_kmh"
     private const val KEY_RIDE_UPDATES = "ride_updates"
+    private const val KEY_DATA_SAVER = "data_saver"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -208,4 +210,11 @@ object Prefs {
 
     fun setRideUpdates(context: Context, every: UpdateEvery) =
         prefs(context).edit().putString(KEY_RIDE_UPDATES, every.name).apply()
+
+    /** When to save mobile data (lower voice quality, no shared-song downloads). */
+    fun dataSaver(context: Context): DataSaverMode =
+        DataSaverMode.entries.firstOrNull { it.name == prefs(context).getString(KEY_DATA_SAVER, null) } ?: DataSaverMode.AUTO
+
+    fun setDataSaver(context: Context, mode: DataSaverMode) =
+        prefs(context).edit().putString(KEY_DATA_SAVER, mode.name).apply()
 }

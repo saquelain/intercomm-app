@@ -36,6 +36,18 @@ other over mobile internet through their helmet headset.
 - **Background:** a foreground service keeps the call alive with the screen off or Maps open; the notification has
   Mute and Leave buttons.
 - **Dead zones:** if the connection drops, the app keeps retrying (up to every 15 s) until the rider leaves.
+- **Catch-up after a drop:** when you're back online you hear "Back online", and each rider re-sends what you
+  missed (up to 5 minutes): "While you were offline, Rahul said slow down", a vote that's still open (you can still
+  vote) or one that finished, and any active SOS. An SOS you sent without internet goes to the group the moment
+  you're back.
+- **Data saver** (Settings: Off / Auto (default) / Always): voice drops from 24 to 12 kbps (half the data, still
+  clear; switched on the live call without a gap) and shared songs aren't downloaded. Auto does this only after 5 s
+  of a poor connection and goes back to normal after 30 s of a good one; the paused song then downloads by itself.
+  Songs are the big data user (4–8 MB each); voice is about 10 MB an hour.
+- **Phone calls:** a regular call doesn't end the ride. Your ride mic goes off for the call, the group hears
+  "Rahul is on a phone call" (and sees it on the card), and your mic comes back when the call ends.
+- **One rider dropping never affects the others:** everyone connects to the ride server separately, so the rest
+  keep talking while one rider reconnects.
 - **Rider alerts:** spoken heads-ups so nobody has to look: "Rahul joined the ride", "Rahul dropped out" (signal
   lost; a rider who taps Leave says bye first, so the others hear "left the ride" instead), "Rahul is back", and
   "Amit's phone battery is at 15 percent" (once each at 20%, 10% and 5%, not while charging). Phones share their

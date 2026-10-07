@@ -20,6 +20,7 @@ import com.ridecomm.app.ride.RideStatus
 import com.ridecomm.app.ride.safeMainScope
 import com.ridecomm.app.ride.trySendText
 import io.livekit.android.room.Room
+import io.livekit.android.room.participant.Participant
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
@@ -79,6 +80,10 @@ object SosManager {
     private var countdownJob: Job? = null
     private var remindJob: Job? = null
     private val siren = Siren()
+    /** My active SOS as last sent (or meant to be sent), for riders who come back online. */
+    private var lastSos: JSONObject? = null
+    /** Whether [lastSos] reached the group; if not, it goes out as soon as I'm back online. */
+    private var deliveredOnline = false
 
     /** True while an incoming alert is sounding; shared music goes silent. */
     private val _alarming = MutableStateFlow(false)
@@ -106,6 +111,8 @@ object SosManager {
 
     fun release() {
         room = null
+        lastSos = null
+        deliveredOnline = false
         countdownJob?.cancel()
         stopAlarm()
         _state.value = SosState()
@@ -160,7 +167,9 @@ object SosManager {
         val online = room != null && RideManager.state.value.status == RideStatus.CONNECTED
         _state.update { it.copy(mySosActive = true, mySosStatus = "Sending…") }
         scope.launch {
-            val sentOnline = online && broadcast(sosMessage(name, quick, startedAt, crash))
+            lastSos = sosMessage(name, quick, startedAt, crash)
+            val sentOnline = online && broadcast(lastSos!!)
+            deliveredOnline = sentOnline
             var status = if (sentOnline) "Sent to the group" else null
             if (!sentOnline) {
                 val numbers = SmsSender.parseNumbers(Prefs.emergencyNumbers(appContext))
@@ -177,7 +186,22 @@ object SosManager {
             // Follow up with a fresh GPS fix so the group gets an accurate position.
             val precise = LocationHelper.fresh(appContext) ?: return@launch
             if (!_state.value.mySosActive) return@launch
-            if (sentOnline) broadcast(sosMessage(name, precise, startedAt, crash))
+            lastSos = sosMessage(name, precise, startedAt, crash)
+            if (deliveredOnline) broadcast(lastSos!!)
+        }
+    }
+
+    /** Back online after a drop: an SOS that couldn't go out goes now; ask others for theirs. */
+    fun onBackOnline(sinceMs: Long) {
+        scope.launch {
+            broadcast(JSONObject().put("t", "catchup").put("since", sinceMs))
+            val sos = lastSos ?: return@launch
+            if (!_state.value.mySosActive || deliveredOnline) return@launch
+            if (broadcast(sos)) {
+                deliveredOnline = true
+                _state.update { it.copy(mySosStatus = "Sent to the group") }
+                Announcer.speak(appContext, "Back online. SOS sent to the group.")
+            }
         }
     }
 
@@ -185,6 +209,7 @@ object SosManager {
     fun imOk() {
         if (!_state.value.mySosActive) return
         _state.update { it.copy(mySosActive = false, mySosStatus = null) }
+        lastSos = null
         val name = Prefs.riderName(appContext).ifBlank { "Rider" }
         scope.launch { broadcast(JSONObject().put("t", "ok").put("name", name)) }
         Announcer.speak(appContext, "Told the group you're OK")
@@ -237,6 +262,13 @@ object SosManager {
                 if (_state.value.alerts.none { it.identity == from }) return
                 dismiss(from)
                 Announcer.speak(appContext, "${o.getString("name")} is OK")
+            }
+            // A rider came back online: make sure they know about my SOS.
+            "catchup" -> {
+                val sos = lastSos ?: return
+                if (!_state.value.mySosActive) return
+                val r = room ?: return
+                scope.launch { r.trySendText(sos.toString(), TOPIC, listOf(Participant.Identity(from))) }
             }
         }
     }

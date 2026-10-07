@@ -8,6 +8,7 @@ import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.safeMainScope
 import com.ridecomm.app.ride.trySendText
 import io.livekit.android.room.Room
+import io.livekit.android.room.participant.Participant
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
@@ -61,6 +62,8 @@ object VoteManager {
     const val VOTE_TIMEOUT_MS = 45_000L
     const val RESULT_SHOWN_MS = 6_000L
     const val SENT_SHOWN_MS = 3_000L
+    /** Quick messages are re-sent to riders who were offline for up to this long. */
+    private const val CATCH_UP_WINDOW_MS = 5 * 60_000L
 
     private val scope = safeMainScope()
     private val _state = MutableStateFlow(VoteState())
@@ -70,6 +73,12 @@ object VoteManager {
     private var room: Room? = null
     private var timeoutJob: Job? = null
     private var clearResultJob: Job? = null
+
+    // For riders who were offline: each phone re-sends what it said or started itself.
+    private val mySays = ArrayDeque<Pair<QuickMessage, Long>>()
+    private val startedByMe = mutableSetOf<String>()
+    /** A vote I started that has finished, and when. */
+    private var myFinished: Pair<Vote, Long>? = null
 
     fun attach(context: Context, r: Room) {
         appContext = context.applicationContext
@@ -93,6 +102,14 @@ object VoteManager {
         clearSentJob?.cancel()
         _state.value = VoteState()
         _sent.value = null
+        mySays.clear()
+        startedByMe.clear()
+        myFinished = null
+    }
+
+    /** Back online after a drop: ask the others for what I missed since [sinceMs] (wall clock). */
+    fun requestCatchUp(sinceMs: Long) {
+        send(JSONObject().put("t", "catchup").put("since", sinceMs))
     }
 
     // ---- Actions ----
@@ -109,17 +126,18 @@ object VoteManager {
             ballots = mapOf(me to Ballot(myName(), yes = true)),
         )
         open(vote, myVote = true)
-        send(
-            JSONObject()
-                .put("t", "start")
-                .put("id", vote.id)
-                .put("kind", kind.name)
-                .put("name", vote.starterName)
-                .put("at", vote.startedAtMs)
-                .put("riders", vote.riders),
-        )
+        startedByMe += vote.id
+        send(startMessage(vote))
         check()
     }
+
+    private fun startMessage(vote: Vote) = JSONObject()
+        .put("t", "start")
+        .put("id", vote.id)
+        .put("kind", vote.kind.name)
+        .put("name", vote.starterName)
+        .put("at", vote.startedAtMs)
+        .put("riders", vote.riders)
 
     fun cast(yes: Boolean) {
         val s = _state.value
@@ -142,6 +160,9 @@ object VoteManager {
 
     fun sendQuick(message: QuickMessage) {
         send(JSONObject().put("t", "say").put("msg", message.name).put("name", myName()))
+        val now = System.currentTimeMillis()
+        mySays.addLast(message to now)
+        while (mySays.isNotEmpty() && now - mySays.first().second > CATCH_UP_WINDOW_MS) mySays.removeFirst()
         // Same confirmation whether sent from the app or the floating button.
         announce("Sent: ${message.label}")
         val sent = Sent(message, System.currentTimeMillis())
@@ -158,25 +179,45 @@ object VoteManager {
     private fun onMessage(o: JSONObject, from: String) {
         when (o.getString("t")) {
             "start" -> {
+                // A catch-up re-send also carries the ballots cast so far.
+                val earlier = o.optJSONArray("ballots")?.let { list ->
+                    (0 until list.length()).associate { i ->
+                        val b = list.getJSONObject(i)
+                        b.getString("id") to Ballot(b.getString("name"), b.getBoolean("yes"))
+                    }
+                }.orEmpty()
                 val incoming = Vote(
                     id = o.getString("id"),
                     kind = VoteKind.valueOf(o.getString("kind")),
                     starterName = o.getString("name"),
                     startedAtMs = o.getLong("at"),
                     riders = o.getInt("riders"),
-                    ballots = mapOf(from to Ballot(o.getString("name"), yes = true)),
+                    ballots = earlier + (from to Ballot(o.getString("name"), yes = true)),
                 )
+                if (_state.value.active?.id == incoming.id) return
                 val current = _state.value.active
                 // Two riders started at once: everyone keeps the earlier vote.
                 val keepCurrent = current != null &&
                     (current.startedAtMs < incoming.startedAtMs ||
                         (current.startedAtMs == incoming.startedAtMs && current.id <= incoming.id))
                 if (keepCurrent) return
-                open(incoming, myVote = null)
+                val me = myIdentity()
+                open(incoming, myVote = incoming.ballots[me]?.yes)
                 Haptics(appContext).confirm()
-                announce("${incoming.starterName} ${incoming.kind.asking}. Slide to vote.")
+                val late = if (o.optBoolean("late")) "While you were offline, " else ""
+                announce("$late${incoming.starterName} ${incoming.kind.asking}. Slide to vote.")
                 check()
             }
+            "result" -> {
+                // A vote that finished while I was offline.
+                val kind = runCatching { VoteKind.valueOf(o.getString("kind")) }.getOrNull() ?: return
+                val approved = o.getBoolean("approved")
+                announce(
+                    "While you were offline: ${kind.stopName} ${if (approved) "approved" else "not approved"}. " +
+                        "${o.getInt("yes")} yes, ${o.getInt("no")} no.",
+                )
+            }
+            "catchup" -> replyCatchUp(from, o.getLong("since"))
             "cast" -> {
                 val vote = _state.value.active ?: return
                 if (vote.id != o.getString("id")) return
@@ -187,8 +228,33 @@ object VoteManager {
             "say" -> {
                 val message = QuickMessage.valueOf(o.getString("msg"))
                 Haptics(appContext).confirm()
-                announce("${o.getString("name")} says ${message.says}")
+                if (o.optBoolean("late")) {
+                    announce("While you were offline, ${o.getString("name")} said ${message.says}")
+                } else {
+                    announce("${o.getString("name")} says ${message.says}")
+                }
             }
+        }
+    }
+
+    /** [to] came back online: re-send what I said, the vote I'm running, and a vote of mine that ended meanwhile. */
+    private fun replyCatchUp(to: String, sinceMs: Long) {
+        mySays.filter { it.second >= sinceMs }.forEach { (message, _) ->
+            sendTo(to, JSONObject().put("t", "say").put("msg", message.name).put("name", myName()).put("late", true))
+        }
+        val active = _state.value.active
+        if (active != null && active.id in startedByMe) {
+            val ballots = org.json.JSONArray()
+            active.ballots.forEach { (id, b) -> ballots.put(JSONObject().put("id", id).put("name", b.name).put("yes", b.yes)) }
+            sendTo(to, startMessage(active).put("ballots", ballots).put("late", true))
+        }
+        val (done, at) = myFinished ?: return
+        if (at >= sinceMs) {
+            sendTo(
+                to,
+                JSONObject().put("t", "result").put("id", done.id).put("kind", done.kind.name)
+                    .put("approved", done.approved == true).put("yes", done.yes).put("no", done.no),
+            )
         }
     }
 
@@ -210,6 +276,7 @@ object VoteManager {
         timeoutJob?.cancel()
         val done = vote.copy(approved = approved)
         _state.value = VoteState(lastResult = done, resultSinceMs = System.currentTimeMillis())
+        if (done.id in startedByMe) myFinished = done to System.currentTimeMillis()
         announce(
             "${done.kind.stopName} ${if (approved) "approved" else "not approved"}. " +
                 "${done.yes} yes, ${done.no} no.",
@@ -228,6 +295,11 @@ object VoteManager {
             // Best effort: a rider who misses a ballot still gets the result when the vote times out.
             r.trySendText(o.toString(), TOPIC)
         }
+    }
+
+    private fun sendTo(identity: String, o: JSONObject) {
+        val r = room ?: return
+        scope.launch { r.trySendText(o.toString(), TOPIC, listOf(Participant.Identity(identity))) }
     }
 
     private fun announce(text: String) {

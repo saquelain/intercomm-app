@@ -11,6 +11,7 @@ import com.ridecomm.app.audio.GateStatus
 import com.ridecomm.app.alerts.BatteryInfo
 import com.ridecomm.app.alerts.BatteryWatch
 import com.ridecomm.app.alerts.RiderAlerts
+import com.ridecomm.app.ride.DataSaver
 import com.ridecomm.app.ride.DataUsage
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.produceState
@@ -96,6 +97,7 @@ fun RideScreen(state: RideState) {
     val myPhoto by Profile.photo.collectAsStateWithLifecycle()
     val batteries by RiderAlerts.batteries.collectAsStateWithLifecycle()
     val trip by TripTracker.state.collectAsStateWithLifecycle()
+    val onCall by RiderAlerts.onCall.collectAsStateWithLifecycle()
     val filterStatus by remember { MicGate.live.map { it?.status }.distinctUntilChanged() }.collectAsStateWithLifecycle(null)
     val dataUsed by produceState(DataUsage.usedBytes()) {
         while (true) {
@@ -103,7 +105,7 @@ fun RideScreen(state: RideState) {
             value = DataUsage.usedBytes()
         }
     }
-    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed, batteries, filterStatus, trip)
+    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed, batteries, filterStatus, trip, onCall)
 }
 
 /** The ride screen for given states (split out so screenshots can render any situation). */
@@ -121,6 +123,7 @@ fun RideContent(
     batteries: Map<String, BatteryInfo> = emptyMap(),
     filterStatus: GateStatus? = null,
     trip: TripState? = null,
+    onCall: Set<String> = emptySet(),
 ) {
     val context = LocalContext.current
     var confirmLeave by remember { mutableStateOf(false) }
@@ -172,7 +175,7 @@ fun RideContent(
                 StatusLine(state, dataUsed)
                 if (trip != null) TripRow(trip)
                 SosCards(sos)
-                RidersCard(state.riders, group, batteries) { rider -> if (rider.isMe) myPhoto else photos[rider.id] }
+                RidersCard(state.riders, group, batteries, onCall) { rider -> if (rider.isMe) myPhoto else photos[rider.id] }
                 VoteCard(vote)
                 MusicCard(music)
                 OverlayPermissionCard()
@@ -228,7 +231,11 @@ private fun StatusLine(state: RideState, dataUsed: Long?) {
         else -> {
             val count = state.riders.size
             val data = dataUsed?.let { " · ${DataUsage.format(it)}" }.orEmpty()
-            StatusPill("Connected · $count ${if (count == 1) "rider" else "riders"}$data", Palette.Go)
+            val saver by DataSaver.active.collectAsStateWithLifecycle()
+            StatusPill(
+                "Connected · $count ${if (count == 1) "rider" else "riders"}$data" + if (saver) " · Data saver" else "",
+                if (saver) Palette.Amber else Palette.Go,
+            )
         }
     }
 }
@@ -236,18 +243,26 @@ private fun StatusLine(state: RideState, dataUsed: Long?) {
 private const val DATA_REFRESH_MS = 5_000L
 
 @Composable
-private fun RidersCard(riders: List<Rider>, group: GroupState, batteries: Map<String, BatteryInfo>, photoOf: (Rider) -> Bitmap?) {
+private fun RidersCard(
+    riders: List<Rider>,
+    group: GroupState,
+    batteries: Map<String, BatteryInfo>,
+    onCall: Set<String>,
+    photoOf: (Rider) -> Bitmap?,
+) {
     GlassCard(spacing = 14.dp) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             SectionLabel("Riders", Modifier.weight(1f))
             if (group.sharing) StatusPill("Location (beta)", Palette.Cyan)
         }
-        riders.forEach { RiderRow(it, if (it.isMe) null else group.positions[it.id], photoOf(it), batteries[it.id]) }
+        riders.forEach {
+            RiderRow(it, if (it.isMe) null else group.positions[it.id], photoOf(it), batteries[it.id], it.id in onCall)
+        }
     }
 }
 
 @Composable
-private fun RiderRow(rider: Rider, position: RiderPosition?, photo: Bitmap?, battery: BatteryInfo?) {
+private fun RiderRow(rider: Rider, position: RiderPosition?, photo: Bitmap?, battery: BatteryInfo?, onPhoneCall: Boolean) {
     val context = LocalContext.current
     val ring by animateColorAsState(if (rider.isSpeaking) Palette.Go else Color.Transparent, label = "ring")
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -257,12 +272,17 @@ private fun RiderRow(rider: Rider, position: RiderPosition?, photo: Bitmap?, bat
             Text(if (rider.isMe) "${rider.name} (you)" else rider.name, style = MaterialTheme.typography.titleMedium)
             Text(
                 when {
+                    onPhoneCall -> "On a phone call"
                     rider.isMuted -> "Mic off"
                     rider.isSpeaking -> "Talking"
                     else -> "Listening"
                 },
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (rider.isSpeaking) Palette.Go else Palette.TextSecondary,
+                color = when {
+                    onPhoneCall -> Palette.Amber
+                    rider.isSpeaking -> Palette.Go
+                    else -> Palette.TextSecondary
+                },
             )
         }
         if (rider.isMuted) {

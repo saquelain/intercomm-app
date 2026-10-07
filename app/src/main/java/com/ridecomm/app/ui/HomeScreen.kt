@@ -65,6 +65,8 @@ import com.ridecomm.app.profile.Profile
 import com.ridecomm.app.group.GroupTracker
 import com.ridecomm.app.headset.HeadsetButtons
 import com.ridecomm.app.ride.InviteLink
+import com.ridecomm.app.ride.DataSaver
+import com.ridecomm.app.ride.DataSaverMode
 import com.ridecomm.app.ride.RecentRide
 import com.ridecomm.app.voice.VoiceCommands
 import com.ridecomm.app.ride.RecentRides
@@ -343,6 +345,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var testingFilter by remember { mutableStateOf(false) }
     var speedLimit by remember { mutableStateOf(Prefs.speedLimit(context)) }
     var rideUpdates by remember { mutableStateOf(Prefs.rideUpdates(context)) }
+    var dataSaver by remember { mutableStateOf(Prefs.dataSaver(context)) }
     // The test can change the filter live during a ride; closing without saving puts it back.
     val cancel = {
         MicGate.setSettings(Prefs.windGate(context))
@@ -432,6 +435,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             "Speaks when someone joins, drops out or is back, and when a phone's battery gets low",
             riderAlerts,
         ) { riderAlerts = it }
+        DataSaverSetting(dataSaver) { dataSaver = it }
         SpeedAlertSetting(speedLimit) { speedLimit = it }
         RideUpdatesSetting(rideUpdates) { rideUpdates = it }
         SettingSwitch("Show who's talking", "Small photos at the top-left over Maps and other apps", speakerOverlay) {
@@ -467,6 +471,8 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setSpeedLimit(context, speedLimit)
                 Prefs.setRideUpdates(context, rideUpdates)
                 TripTracker.applySettings(context)
+                Prefs.setDataSaver(context, dataSaver)
+                DataSaver.applySettings(context)
                 if (voiceAvailable) Prefs.setVoiceCommands(context, voiceCommands)
                 VoiceCommands.applySettings(context)
                 MicGate.setSettings(windGate)
@@ -537,6 +543,46 @@ internal fun SpeedAlertSetting(limitKmh: Int, onChange: (Int) -> Unit) {
 }
 
 private const val DEFAULT_SPEED_LIMIT = 90
+
+/** Off / Auto / Always choice for saving mobile data. */
+@Composable
+internal fun DataSaverSetting(value: DataSaverMode, onChange: (DataSaverMode) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Data saver", style = MaterialTheme.typography.titleMedium)
+        Text(
+            when (value) {
+                DataSaverMode.OFF -> "Best voice quality and shared music, always."
+                DataSaverMode.AUTO -> "When your network is weak: lighter voice and shared music paused. " +
+                    "Back to normal, and music catches up, once the network is good again."
+                DataSaverMode.ALWAYS -> "Lighter voice (half the data, still clear) and no shared music downloads."
+            },
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            DataSaverMode.entries.forEach { option ->
+                val selected = option == value
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .height(44.dp)
+                        .glass(
+                            RoundedCornerShape(14.dp),
+                            tint = if (selected) Palette.Orange else Color.White,
+                            fillAlpha = if (selected) 0.32f else 0.06f,
+                        )
+                        .clickable { onChange(option) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        option.label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (selected) Color.White else Palette.TextSecondary,
+                    )
+                }
+            }
+        }
+    }
+}
 
 /** How often to hear distance, riding time and average speed. */
 @Composable
