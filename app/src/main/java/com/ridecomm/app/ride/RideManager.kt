@@ -2,6 +2,7 @@ package com.ridecomm.app.ride
 
 import android.content.Context
 import com.ridecomm.app.Prefs
+import com.ridecomm.app.group.GroupTracker
 import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.sos.SosManager
 import com.ridecomm.app.vote.VoteManager
@@ -64,6 +65,7 @@ object RideManager {
         MusicManager.release()
         VoteManager.release()
         SosManager.release()
+        GroupTracker.release()
         _state.value = RideState()
     }
 
@@ -136,6 +138,7 @@ object RideManager {
         MusicManager.attach(appContext, r)
         VoteManager.attach(appContext, r)
         SosManager.attach(r)
+        GroupTracker.attach(appContext, r)
         val ended = CompletableDeferred<DisconnectReason>()
         val events = launch(start = CoroutineStart.UNDISPATCHED) {
             r.events.collect { event ->
@@ -144,6 +147,7 @@ object RideManager {
                     is RoomEvent.Reconnected -> _state.update { it.copy(status = RideStatus.CONNECTED) }
                     is RoomEvent.Disconnected -> ended.complete(event.reason)
                     is RoomEvent.ActiveSpeakersChanged -> MusicManager.onSpeakersChanged(event.speakers)
+                    is RoomEvent.ParticipantDisconnected -> event.participant.identity?.let { GroupTracker.forget(it.value) }
                     else -> Unit
                 }
                 refreshRiders()
@@ -162,6 +166,7 @@ object RideManager {
             MusicManager.detach()
             VoteManager.detach()
             SosManager.detach()
+            GroupTracker.detach()
             room = null
             r.disconnect()
             r.release()
@@ -173,6 +178,7 @@ object RideManager {
         MusicManager.release()
         VoteManager.release()
         SosManager.release()
+        GroupTracker.release()
         _state.value = RideState(error = message)
     }
 

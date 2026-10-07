@@ -7,6 +7,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.ridecomm.app.group.GroupState
+import com.ridecomm.app.group.Relation
+import com.ridecomm.app.group.RiderPosition
 import com.ridecomm.app.music.MusicState
 import com.ridecomm.app.ride.RideState
 import com.ridecomm.app.ride.RideStatus
@@ -57,6 +60,14 @@ class ScreenshotTest {
             MusicState(title = "Kesariya", djName = "Amit", playing = true, volume = 0.7f),
             VoteState(),
             SosState(),
+            GroupState(
+                sharing = true,
+                positions = mapOf(
+                    "a" to RiderPosition(0.0, 0.0, 0, distanceM = 90.0, relation = Relation.NEARBY),
+                    "r" to RiderPosition(0.0, 0.0, 0, distanceM = 1_240.0, relation = Relation.BEHIND),
+                    "v" to RiderPosition(0.0, 0.0, 0, distanceM = 420.0, relation = Relation.AHEAD),
+                ),
+            ),
         )
     }
 

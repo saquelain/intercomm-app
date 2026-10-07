@@ -203,6 +203,7 @@ private fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit) {
     var tokenId by remember { mutableStateOf(Prefs.tokenServerId(context)) }
     var bubbleOn by remember { mutableStateOf(Prefs.bubbleEnabled(context)) }
     var numbers by remember { mutableStateOf(Prefs.emergencyNumbers(context)) }
+    var shareLocation by remember { mutableStateOf(Prefs.shareLocation(context)) }
 
     GlassDialog(onDismiss = onClose) {
         Text("Settings", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp))
@@ -226,19 +227,9 @@ private fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit) {
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
         )
         Text("Used for SOS when there's no internet.", style = MaterialTheme.typography.bodyMedium)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("Floating ride button", style = MaterialTheme.typography.titleMedium)
-                Text("Controls over Maps and other apps", style = MaterialTheme.typography.bodyMedium)
-            }
-            Switch(
-                checked = bubbleOn,
-                onCheckedChange = { bubbleOn = it },
-                colors = SwitchDefaults.colors(
-                    checkedTrackColor = Palette.Orange,
-                    uncheckedTrackColor = Color.White.copy(alpha = 0.1f),
-                ),
-            )
+        SettingSwitch("Floating ride button", "Controls over Maps and other apps", bubbleOn) { bubbleOn = it }
+        SettingSwitch("Share my location", "Distances and separation alerts for the group", shareLocation) {
+            shareLocation = it
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             GlassButton("Cancel", modifier = Modifier.weight(1f), onClick = onClose)
@@ -246,9 +237,28 @@ private fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit) {
                 Prefs.setTokenServerId(context, tokenId)
                 Prefs.setBubbleEnabled(context, bubbleOn)
                 Prefs.setEmergencyNumbers(context, numbers)
+                Prefs.setShareLocation(context, shareLocation)
                 onSaved()
                 onClose()
             }
         }
+    }
+}
+
+@Composable
+private fun SettingSwitch(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(subtitle, style = MaterialTheme.typography.bodyMedium)
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onChange,
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = Palette.Orange,
+                uncheckedTrackColor = Color.White.copy(alpha = 0.1f),
+            ),
+        )
     }
 }

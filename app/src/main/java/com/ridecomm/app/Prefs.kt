@@ -13,6 +13,7 @@ object Prefs {
     private const val KEY_BUBBLE_Y = "bubble_y"
     private const val KEY_BUBBLE_LEFT = "bubble_left"
     private const val KEY_EMERGENCY_NUMBERS = "emergency_numbers"
+    private const val KEY_SHARE_LOCATION = "share_location"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -55,6 +56,12 @@ object Prefs {
 
     fun setEmergencyNumbers(context: Context, numbers: String) =
         prefs(context).edit().putString(KEY_EMERGENCY_NUMBERS, numbers.trim()).apply()
+
+    /** Share my GPS position with the group during rides (distance and separation alerts). */
+    fun shareLocation(context: Context): Boolean = prefs(context).getBoolean(KEY_SHARE_LOCATION, true)
+
+    fun setShareLocation(context: Context, share: Boolean) =
+        prefs(context).edit().putBoolean(KEY_SHARE_LOCATION, share).apply()
 
     fun setBubblePosition(context: Context, y: Int, onLeft: Boolean) =
         prefs(context).edit().putInt(KEY_BUBBLE_Y, y).putBoolean(KEY_BUBBLE_LEFT, onLeft).apply()

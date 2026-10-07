@@ -1,6 +1,7 @@
 package com.ridecomm.app.ui
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -38,6 +39,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ridecomm.app.R
+import com.ridecomm.app.group.GroupMath
+import com.ridecomm.app.group.GroupState
+import com.ridecomm.app.group.GroupTracker
+import com.ridecomm.app.group.Relation
+import com.ridecomm.app.group.RiderPosition
 import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.music.MusicState
 import com.ridecomm.app.ride.RideManager
@@ -57,12 +63,19 @@ fun RideScreen(state: RideState) {
     val music by MusicManager.state.collectAsStateWithLifecycle()
     val vote by VoteManager.state.collectAsStateWithLifecycle()
     val sos by SosManager.state.collectAsStateWithLifecycle()
-    RideContent(state, music, vote, sos)
+    val group by GroupTracker.state.collectAsStateWithLifecycle()
+    RideContent(state, music, vote, sos, group)
 }
 
 /** The ride screen for given states (split out so screenshots can render any situation). */
 @Composable
-fun RideContent(state: RideState, music: MusicState, vote: VoteState, sos: SosState) {
+fun RideContent(
+    state: RideState,
+    music: MusicState,
+    vote: VoteState,
+    sos: SosState,
+    group: GroupState = GroupState(),
+) {
     val context = LocalContext.current
     var confirmLeave by remember { mutableStateOf(false) }
 
@@ -92,7 +105,7 @@ fun RideContent(state: RideState, music: MusicState, vote: VoteState, sos: SosSt
 
                 StatusLine(state)
                 SosCards(sos)
-                RidersCard(state.riders)
+                RidersCard(state.riders, group)
                 VoteCard(vote)
                 MusicCard(music)
                 OverlayPermissionCard()
@@ -138,15 +151,19 @@ private fun StatusLine(state: RideState) {
 }
 
 @Composable
-private fun RidersCard(riders: List<Rider>) {
+private fun RidersCard(riders: List<Rider>, group: GroupState) {
     GlassCard(spacing = 14.dp) {
-        SectionLabel("Riders")
-        riders.forEach { RiderRow(it) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionLabel("Riders", Modifier.weight(1f))
+            if (group.sharing) StatusPill("Sharing location", Palette.Cyan)
+        }
+        riders.forEach { RiderRow(it, if (it.isMe) null else group.positions[it.id]) }
     }
 }
 
 @Composable
-private fun RiderRow(rider: Rider) {
+private fun RiderRow(rider: Rider, position: RiderPosition?) {
+    val context = LocalContext.current
     val ring by animateColorAsState(if (rider.isSpeaking) Palette.Go else Color.Transparent, label = "ring")
     Row(verticalAlignment = Alignment.CenterVertically) {
         Avatar(rider.name, 54.dp, if (rider.isMe) Palette.Brand else OthersGradient, ring)
@@ -168,6 +185,42 @@ private fun RiderRow(rider: Rider) {
             Spacer(Modifier.width(10.dp))
         }
         SignalIcon(rider.signal)
+        if (position != null) {
+            Spacer(Modifier.width(10.dp))
+            DistanceChip(position) {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(GroupTracker.mapsLink(position))))
+            }
+        }
+    }
+}
+
+/** "1.2 km · behind" with a map pin; tap to open the rider's position in Maps. */
+@Composable
+private fun DistanceChip(position: RiderPosition, onClick: () -> Unit) {
+    val distance = position.distanceM
+    val far = distance != null && distance >= 1_000
+    Column(
+        Modifier
+            .glass(RoundedCornerShape(16.dp), tint = if (far) Palette.Amber else Color.White, fillAlpha = if (far) 0.18f else 0.08f)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Ico(R.drawable.ms_location_on, 14.dp, if (far) Palette.Amber else Palette.Cyan)
+            Spacer(Modifier.width(3.dp))
+            Text(
+                distance?.let { GroupMath.shortDistance(it) } ?: "Map",
+                style = MaterialTheme.typography.labelSmall,
+                color = Palette.TextPrimary,
+            )
+        }
+        val label = when (position.relation) {
+            Relation.AHEAD -> "ahead"
+            Relation.BEHIND -> "behind"
+            Relation.NEARBY -> if (distance != null && distance < GroupMath.TOGETHER_M) "with you" else null
+        }
+        if (label != null) Text(label, style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
     }
 }
 
