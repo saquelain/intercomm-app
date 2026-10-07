@@ -56,6 +56,7 @@ import com.ridecomm.app.R
 import com.ridecomm.app.crash.CrashDetector
 import com.ridecomm.app.profile.Profile
 import com.ridecomm.app.group.GroupTracker
+import com.ridecomm.app.headset.HeadsetButtons
 import com.ridecomm.app.ride.InviteLink
 import com.ridecomm.app.ride.RideCode
 import com.ridecomm.app.ride.RideManager
@@ -261,6 +262,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var riderName by remember { mutableStateOf(Prefs.riderName(context)) }
     var crashDetection by remember { mutableStateOf(Prefs.crashDetection(context)) }
     var speakerOverlay by remember { mutableStateOf(Prefs.speakerOverlay(context)) }
+    var headsetButtons by remember { mutableStateOf(Prefs.headsetButtons(context)) }
 
     GlassDialog(onDismiss = onClose) {
         Text("Settings", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp))
@@ -312,6 +314,11 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             "After a hard impact and no movement, starts a 15-second SOS countdown you can cancel",
             crashDetection,
         ) { crashDetection = it }
+        SettingSwitch(
+            "Headset button",
+            "1 press: mute/unmute · 2: next song or music off · 3: SOS. While Spotify plays, the button may control Spotify instead.",
+            headsetButtons,
+        ) { headsetButtons = it }
         SettingSwitch("Show who's talking", "Small photos at the top-left over Maps and other apps", speakerOverlay) {
             speakerOverlay = it
         }
@@ -339,6 +346,8 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 if (riderName.isNotBlank()) Prefs.setRiderName(context, riderName.trim())
                 Prefs.setCrashDetection(context, crashDetection)
                 Prefs.setSpeakerOverlay(context, speakerOverlay)
+                Prefs.setHeadsetButtons(context, headsetButtons)
+                HeadsetButtons.applySettings(context)
                 CrashDetector.applySettings(context)
                 GroupTracker.applySettings()
                 onSaved()

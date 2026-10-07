@@ -51,6 +51,9 @@ other over mobile internet through their helmet headset.
 - **Profile:** name and photo are set once (first run, then Settings). Photos are shared with the ride and shown
   on rider cards and, while another app is open, as small semi-transparent bubbles of whoever is talking at the
   top-left corner (they ignore touches, so Maps underneath stays usable).
+- **Headset button:** the helmet headset's play/pause button controls the ride: 1 press mute/unmute, 2 presses
+  next song (DJ) or music off/on, 3 presses SOS countdown; each confirmed by voice. Android routes the button to the
+  app that last played media, so while Spotify plays it may control Spotify instead. Switchable in Settings.
 - **SOS:** 🚨 SOS (ride screen or outer ring of the floating button) starts a 5-second countdown — tap anywhere
   to cancel. Then every rider gets a siren in the headset (music muted), a spoken "S O S. Rahul needs help.
   1.2 kilometers away.", a full-screen red alert over other apps and a high-priority notification, both with

@@ -18,6 +18,7 @@ import com.ridecomm.app.Announcer
 import com.ridecomm.app.MainActivity
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
+import com.ridecomm.app.headset.HeadsetButtons
 import com.ridecomm.app.overlay.AppVisibility
 import com.ridecomm.app.overlay.BubbleOverlay
 import com.ridecomm.app.overlay.Speaker
@@ -60,6 +61,7 @@ class RideService : Service() {
             .apply { acquire(WAKE_LOCK_TIMEOUT_MS) }
 
         bubble = BubbleOverlay(this)
+        HeadsetButtons.start(this)
         sosOverlay = SosOverlay(this)
         speakerOverlay = SpeakerOverlay(this)
         scope.launch {
@@ -118,6 +120,7 @@ class RideService : Service() {
         bubble.hide()
         sosOverlay.hide()
         speakerOverlay.hide()
+        HeadsetButtons.stop()
         Announcer.shutdown()
         wakeLock?.takeIf { it.isHeld }?.release()
         super.onDestroy()

@@ -17,6 +17,7 @@ object Prefs {
     private const val KEY_SHARE_LOCATION = "share_location_beta"
     private const val KEY_CRASH_DETECTION = "crash_detection"
     private const val KEY_RIDE_SERVER = "ride_server_url"
+    private const val KEY_HEADSET_BUTTONS = "headset_buttons"
     private const val KEY_GROUP_KEY = "group_key"
     private const val KEY_SPEAKER_OVERLAY = "speaker_overlay"
     private const val KEY_KEEP_OTHER_MUSIC = "keep_other_music"
@@ -106,6 +107,12 @@ object Prefs {
     /** Ready to ride: either the private server with a group key, or the development token server. */
     fun serverConfigured(context: Context): Boolean =
         if (rideServerUrl(context).isNotBlank()) groupKey(context).isNotBlank() else tokenServerId(context).isNotBlank()
+
+    /** The helmet headset's play/pause button controls the ride (mute, music, SOS). */
+    fun headsetButtons(context: Context): Boolean = prefs(context).getBoolean(KEY_HEADSET_BUTTONS, true)
+
+    fun setHeadsetButtons(context: Context, on: Boolean) =
+        prefs(context).edit().putBoolean(KEY_HEADSET_BUTTONS, on).apply()
 
     fun setBubblePosition(context: Context, y: Int, onLeft: Boolean) =
         prefs(context).edit().putInt(KEY_BUBBLE_Y, y).putBoolean(KEY_BUBBLE_LEFT, onLeft).apply()
