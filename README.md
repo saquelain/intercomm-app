@@ -108,6 +108,14 @@ Every push builds an APK on GitHub Actions. Download `RideComm.apk` from the
 [`latest` release](../../releases/tag/latest) on your phone and install it (allow "Install unknown apps" for your
 browser once). Builds are signed with the same test key, so new versions install over old ones.
 
+- `RideComm.apk` (~16 MB): 64-bit phones, i.e. nearly every phone from 2017 on. Shrunk with R8, which cut the
+  app's code from 34 MB to 4 MB; most of what's left is LiveKit's WebRTC voice engine (12 MB).
+- `RideComm-32bit.apk` (~11 MB): only if Android says RideComm.apk "isn't compatible" with your phone.
+- `RideComm-unshrunk.apk` (~27 MB): the same app without R8 shrinking. Install it over RideComm.apk if the
+  shrunk build crashes or misbehaves, and share the crash report so it can be fixed.
+
+The ride screen shows how much mobile data RideComm has used since the ride started (voice, music, photos).
+
 ## Design
 
 Glassmorphism on a dark night background: translucent "frosted" cards with a light sheen and thin
@@ -125,7 +133,7 @@ Screenshots of the main screens render on the JVM, no phone needed:
 
 ```sh
 ./gradlew assembleRelease -PlivekitTokenServerId=<your id>
-# APK: app/build/outputs/apk/release/app-release.apk
+# APKs: app/build/outputs/apk/release/app-arm64-v8a-release.apk (and -armeabi-v7a-)
 ```
 
 Requires JDK 17+ and the Android SDK (platform 35).

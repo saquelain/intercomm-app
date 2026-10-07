@@ -1,5 +1,8 @@
 package com.ridecomm.app.ui
 
+import com.ridecomm.app.ride.DataUsage
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.produceState
 import android.content.Intent
 import android.widget.Toast
 import android.graphics.Bitmap
@@ -80,7 +83,13 @@ fun RideScreen(state: RideState) {
     val sent by VoteManager.sent.collectAsStateWithLifecycle()
     val photos by ProfileSync.photos.collectAsStateWithLifecycle()
     val myPhoto by Profile.photo.collectAsStateWithLifecycle()
-    RideContent(state, music, vote, sos, group, sent, photos, myPhoto)
+    val dataUsed by produceState(DataUsage.usedBytes()) {
+        while (true) {
+            delay(DATA_REFRESH_MS)
+            value = DataUsage.usedBytes()
+        }
+    }
+    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed)
 }
 
 /** The ride screen for given states (split out so screenshots can render any situation). */
@@ -94,6 +103,7 @@ fun RideContent(
     sent: VoteManager.Sent? = null,
     photos: Map<String, Bitmap> = emptyMap(),
     myPhoto: Bitmap? = null,
+    dataUsed: Long? = null,
 ) {
     val context = LocalContext.current
     var confirmLeave by remember { mutableStateOf(false) }
@@ -142,7 +152,7 @@ fun RideContent(
                     SosButton(sos)
                 }
 
-                StatusLine(state)
+                StatusLine(state, dataUsed)
                 SosCards(sos)
                 RidersCard(state.riders, group) { rider -> if (rider.isMe) myPhoto else photos[rider.id] }
                 VoteCard(vote)
@@ -192,16 +202,19 @@ fun RideContent(
 }
 
 @Composable
-private fun StatusLine(state: RideState) {
+private fun StatusLine(state: RideState, dataUsed: Long?) {
     when (state.status) {
         RideStatus.CONNECTING -> StatusPill("Joining…", Palette.Amber)
         RideStatus.RECONNECTING -> StatusPill("Weak network, reconnecting…", Palette.Amber)
         else -> {
             val count = state.riders.size
-            StatusPill("Connected · $count ${if (count == 1) "rider" else "riders"}", Palette.Go)
+            val data = dataUsed?.let { " · ${DataUsage.format(it)}" }.orEmpty()
+            StatusPill("Connected · $count ${if (count == 1) "rider" else "riders"}$data", Palette.Go)
         }
     }
 }
+
+private const val DATA_REFRESH_MS = 5_000L
 
 @Composable
 private fun RidersCard(riders: List<Rider>, group: GroupState, photoOf: (Rider) -> Bitmap?) {

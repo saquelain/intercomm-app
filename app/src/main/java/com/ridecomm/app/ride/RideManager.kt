@@ -59,6 +59,7 @@ object RideManager {
         if (rideJob != null) return
         appContext = context.applicationContext
         _state.value = RideState(status = RideStatus.CONNECTING, code = code)
+        DataUsage.start()
         RideService.start(appContext)
         CrashDetector.start(appContext)
         rideJob = scope.launch { runRide(code) }

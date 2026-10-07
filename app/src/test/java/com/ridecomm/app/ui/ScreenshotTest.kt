@@ -108,6 +108,7 @@ class ScreenshotTest {
                     "v" to RiderPosition(0.0, 0.0, 0, distanceM = 420.0, relation = Relation.AHEAD),
                 ),
             ),
+            dataUsed = 18_400_000,
         )
     }
 

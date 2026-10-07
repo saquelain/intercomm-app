@@ -32,11 +32,6 @@ android {
         versionName = "0.1.$buildNumber"
         buildConfigField("String", "DEFAULT_TOKEN_SERVER_ID", "\"$tokenServerId\"")
         buildConfigField("String", "DEFAULT_RIDE_SERVER_URL", "\"$rideServerUrl\"")
-
-        ndk {
-            // Real phones only; keeps the WebRTC native libraries out of the APK for other ABIs.
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
-        }
     }
 
     signingConfigs {
@@ -55,8 +50,28 @@ android {
             signingConfig = signingConfigs.getByName("ridecomm")
         }
         release {
-            isMinifyEnabled = false
+            // R8 drops unused code and resources: a much smaller APK that also starts faster.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("ridecomm")
+        }
+        // Same app without R8, published as a fallback in case shrinking breaks something on a phone.
+        create("unshrunk") {
+            initWith(getByName("release"))
+            isMinifyEnabled = false
+            isShrinkResources = false
+            matchingFallbacks += "release"
+        }
+    }
+
+    // One APK per CPU type, each with only its own WebRTC native libraries. Real phones only.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a")
+            isUniversalApk = false
         }
     }
 

@@ -30,13 +30,17 @@ jobs:
           RIDE_SERVER_URL: ${{ secrets.RIDE_SERVER_URL }}
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
-          ./gradlew testReleaseUnitTest assembleRelease --console=plain
-          mv app/build/outputs/apk/release/app-release.apk RideComm.apk
+          ./gradlew testReleaseUnitTest assembleRelease assembleUnshrunk --console=plain
+          # 64-bit phones (nearly all since ~2017) get the main APK; old 32-bit phones their own.
+          mv app/build/outputs/apk/release/app-arm64-v8a-release.apk RideComm.apk
+          mv app/build/outputs/apk/release/app-armeabi-v7a-release.apk RideComm-32bit.apk
+          # Fallback without R8 shrinking, in case shrinking breaks something on a real phone.
+          mv app/build/outputs/apk/unshrunk/app-arm64-v8a-unshrunk.apk RideComm-unshrunk.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: RideComm-${{ github.run_number }}
-          path: RideComm.apk
+          path: RideComm*.apk
 
       # A fixed "latest" pre-release gives one link to download the newest APK on a phone.
       - name: Publish to "latest" release
@@ -44,8 +48,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest RideComm.apk \
+          gh release create latest RideComm.apk RideComm-32bit.apk RideComm-unshrunk.apk \
             --prerelease \
             --target "$GITHUB_SHA" \
             --title "RideComm latest build #${{ github.run_number }}" \
-            --notes "Built from ${GITHUB_REF_NAME} at ${GITHUB_SHA::7}. Download RideComm.apk below and install it on your phone."
+            --notes "Built from ${GITHUB_REF_NAME} at ${GITHUB_SHA::7}. Download RideComm.apk below and install it on your phone. RideComm-32bit.apk is for old phones that say the app isn't compatible; RideComm-unshrunk.apk is a bigger fallback if RideComm.apk misbehaves."
