@@ -178,7 +178,7 @@
   const TOKEN_SERVER = params.get('ts') || 'ridecomm-xnnn94';
   const CODE_RE = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/;
   const T = { vote: 'rc-vote', sos: 'rc-sos', rider: 'rc-rider', music: 'rc-music', avatar: 'rc-avatar' };
-  const VOTE_TIMEOUT_MS = 45000, RESULT_SHOWN_MS = 6000, CATCH_UP_WINDOW_MS = 5 * 60000, BYE_VALID_MS = 30000;
+  const VOTE_TIMEOUT_MS = 45000, RESULT_SHOWN_MS = 6000, BYE_VALID_MS = 30000;
   const P = {
     mic: 'M395-435q-35-35-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35q-50 0-85-35Zm45 275v-83q-92-13-157.5-78T203-479q-2-17 9-29t28-12q17 0 28.5 11.5T284-480q14 70 69.5 115T480-320q72 0 127-45.5T676-480q4-17 15.5-28.5T720-520q17 0 28 12t9 29q-14 91-79 157t-158 79v83q0 17-11.5 28.5T480-120q-17 0-28.5-11.5T440-160Z',
     micOff: 'M672-377q-14-8-18-24.5t4-30.5q7-11 11.5-23.5T676-481q4-17 15.5-28t28.5-11q17 0 28 12t9 29q-3 23-10.5 45T727-392q-8 14-24.5 18.5T672-377ZM532-542 383-691q-11-11-17-25.5t-6-30.5v-13q0-50 35-85t85-35q50 0 85 35t35 85v189q0 27-24.5 37.5T532-542Zm-92 382v-84q-92-12-157.5-77T203-479q-2-17 9-29t28-12q17 0 28.5 11.5T284-480q14 70 69.5 115T480-320q34 0 64.5-10.5T600-360l57 57q-29 23-63.5 38.5T520-244v84q0 17-11.5 28.5T480-120q-17 0-28.5-11.5T440-160Zm324 76L84-764q-11-11-11-28t11-28q11-11 28-11t28 11l680 680q11 11 11 28t-11 28q-11 11-28 11t-28-11Z',
@@ -212,7 +212,7 @@
   const S = {
     room: null, code: null, name: '', leaving: false, retry: null, offlineSince: null,
     vote: null, myVote: null, voteTimer: null, result: null, resultTimer: null,
-    mySays: [], startedByMe: new Set(), myFinished: null,
+    startedByMe: new Set(),
     alerts: new Map(), mySos: null, mySosDelivered: false, countdown: null,
     photos: new Map(), batteries: new Map(), onCall: new Set(), byes: new Map(), dropped: new Set(), seen: new Set(),
     music: null, wakeLock: null,
@@ -282,7 +282,6 @@
     clearTimeout(S.voteTimer);
     S.vote = null; S.myVote = null;
     S.result = { kind: v.kind, approved: ok, yes: y, no: n };
-    if (S.startedByMe.has(v.id)) S.myFinished = { vote: v, approved: ok, yes: y, no: n, at: Date.now() };
     speak(KINDS[v.kind].stop + (ok ? ' approved. ' : ' not approved. ') + y + ' yes, ' + n + ' no.');
     clearTimeout(S.resultTimer); S.resultTimer = setTimeout(() => { S.result = null; renderVote(); }, RESULT_SHOWN_MS);
     renderVote();
@@ -304,8 +303,6 @@
   }
   function sendQuick(key) {
     send(T.vote, { t: 'say', msg: key, name: S.name });
-    const now = Date.now();
-    S.mySays.push([key, now]); S.mySays = S.mySays.filter(([, at]) => now - at <= CATCH_UP_WINDOW_MS);
     speak('Sent: ' + QUICK[key].label); banner('Sent: ' + QUICK[key].label); vibrate(30);
   }
   function onVote(o, from) {
@@ -331,29 +328,23 @@
         break;
       }
       case 'say': {
-        const q = QUICK[o.msg]; if (!q) return;
+        // Old quick messages replayed after a drop are stale: only live ones are spoken.
+        const q = QUICK[o.msg]; if (!q || o.late) return;
         vibrate(60);
-        const text = o.late ? 'While you were offline, ' + o.name + ' said ' + q.says : o.name + ' says ' + q.says;
+        const text = o.name + ' says ' + q.says;
         speak(text); banner(text);
         break;
       }
-      case 'result': {
-        const k = KINDS[o.kind]; if (!k) return;
-        speak('While you were offline: ' + k.stop + (o.approved ? ' approved. ' : ' not approved. ') + o.yes + ' yes, ' + o.no + ' no.');
-        break;
-      }
-      case 'catchup': replyCatchUp(from, o.since); break;
+      // 'result' (a vote that finished while offline) is ignored: only open votes matter.
+      case 'catchup': replyCatchUp(from); break;
     }
   }
-  function replyCatchUp(to, since) {
-    S.mySays.filter(([, at]) => at >= since).forEach(([key]) => send(T.vote, { t: 'say', msg: key, name: S.name, late: true }, [to]));
+  /** A rider came back online: send them the vote I'm running, if it's still open. */
+  function replyCatchUp(to) {
     const v = S.vote;
-    if (v && S.startedByMe.has(v.id)) {
-      const ballots = Object.entries(v.ballots).map(([id, b]) => ({ id, name: b.name, yes: b.yes }));
-      send(T.vote, Object.assign(startMsg(v), { ballots, late: true }), [to]);
-    }
-    const f = S.myFinished;
-    if (f && f.at >= since) send(T.vote, { t: 'result', id: f.vote.id, kind: f.vote.kind, approved: f.approved, yes: f.yes, no: f.no }, [to]);
+    if (!v || !S.startedByMe.has(v.id)) return;
+    const ballots = Object.entries(v.ballots).map(([id, b]) => ({ id, name: b.name, yes: b.yes }));
+    send(T.vote, Object.assign(startMsg(v), { ballots, late: true }), [to]);
   }
 
   // ---- SOS ----
