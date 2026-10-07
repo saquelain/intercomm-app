@@ -12,6 +12,11 @@ val tokenServerId: String = System.getenv("LIVEKIT_TOKEN_SERVER_ID")
     ?: (project.findProperty("livekitTokenServerId") as String?)
     ?: ""
 
+// Private ride server (Cloudflare Worker) address, from the RIDE_SERVER_URL secret in CI.
+val rideServerUrl: String = System.getenv("RIDE_SERVER_URL")
+    ?: (project.findProperty("rideServerUrl") as String?)
+    ?: ""
+
 // CI sets BUILD_NUMBER so every APK installs as an update over the previous one.
 val buildNumber: Int = System.getenv("BUILD_NUMBER")?.toIntOrNull() ?: 1
 
@@ -26,6 +31,7 @@ android {
         versionCode = buildNumber
         versionName = "0.1.$buildNumber"
         buildConfigField("String", "DEFAULT_TOKEN_SERVER_ID", "\"$tokenServerId\"")
+        buildConfigField("String", "DEFAULT_RIDE_SERVER_URL", "\"$rideServerUrl\"")
 
         ndk {
             // Real phones only; keeps the WebRTC native libraries out of the APK for other ABIs.

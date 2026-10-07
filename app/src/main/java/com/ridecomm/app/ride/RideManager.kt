@@ -21,8 +21,6 @@ import io.livekit.android.room.participant.AudioTrackPublishDefaults
 import io.livekit.android.room.participant.ConnectionQuality
 import io.livekit.android.room.participant.Participant
 import io.livekit.android.room.track.LocalAudioTrackOptions
-import io.livekit.android.token.TokenRequestOptions
-import io.livekit.android.token.TokenSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -120,18 +118,11 @@ object RideManager {
 
     /** Joins the ride once and suspends until the connection ends; returns why it ended. */
     private suspend fun connectOnce(code: String, onConnected: () -> Unit): DisconnectReason = coroutineScope {
-        val tokenServerId = Prefs.tokenServerId(appContext)
-        if (tokenServerId.isBlank()) throw RideError("Add the LiveKit token server ID in Settings first")
-
-        val details = TokenSource.fromDevelopmentTokenServer(tokenServerId)
-            .fetch(
-                TokenRequestOptions(
-                    roomName = "ride-$code",
-                    participantName = Prefs.riderName(appContext).ifBlank { "Rider" },
-                    participantIdentity = Prefs.deviceId(appContext),
-                ),
-            )
-            .getOrElse { throw RideError("Could not reach the ride server. Check internet and the token server ID.") }
+        val details = try {
+            RidePass.fetch(appContext, code)
+        } catch (e: RidePassError) {
+            throw RideError(e.message ?: "Could not get into the ride")
+        }
 
         val r = LiveKit.create(
             appContext,

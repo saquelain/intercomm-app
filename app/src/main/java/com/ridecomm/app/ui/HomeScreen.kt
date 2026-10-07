@@ -69,7 +69,7 @@ fun HomeScreen(state: RideState) {
     var savedName by remember { mutableStateOf(Prefs.riderName(context)) }
     val myPhoto by Profile.photo.collectAsStateWithLifecycle()
     var joinCode by rememberSaveable { mutableStateOf("") }
-    var tokenServerId by remember { mutableStateOf(Prefs.tokenServerId(context)) }
+    var serverReady by remember { mutableStateOf(Prefs.serverConfigured(context)) }
     var showSettings by remember { mutableStateOf(false) }
     var pendingCode by remember { mutableStateOf<String?>(null) }
 
@@ -101,7 +101,7 @@ fun HomeScreen(state: RideState) {
         val code = invite ?: return@LaunchedEffect
         InviteLink.consume()
         joinCode = code
-        if (savedName.isNotBlank() && tokenServerId.isNotBlank()) {
+        if (savedName.isNotBlank() && serverReady) {
             pendingCode = code
             permissionLauncher.launch(permissions)
         }
@@ -143,10 +143,17 @@ fun HomeScreen(state: RideState) {
             }
         }
 
-        if (tokenServerId.isBlank()) {
+        if (!serverReady) {
             GlassCard(tint = Palette.Amber, fillAlpha = 0.14f) {
                 Text("Finish setup", style = MaterialTheme.typography.titleMedium)
-                Text("Add your LiveKit token server ID once to start riding.", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    if (Prefs.rideServerUrl(context).isNotBlank()) {
+                        "Enter your group key in Settings to join your group's rides."
+                    } else {
+                        "Add your ride server details once to start riding."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                )
                 GlassButton("Open settings", R.drawable.ms_settings) { showSettings = true }
             }
         }
@@ -203,7 +210,7 @@ fun HomeScreen(state: RideState) {
         SettingsDialog(
             onClose = { showSettings = false },
             onSaved = {
-                tokenServerId = Prefs.tokenServerId(context)
+                serverReady = Prefs.serverConfigured(context)
                 savedName = Prefs.riderName(context)
                 name = savedName
             },
@@ -245,6 +252,8 @@ private fun Feature(icon: Int, label: String, modifier: Modifier) {
 fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolean = false) {
     val context = LocalContext.current
     var tokenId by remember { mutableStateOf(Prefs.tokenServerId(context)) }
+    var serverUrl by remember { mutableStateOf(Prefs.rideServerUrl(context)) }
+    var groupKey by remember { mutableStateOf(Prefs.groupKey(context)) }
     var bubbleOn by remember { mutableStateOf(Prefs.bubbleEnabled(context)) }
     var numbers by remember { mutableStateOf(Prefs.emergencyNumbers(context)) }
     var shareLocation by remember { mutableStateOf(Prefs.shareLocation(context)) }
@@ -258,14 +267,33 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
         ProfileEditor(riderName) { riderName = it }
         if (!inRide) {
             GlassTextField(
+                value = groupKey,
+                onValueChange = { groupKey = it },
+                label = "Group key",
+                placeholder = "Ask your group admin",
+                textStyle = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                "Only riders with this key can join your group's rides (needs the private ride server below).",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            GlassTextField(
+                value = serverUrl,
+                onValueChange = { serverUrl = it },
+                label = "Private ride server",
+                placeholder = "https://ridecomm-token.….workers.dev",
+                textStyle = MaterialTheme.typography.bodyLarge,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+            )
+            GlassTextField(
                 value = tokenId,
                 onValueChange = { tokenId = it },
-                label = "LiveKit token server ID",
+                label = "Or: LiveKit test token server ID",
                 placeholder = "ridecomm-xxxxxx",
                 textStyle = MaterialTheme.typography.bodyLarge,
             )
             Text(
-                "LiveKit Cloud → Settings → Development token server. Everyone in the group uses the same one.",
+                "Used only when no private server is set. Anyone with this ID can join, so switch to the private server for your group.",
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -302,6 +330,8 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             GlassButton("Cancel", modifier = Modifier.weight(1f), onClick = onClose)
             PrimaryButton("Save", modifier = Modifier.weight(1f), height = 56.dp) {
                 Prefs.setTokenServerId(context, tokenId)
+                Prefs.setRideServerUrl(context, serverUrl)
+                Prefs.setGroupKey(context, groupKey)
                 Prefs.setBubbleEnabled(context, bubbleOn)
                 Prefs.setEmergencyNumbers(context, numbers)
                 Prefs.setShareLocation(context, shareLocation)

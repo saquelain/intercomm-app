@@ -16,6 +16,8 @@ object Prefs {
     // New key so the feature starts switched off for everyone while it's still being built.
     private const val KEY_SHARE_LOCATION = "share_location_beta"
     private const val KEY_CRASH_DETECTION = "crash_detection"
+    private const val KEY_RIDE_SERVER = "ride_server_url"
+    private const val KEY_GROUP_KEY = "group_key"
     private const val KEY_SPEAKER_OVERLAY = "speaker_overlay"
     private const val KEY_KEEP_OTHER_MUSIC = "keep_other_music"
 
@@ -87,6 +89,23 @@ object Prefs {
 
     fun setSpeakerOverlay(context: Context, on: Boolean) =
         prefs(context).edit().putBoolean(KEY_SPEAKER_OVERLAY, on).apply()
+
+    /** Private ride server address; when set it's used instead of the LiveKit development token server. */
+    fun rideServerUrl(context: Context): String =
+        prefs(context).getString(KEY_RIDE_SERVER, null)?.takeIf { it.isNotBlank() } ?: BuildConfig.DEFAULT_RIDE_SERVER_URL
+
+    fun setRideServerUrl(context: Context, url: String) =
+        prefs(context).edit().putString(KEY_RIDE_SERVER, url.trim()).apply()
+
+    /** The group's shared secret; the private ride server only lets in riders who know it. */
+    fun groupKey(context: Context): String = prefs(context).getString(KEY_GROUP_KEY, "") ?: ""
+
+    fun setGroupKey(context: Context, key: String) =
+        prefs(context).edit().putString(KEY_GROUP_KEY, key.trim()).apply()
+
+    /** Ready to ride: either the private server with a group key, or the development token server. */
+    fun serverConfigured(context: Context): Boolean =
+        if (rideServerUrl(context).isNotBlank()) groupKey(context).isNotBlank() else tokenServerId(context).isNotBlank()
 
     fun setBubblePosition(context: Context, y: Int, onLeft: Boolean) =
         prefs(context).edit().putInt(KEY_BUBBLE_Y, y).putBoolean(KEY_BUBBLE_LEFT, onLeft).apply()

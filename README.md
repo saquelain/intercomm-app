@@ -71,7 +71,29 @@ other over mobile internet through their helmet headset.
 > The development token server is fine for a private group but lets anyone with the ID join rooms.
 > Before sharing the app publicly we'll switch to our own token endpoint.
 
+## Private ride server (recommended)
+
+The LiveKit development token server lets anyone who has its ID join any ride. The private ride server
+(`server/token-worker`, a Cloudflare Worker) only gives a ride pass to riders who send the **group key**, and only
+for one ride room (no listing other rides).
+
+One-time setup:
+
+1. Create a free account at [dash.cloudflare.com](https://dash.cloudflare.com). Note your **Account ID**
+   (right sidebar of Workers & Pages). Create an **API token** with the "Edit Cloudflare Workers" template.
+2. In LiveKit Cloud → Settings → **Keys**, note the **WebSocket URL**, **API key** and **API secret**.
+3. Pick a group key (a long passphrase) to share privately with your riders.
+4. Add GitHub repository secrets (Settings → Secrets and variables → Actions): `CLOUDFLARE_API_TOKEN`,
+   `CLOUDFLARE_ACCOUNT_ID`, `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `GROUP_SECRET`.
+5. Run **Actions → Deploy ride server → Run workflow**. The log prints the worker address
+   (`https://ridecomm-token.<you>.workers.dev`). Add it as the `RIDE_SERVER_URL` secret and rebuild the APK
+   (or paste it in the app's Settings).
+6. Each rider enters the group key in Settings. Then switch off the development token server in LiveKit Cloud.
+
 ## Getting the APK
+
+Invite links (`https://saquelain.github.io/intercomm-app/join/?code=…`) need GitHub Pages: Settings → Pages →
+Deploy from a branch → this branch, `/docs` folder.
 
 Every push builds an APK on GitHub Actions. Download `RideComm.apk` from the
 [`latest` release](../../releases/tag/latest) on your phone and install it (allow "Install unknown apps" for your

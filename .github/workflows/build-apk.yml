@@ -27,6 +27,7 @@ jobs:
       - name: Build APK
         env:
           LIVEKIT_TOKEN_SERVER_ID: ${{ secrets.LIVEKIT_TOKEN_SERVER_ID }}
+          RIDE_SERVER_URL: ${{ secrets.RIDE_SERVER_URL }}
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
           ./gradlew testReleaseUnitTest assembleRelease --console=plain
