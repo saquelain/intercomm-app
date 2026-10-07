@@ -1,5 +1,7 @@
 package com.ridecomm.app.ui
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -147,6 +149,15 @@ class ScreenshotTest {
     @Test
     fun musicCardEmpty() = shot("9_music_card") {
         Box(Modifier.padding(16.dp)) { MusicCard(MusicState()) }
+    }
+
+    @Test
+    fun rejoinAndRecent() = shot("12_rejoin_recent") {
+        val now = 100L * 60 * 60 * 1000
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            RejoinCard(com.ridecomm.app.ride.RecentRide("XCQGCW", now - 25 * 60_000), now, {}) {}
+            GlassCard { RecentRidesRow(listOf(com.ridecomm.app.ride.RecentRide("CQNQNE", now - 26 * 60 * 60_000), com.ridecomm.app.ride.RecentRide("HKP4TZ", now - 3 * 24 * 60 * 60_000)), now) {} }
+        }
     }
 
     @Test

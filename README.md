@@ -26,6 +26,9 @@ other over mobile internet through their helmet headset.
 - **Background:** a foreground service keeps the call alive with the screen off or Maps open; the notification has
   Mute and Leave buttons.
 - **Dead zones:** if the connection drops, the app keeps retrying (up to every 15 s) until the rider leaves.
+- **Quick rejoin:** if a ride ends without the rider leaving (app closed, phone restarted or out of battery), the
+  home screen offers "Back to ride CODE?" with a one-tap Rejoin for 12 hours. The join card also lists up to three
+  recent ride codes from the past week ("Ride again"); one tap joins that ride again.
 - **Audio route:** Bluetooth headset → wired headset → speaker → earpiece, switched automatically.
 - **Music:** the DJ picks songs from their phone. Each song file is sent once to every rider over LiveKit data
   streams (the next song is sent ahead while the current one plays), and every phone plays it locally, kept in

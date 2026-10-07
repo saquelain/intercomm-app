@@ -60,12 +60,14 @@ object RideManager {
         appContext = context.applicationContext
         _state.value = RideState(status = RideStatus.CONNECTING, code = code)
         DataUsage.start()
+        Prefs.rideStarted(appContext, code)
         RideService.start(appContext)
         CrashDetector.start(appContext)
         rideJob = scope.launch { runRide(code) }
     }
 
     fun leave() {
+        if (::appContext.isInitialized) Prefs.clearUnfinishedRide(appContext)
         rideJob?.cancel()
         rideJob = null
         MusicManager.release()
@@ -193,6 +195,7 @@ object RideManager {
     }
 
     private fun endWithError(message: String) {
+        Prefs.clearUnfinishedRide(appContext)
         rideJob = null
         MusicManager.release()
         VoteManager.release()

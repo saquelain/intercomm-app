@@ -2,6 +2,8 @@ package com.ridecomm.app
 
 import android.content.Context
 import com.ridecomm.app.audio.NoiseGate
+import com.ridecomm.app.ride.RecentRide
+import com.ridecomm.app.ride.RecentRides
 import java.util.UUID
 
 /** Small on-device settings: rider name, a stable device id, and the LiveKit token server id. */
@@ -23,6 +25,8 @@ object Prefs {
     private const val KEY_SPEAKER_OVERLAY = "speaker_overlay"
     private const val KEY_KEEP_OTHER_MUSIC = "keep_other_music"
     private const val KEY_WIND_GATE = "wind_gate"
+    private const val KEY_RECENT_RIDES = "recent_rides"
+    private const val KEY_UNFINISHED_RIDE = "unfinished_ride"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -130,4 +134,25 @@ object Prefs {
         prefs(context).edit().putString(KEY_WIND_GATE, value?.name ?: OFF).apply()
 
     private const val OFF = "OFF"
+
+    fun recentRides(context: Context): List<RecentRide> =
+        RecentRides.parse(prefs(context).getString(KEY_RECENT_RIDES, "") ?: "")
+
+    /**
+     * Marks [code] as the ride I'm in (until I leave) and adds it to the recent rides. If the app or
+     * phone restarts mid-ride, the home screen offers to rejoin it.
+     */
+    fun rideStarted(context: Context, code: String, nowMs: Long = System.currentTimeMillis()) {
+        val recent = RecentRides.add(recentRides(context), code, nowMs)
+        prefs(context).edit()
+            .putString(KEY_RECENT_RIDES, RecentRides.format(recent))
+            .putString(KEY_UNFINISHED_RIDE, RecentRides.format(listOf(RecentRide(code, nowMs))))
+            .apply()
+    }
+
+    /** The ride I didn't leave myself (app closed, phone restarted), if any. */
+    fun unfinishedRide(context: Context): RecentRide? =
+        RecentRides.parse(prefs(context).getString(KEY_UNFINISHED_RIDE, "") ?: "").firstOrNull()
+
+    fun clearUnfinishedRide(context: Context) = prefs(context).edit().remove(KEY_UNFINISHED_RIDE).apply()
 }

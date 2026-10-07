@@ -60,6 +60,8 @@ import com.ridecomm.app.profile.Profile
 import com.ridecomm.app.group.GroupTracker
 import com.ridecomm.app.headset.HeadsetButtons
 import com.ridecomm.app.ride.InviteLink
+import com.ridecomm.app.ride.RecentRide
+import com.ridecomm.app.ride.RecentRides
 import com.ridecomm.app.ride.RideCode
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideState
@@ -75,6 +77,10 @@ fun HomeScreen(state: RideState) {
     var serverReady by remember { mutableStateOf(Prefs.serverConfigured(context)) }
     var showSettings by remember { mutableStateOf(false) }
     var pendingCode by remember { mutableStateOf<String?>(null) }
+    val now = remember { System.currentTimeMillis() }
+    // A ride that ended without me leaving (app closed, phone restarted): offer it back in one tap.
+    var unfinished by remember { mutableStateOf(RecentRides.rejoin(Prefs.unfinishedRide(context), now)) }
+    val recent = remember { RecentRides.shown(Prefs.recentRides(context), now, except = unfinished?.code) }
 
     val permissions = remember {
         buildList {
@@ -146,6 +152,18 @@ fun HomeScreen(state: RideState) {
             }
         }
 
+        val ready = serverReady && name.isNotBlank()
+        unfinished?.takeIf { ready }?.let { ride ->
+            RejoinCard(
+                ride,
+                now,
+                onDismiss = {
+                    Prefs.clearUnfinishedRide(context)
+                    unfinished = null
+                },
+            ) { startRide(ride.code) }
+        }
+
         if (!serverReady) {
             GlassCard(tint = Palette.Amber, fillAlpha = 0.14f) {
                 Text("Finish setup", style = MaterialTheme.typography.titleMedium)
@@ -199,6 +217,7 @@ fun HomeScreen(state: RideState) {
                 enabled = name.isNotBlank() && joinCode.length == RideCode.LENGTH,
                 height = 60.dp,
             ) { startRide(joinCode) }
+            if (recent.isNotEmpty() && ready) RecentRidesRow(recent, now) { startRide(it) }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -218,6 +237,53 @@ fun HomeScreen(state: RideState) {
                 name = savedName
             },
         )
+    }
+}
+
+/** "Rejoin ride XCQGCW": the ride was cut off without me leaving it. */
+@Composable
+internal fun RejoinCard(ride: RecentRide, nowMs: Long, onDismiss: () -> Unit, onRejoin: () -> Unit) {
+    GlassCard(tint = Palette.Go, fillAlpha = 0.14f) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Ico(R.drawable.ms_replay, 26.dp, Palette.Go)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Back to ride ${ride.code}?", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Joined ${RecentRides.ago(ride.atMs, nowMs)} and closed without you leaving. Your group may still be on it.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            GlassButton("Not now", modifier = Modifier.weight(1f), onClick = onDismiss)
+            PrimaryButton("Rejoin", R.drawable.ms_replay, Modifier.weight(1f), height = 56.dp, onClick = onRejoin)
+        }
+    }
+}
+
+/** Codes of recent rides; one tap joins the same ride again. */
+@Composable
+internal fun RecentRidesRow(rides: List<RecentRide>, nowMs: Long, onJoin: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SectionLabel("Ride again")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            rides.take(3).forEach { ride ->
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .glass(RoundedCornerShape(16.dp), fillAlpha = 0.06f, rimAlpha = 0.2f)
+                        .clickable { onJoin(ride.code) }
+                        .padding(vertical = 10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(ride.code, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                    Text(RecentRides.ago(ride.atMs, nowMs), style = MaterialTheme.typography.labelSmall, color = Palette.TextTertiary)
+                }
+            }
+            // Keep chips the same width when there are fewer than three.
+            repeat(3 - rides.take(3).size) { Spacer(Modifier.weight(1f)) }
+        }
     }
 }
 
