@@ -27,7 +27,7 @@ class GateMeterTest {
 
     @Test
     fun windIsBlockedAndVoiceSent() {
-        val a = GateAnalysis.run(clip, rate, NoiseGate.Sensitivity.MEDIUM)
+        val a = GateAnalysis.run(clip, rate, GateSettings.MEDIUM)
         assertEquals(80, a.frames.size) // 4 s / 50 ms
         val t = a.totals
         assertTrue("quiet ${t.quietMs}", t.quietMs in 900..1_100)
@@ -57,7 +57,7 @@ class GateMeterTest {
     fun noiseCutIgnoresTheMomentTheGateCloses() {
         // Voice straight into wind: the gate holds open briefly, then shuts.
         val clip = FloatArray(rate * 4) { t -> if (t < rate) voice(t) else wind() }
-        val t = GateAnalysis.run(clip, rate, NoiseGate.Sensitivity.MEDIUM).totals
+        val t = GateAnalysis.run(clip, rate, GateSettings.MEDIUM).totals
         assertTrue("blocked ${t.blockedMs}", t.blockedMs >= 2_300)
         assertTrue("noise cut ${t.noiseCutDb}", t.noiseCutDb!! > 40f)
     }

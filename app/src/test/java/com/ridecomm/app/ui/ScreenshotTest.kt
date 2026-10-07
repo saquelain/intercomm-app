@@ -95,6 +95,46 @@ class ScreenshotTest {
         bitmap.captureRoboImage("screenshots/10_speakers_strip.png")
     }
 
+    /** The ✕ while dragging the floating button: idle on the left, with the button over it on the right. */
+    @Test
+    fun dismissTarget() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val d = context.resources.displayMetrics.density
+        val size = (120 * d).toInt()
+        val bubbleSize = (68 * d).toInt()
+        val bitmap = android.graphics.Bitmap.createBitmap(size * 2 + 120, size + 80, android.graphics.Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bitmap)
+        canvas.drawColor(android.graphics.Color.rgb(0xDD, 0xE6, 0xD8)) // stand-in for Maps
+        listOf(false, true).forEachIndexed { i, active ->
+            canvas.save()
+            canvas.translate(40f + i * (size + 40f), 40f)
+            if (active) {
+                val bubble = com.ridecomm.app.overlay.BubbleOverlay.BubbleView(context)
+                bubble.measure(
+                    android.view.View.MeasureSpec.makeMeasureSpec(bubbleSize, android.view.View.MeasureSpec.EXACTLY),
+                    android.view.View.MeasureSpec.makeMeasureSpec(bubbleSize, android.view.View.MeasureSpec.EXACTLY),
+                )
+                bubble.layout(0, 0, bubbleSize, bubbleSize)
+                canvas.save()
+                canvas.translate((size - bubbleSize) / 2f, (size - bubbleSize) / 2f)
+                bubble.draw(canvas)
+                canvas.restore()
+            }
+            val target = com.ridecomm.app.overlay.BubbleOverlay.DismissTargetView(context)
+            target.active = active
+            target.measure(
+                android.view.View.MeasureSpec.makeMeasureSpec(size, android.view.View.MeasureSpec.EXACTLY),
+                android.view.View.MeasureSpec.makeMeasureSpec(size, android.view.View.MeasureSpec.EXACTLY),
+            )
+            target.layout(0, 0, size, size)
+            canvas.saveLayerAlpha(0f, 0f, size.toFloat(), size.toFloat(), (0.8f * 255).toInt())
+            target.draw(canvas)
+            canvas.restore()
+            canvas.restore()
+        }
+        bitmap.captureRoboImage("screenshots/14_dismiss_target.png")
+    }
+
     @Test
     fun ride() = shot("2_ride") {
         RideContent(
@@ -183,7 +223,7 @@ class ScreenshotTest {
                 else -> 0f
             }
         }
-        val analysis = com.ridecomm.app.audio.GateAnalysis.run(clip, rate, com.ridecomm.app.audio.NoiseGate.Sensitivity.MEDIUM)
+        val analysis = com.ridecomm.app.audio.GateAnalysis.run(clip, rate, com.ridecomm.app.audio.GateSettings.MEDIUM)
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             LiveMeter(analysis.frames[80])
             ClipView(clip, analysis, playhead = 0.42f)
@@ -192,8 +232,15 @@ class ScreenshotTest {
     }
 
     @Test
+    fun windFilterFineTune() = shot("15_wind_fine_tune") {
+        Box(Modifier.padding(16.dp)) {
+            FineTune(com.ridecomm.app.audio.GateSettings(thresholdDb = -46f, rumbleAllowanceDb = 0f, holdMs = 700, reductionDb = 24f)) {}
+        }
+    }
+
+    @Test
     fun windGateSetting() = shot("11_wind_gate_setting") {
-        Box(Modifier.padding(16.dp)) { WindGateSetting(com.ridecomm.app.audio.NoiseGate.Sensitivity.MEDIUM) {} }
+        Box(Modifier.padding(16.dp)) { WindGateSetting(com.ridecomm.app.audio.GateSettings(holdMs = 800)) {} }
     }
 
     @Test

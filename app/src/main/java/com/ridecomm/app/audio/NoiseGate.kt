@@ -11,19 +11,11 @@ import kotlin.math.log10
  *
  * Samples are floats in -1..1, processed in place.
  */
-class NoiseGate(sampleRate: Int, var sensitivity: Sensitivity = Sensitivity.MEDIUM) {
-
-    /** How quiet a voice still opens the gate (dBFS of the voice band). */
-    enum class Sensitivity(val thresholdDb: Float) {
-        LOW(-34f), // only clear, close speech
-        MEDIUM(-42f),
-        HIGH(-50f), // quiet voices too; lets more noise through
-    }
+class NoiseGate(private val sampleRate: Int, var settings: GateSettings = GateSettings.MEDIUM) {
 
     private val voiceHigh = Biquad.highPass(300f, sampleRate)
     private val voiceLow = Biquad.lowPass(3400f, sampleRate)
     private val lowBand = Biquad.lowPass(250f, sampleRate)
-    private val holdSamples = sampleRate * HOLD_MS / 1000
     private val rampStep = 1f / (sampleRate * RAMP_MS / 1000f)
 
     /** True while voice is getting through. */
@@ -56,13 +48,15 @@ class NoiseGate(sampleRate: Int, var sensitivity: Sensitivity = Sensitivity.MEDI
         smoothLow = smoothLow * (1 - SMOOTHING) + (lowEnergy / count) * SMOOTHING
         voiceDb = db(smoothVoice)
         lowDb = db(smoothLow)
-        val voiceLike = voiceDb > sensitivity.thresholdDb && voiceDb - lowDb > MAX_LOW_DOMINANCE_DB
+        val s = settings
+        // Wind and engines are loud low down; speech is loud in the voice band.
+        val voiceLike = voiceDb > s.thresholdDb && lowDb - voiceDb < s.rumbleAllowanceDb
 
         if (voiceLike) {
             voiceChunks++
             if (voiceChunks >= OPEN_AFTER_CHUNKS) {
                 open = true
-                holdLeft = holdSamples
+                holdLeft = sampleRate * s.holdMs / 1000
             }
         } else {
             voiceChunks = 0
@@ -72,7 +66,7 @@ class NoiseGate(sampleRate: Int, var sensitivity: Sensitivity = Sensitivity.MEDI
             }
         }
 
-        val target = if (open) 1f else 0f
+        val target = if (open) 1f else s.floorGain
         for (i in 0 until count) {
             gain = when {
                 gain < target -> (gain + rampStep).coerceAtMost(target)
@@ -86,12 +80,9 @@ class NoiseGate(sampleRate: Int, var sensitivity: Sensitivity = Sensitivity.MEDI
     private fun db(meanSquare: Double): Float = (10 * log10(meanSquare + 1e-12)).toFloat()
 
     private companion object {
-        /** Voice band may be at most this much quieter than the low band (wind makes it far quieter). */
-        const val MAX_LOW_DOMINANCE_DB = -6f
         /** Three 10 ms chunks of voice in a row, so clicks and gusts don't open it. */
         const val OPEN_AFTER_CHUNKS = 3
         const val SMOOTHING = 0.35
-        const val HOLD_MS = 500
         const val RAMP_MS = 5
     }
 }

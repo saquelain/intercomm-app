@@ -1,7 +1,7 @@
 package com.ridecomm.app
 
 import android.content.Context
-import com.ridecomm.app.audio.NoiseGate
+import com.ridecomm.app.audio.GateSettings
 import com.ridecomm.app.ride.RecentRide
 import com.ridecomm.app.ride.RecentRides
 import java.util.UUID
@@ -25,6 +25,10 @@ object Prefs {
     private const val KEY_SPEAKER_OVERLAY = "speaker_overlay"
     private const val KEY_KEEP_OTHER_MUSIC = "keep_other_music"
     private const val KEY_WIND_GATE = "wind_gate"
+    private const val KEY_GATE_THRESHOLD = "gate_threshold_db"
+    private const val KEY_GATE_RUMBLE = "gate_rumble_db"
+    private const val KEY_GATE_HOLD = "gate_hold_ms"
+    private const val KEY_GATE_REDUCTION = "gate_reduction_db"
     private const val KEY_RECENT_RIDES = "recent_rides"
     private const val KEY_UNFINISHED_RIDE = "unfinished_ride"
     private const val KEY_RIDER_ALERTS = "rider_alerts"
@@ -125,17 +129,37 @@ object Prefs {
     fun setBubblePosition(context: Context, y: Int, onLeft: Boolean) =
         prefs(context).edit().putInt(KEY_BUBBLE_Y, y).putBoolean(KEY_BUBBLE_LEFT, onLeft).apply()
 
-    /** How hard the wind noise gate filters the mic; null means off. */
-    fun windGate(context: Context): NoiseGate.Sensitivity? =
-        when (val v = prefs(context).getString(KEY_WIND_GATE, NoiseGate.Sensitivity.MEDIUM.name)) {
-            OFF -> null
-            else -> NoiseGate.Sensitivity.entries.firstOrNull { it.name == v } ?: NoiseGate.Sensitivity.MEDIUM
-        }
+    /** The wind filter's settings; null means off. */
+    fun windGate(context: Context): GateSettings? {
+        val p = prefs(context)
+        // Older versions stored just a preset name (or OFF).
+        val mode = p.getString(KEY_WIND_GATE, GateSettings.Preset.MEDIUM.name)
+        if (mode == OFF) return null
+        val preset = GateSettings.Preset.entries.firstOrNull { it.name == mode }?.settings ?: GateSettings.MEDIUM
+        return GateSettings(
+            thresholdDb = p.getFloat(KEY_GATE_THRESHOLD, preset.thresholdDb),
+            rumbleAllowanceDb = p.getFloat(KEY_GATE_RUMBLE, preset.rumbleAllowanceDb),
+            holdMs = p.getInt(KEY_GATE_HOLD, preset.holdMs),
+            reductionDb = p.getFloat(KEY_GATE_REDUCTION, preset.reductionDb),
+        )
+    }
 
-    fun setWindGate(context: Context, value: NoiseGate.Sensitivity?) =
-        prefs(context).edit().putString(KEY_WIND_GATE, value?.name ?: OFF).apply()
+    fun setWindGate(context: Context, value: GateSettings?) {
+        val e = prefs(context).edit()
+        if (value == null) {
+            e.putString(KEY_WIND_GATE, OFF)
+        } else {
+            e.putString(KEY_WIND_GATE, CUSTOM)
+                .putFloat(KEY_GATE_THRESHOLD, value.thresholdDb)
+                .putFloat(KEY_GATE_RUMBLE, value.rumbleAllowanceDb)
+                .putInt(KEY_GATE_HOLD, value.holdMs)
+                .putFloat(KEY_GATE_REDUCTION, value.reductionDb)
+        }
+        e.apply()
+    }
 
     private const val OFF = "OFF"
+    private const val CUSTOM = "CUSTOM"
 
     fun recentRides(context: Context): List<RecentRide> =
         RecentRides.parse(prefs(context).getString(KEY_RECENT_RIDES, "") ?: "")

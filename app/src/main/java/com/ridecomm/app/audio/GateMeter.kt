@@ -112,7 +112,7 @@ class GateMeter(sampleRate: Int) {
             sentDb = db(sent),
             voiceDb = gate?.voiceDb ?: micDb,
             lowDb = gate?.lowDb ?: micDb,
-            thresholdDb = gate?.sensitivity?.thresholdDb,
+            thresholdDb = gate?.settings?.thresholdDb,
             status = status,
         )
     }
@@ -130,10 +130,10 @@ class GateMeter(sampleRate: Int) {
 /** A recorded clip run through the filter: what was sent, plus the meter frames along the way. */
 class GateAnalysis(val filtered: FloatArray, val frames: List<GateFrame>, val totals: GateTotals) {
     companion object {
-        /** [sensitivity] null = filter off. */
-        fun run(clip: FloatArray, sampleRate: Int, sensitivity: NoiseGate.Sensitivity?): GateAnalysis {
+        /** [settings] null = filter off. */
+        fun run(clip: FloatArray, sampleRate: Int, settings: GateSettings?): GateAnalysis {
             val out = clip.copyOf()
-            val gate = sensitivity?.let { NoiseGate(sampleRate, it) }
+            val gate = settings?.let { NoiseGate(sampleRate, it) }
             val meter = GateMeter(sampleRate)
             val frames = mutableListOf<GateFrame>()
             val chunkSize = sampleRate / 100

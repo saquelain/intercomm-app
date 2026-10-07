@@ -9,6 +9,7 @@ import android.graphics.Shader
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PixelFormat
+import android.graphics.RectF
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -16,7 +17,9 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import com.ridecomm.app.Announcer
 import com.ridecomm.app.MainActivity
 import com.ridecomm.app.Prefs
@@ -36,6 +39,7 @@ import kotlin.math.roundToInt
  * - Tap it to open the options, then tap an option (or roughly toward it). Tap empty space to close.
  * - Or touch it and slide toward an option, then lift to choose it.
  * - Long-press it to drag it somewhere else; it snaps to the nearest edge.
+ * - Drag it onto the ✕ at the bottom to hide it until RideComm is opened again.
  */
 class BubbleOverlay(private val context: Context) {
 
@@ -56,15 +60,25 @@ class BubbleOverlay(private val context: Context) {
     private val enterMoveMode = Runnable {
         moving = true
         hideMenu()
+        showDismissTarget()
         haptics.longPress()
     }
+    private var target: DismissTargetView? = null
 
     val isShowing: Boolean get() = bubble != null
+
+    /** Dragged onto the ✕: stays hidden until [undismiss] (RideComm opened again). */
+    var dismissed = false
+        private set
+
+    fun undismiss() {
+        dismissed = false
+    }
 
     fun canShow(): Boolean = Settings.canDrawOverlays(context)
 
     fun show() {
-        if (bubble != null || !canShow()) return
+        if (bubble != null || dismissed || !canShow()) return
         val view = BubbleView(context)
         val params = overlayParams(sizePx, sizePx, touchable = true).apply {
             gravity = Gravity.TOP or Gravity.START
@@ -82,6 +96,7 @@ class BubbleOverlay(private val context: Context) {
     fun hide() {
         handler.removeCallbacks(enterMoveMode)
         hideMenu()
+        hideDismissTarget()
         bubble?.let { runCatching { windowManager.removeView(it) } }
         bubble = null
         bubbleParams = null
@@ -120,15 +135,19 @@ class BubbleOverlay(private val context: Context) {
             MotionEvent.ACTION_UP -> {
                 handler.removeCallbacks(enterMoveMode)
                 when {
+                    moving && target?.active == true -> dismiss()
                     moving -> snapToEdge(event.rawX)
                     menu != null -> chooseAndClose()
                     else -> view.performClick()
                 }
+                hideDismissTarget()
                 moving = false
             }
             MotionEvent.ACTION_CANCEL -> {
                 handler.removeCallbacks(enterMoveMode)
                 if (!menuTapMode) hideMenu()
+                if (moving) snapToEdge(event.rawX)
+                hideDismissTarget()
                 moving = false
             }
         }
@@ -287,10 +306,54 @@ class BubbleOverlay(private val context: Context) {
     private fun dragTo(rawX: Float, rawY: Float) {
         val b = bubble ?: return
         val p = bubbleParams ?: return
-        p.x = (rawX - sizePx / 2f).roundToInt().coerceIn(0, screenWidth() - sizePx)
-        p.y = clampY((rawY - sizePx / 2f).roundToInt())
+        val t = target
+        val tx = screenWidth() / 2f
+        val ty = targetCenterY()
+        val overTarget = t != null && hypot(rawX - tx, rawY - ty) < MAGNET_DP * density
+        if (overTarget) {
+            // Pull the button into the ✕ so it's clear what letting go will do.
+            p.x = (tx - sizePx / 2f).roundToInt()
+            p.y = (ty - sizePx / 2f).roundToInt()
+        } else {
+            p.x = (rawX - sizePx / 2f).roundToInt().coerceIn(0, screenWidth() - sizePx)
+            p.y = clampY((rawY - sizePx / 2f).roundToInt())
+        }
+        if (t != null && t.active != overTarget) {
+            t.active = overTarget
+            if (overTarget) haptics.tick()
+        }
         runCatching { windowManager.updateViewLayout(b, p) }
     }
+
+    private fun dismiss() {
+        haptics.confirm()
+        hide()
+        dismissed = true
+        Toast.makeText(context, "Floating button hidden. Open RideComm to bring it back.", Toast.LENGTH_LONG).show()
+    }
+
+    // ---- Dismiss target ----
+
+    private fun showDismissTarget() {
+        if (target != null) return
+        val view = DismissTargetView(context)
+        val w = (TARGET_WINDOW_DP * density).roundToInt()
+        val params = overlayParams(w, w, touchable = false).apply {
+            gravity = Gravity.TOP or Gravity.START
+            x = ((screenWidth() - w) / 2f).roundToInt()
+            y = (targetCenterY() - w / 2f).roundToInt()
+            // Never blocks touches to the app below (Android requires at most 80% opacity for that).
+            alpha = 0.8f
+        }
+        runCatching { windowManager.addView(view, params) }.onSuccess { target = view }
+    }
+
+    private fun hideDismissTarget() {
+        target?.let { runCatching { windowManager.removeView(it) } }
+        target = null
+    }
+
+    private fun targetCenterY() = screenHeight() - TARGET_FROM_BOTTOM_DP * density
 
     private fun snapToEdge(rawX: Float) {
         val b = bubble ?: return
@@ -344,7 +407,7 @@ class BubbleOverlay(private val context: Context) {
      * red with a crossed-out mic while muted, and thick amber while a vote waits for an answer.
      */
     @SuppressLint("ViewConstructor")
-    private class BubbleView(context: Context) : View(context) {
+    internal class BubbleView(context: Context) : View(context) {
         var muted = false
             set(value) {
                 field = value
@@ -390,8 +453,63 @@ class BubbleOverlay(private val context: Context) {
         }
     }
 
+    /**
+     * The ✕ at the bottom while dragging. Lights up as a red ring around the button when it's
+     * close enough to drop.
+     */
+    @SuppressLint("ViewConstructor")
+    internal class DismissTargetView(context: Context) : View(context) {
+        var active = false
+            set(value) {
+                field = value
+                invalidate()
+            }
+        private val density = context.resources.displayMetrics.density
+        private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(200, 20, 18, 40) }
+        private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+        private val label = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textAlign = Paint.Align.CENTER
+            textSize = 13 * density
+            typeface = ResourcesCompat.getFont(context, R.font.outfit_semibold)
+        }
+        private val close = ContextCompat.getDrawable(context, R.drawable.ms_close)!!.mutate()
+        private val pill = RectF()
+
+        override fun onDraw(canvas: Canvas) {
+            val cx = width / 2f
+            val cy = height / 2f
+            if (active) {
+                // A ring around the button sitting in the middle, so the button stays visible.
+                ring.color = RED
+                ring.strokeWidth = 5 * density
+                canvas.drawCircle(cx, cy, (BUBBLE_DP / 2 + 9) * density, ring)
+                return
+            }
+            val r = 28 * density
+            canvas.drawCircle(cx, cy, r, fill)
+            ring.color = Color.argb(150, 255, 255, 255)
+            ring.strokeWidth = 2 * density
+            canvas.drawCircle(cx, cy, r, ring)
+            val icon = (14 * density).roundToInt()
+            close.setBounds((cx - icon).roundToInt(), (cy - icon).roundToInt(), (cx + icon).roundToInt(), (cy + icon).roundToInt())
+            close.setTint(Color.WHITE)
+            close.draw(canvas)
+            // On a dark pill, so it reads over light maps too.
+            val textY = cy + r + 20 * density
+            val half = label.measureText("Hide") / 2 + 10 * density
+            pill.set(cx - half, textY - 15 * density, cx + half, textY + 6 * density)
+            canvas.drawRoundRect(pill, pill.height() / 2, pill.height() / 2, fill)
+            canvas.drawText("Hide", cx, textY, label)
+        }
+    }
+
     companion object {
         private const val BUBBLE_DP = 68f
+        private const val TARGET_WINDOW_DP = 120f
+        private const val TARGET_FROM_BOTTOM_DP = 110f
+        /** Within this distance of the ✕ the button snaps into it. */
+        private const val MAGNET_DP = 70f
         private const val MOVE_HOLD_MS = 600L
         private const val MENU_IDLE_CLOSE_MS = 8_000L
         private const val HOLD_TOLERANCE_DP = 14f

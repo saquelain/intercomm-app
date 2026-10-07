@@ -1,5 +1,11 @@
 package com.ridecomm.app.ui
 
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import com.ridecomm.app.audio.GateSettings
+import androidx.compose.runtime.produceState
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Slider
 import android.Manifest
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -49,7 +55,6 @@ import com.ridecomm.app.audio.GateFrame
 import com.ridecomm.app.audio.GateStatus
 import com.ridecomm.app.audio.GateTotals
 import com.ridecomm.app.audio.MicGate
-import com.ridecomm.app.audio.NoiseGate
 import com.ridecomm.app.ride.RideManager
 import kotlinx.coroutines.delay
 import java.util.Locale
@@ -60,31 +65,137 @@ import kotlin.math.roundToInt
 private const val METER_FLOOR_DB = -70f
 
 /**
- * Shows the wind filter at work. On a ride: live meters on the call's own mic. Otherwise: record
- * a few seconds, see what was sent and what was blocked, and play both back. Changing the
- * sensitivity here re-runs the recording through the filter straight away.
+ * Shows the wind filter at work, and lets every part of it be tuned. On a ride: live meters on the
+ * call's own mic. Otherwise: record a few seconds, see what was sent and what was blocked, and
+ * play both back. Any change re-runs the recording through the filter straight away.
  */
 @Composable
 fun WindFilterTestDialog(
-    sensitivity: NoiseGate.Sensitivity?,
-    onSensitivity: (NoiseGate.Sensitivity?) -> Unit,
+    settings: GateSettings?,
+    onSettings: (GateSettings?) -> Unit,
     inRide: Boolean,
     onClose: () -> Unit,
 ) {
     GlassDialog(onDismiss = onClose) {
         Text("Wind filter test", style = MaterialTheme.typography.headlineMedium)
-        SensitivityChips(sensitivity, onSensitivity)
-        Text(sensitivityHint(sensitivity), style = MaterialTheme.typography.bodyMedium)
-        if (inRide) LiveRideMeter() else RecordedTest(sensitivity)
+        GateChips(settings, onSettings)
+        Text(settingsHint(settings), style = MaterialTheme.typography.bodyMedium)
+        if (inRide) LiveRideMeter() else RecordedTest(settings)
+        if (settings != null) FineTune(settings, onSettings)
         GlassButton("Done", modifier = Modifier.fillMaxWidth(), onClick = onClose)
     }
 }
 
-private fun sensitivityHint(sensitivity: NoiseGate.Sensitivity?) = when (sensitivity) {
-    null -> "Off: everything your mic hears goes to the group, wind included."
-    NoiseGate.Sensitivity.LOW -> "Low: blocks the most noise. You need to speak up clearly to get through."
-    NoiseGate.Sensitivity.MEDIUM -> "Medium: blocks wind and engine, lets normal speech through."
-    NoiseGate.Sensitivity.HIGH -> "High: even quiet speech gets through, but so does more noise."
+private fun settingsHint(settings: GateSettings?) = when (settings?.preset) {
+    null -> if (settings == null) {
+        "Off: everything your mic hears goes to the group, wind included."
+    } else {
+        "Custom: your own fine-tuned settings (below)."
+    }
+    GateSettings.Preset.LOW -> "Low: blocks the most noise. You need to speak up clearly to get through."
+    GateSettings.Preset.MEDIUM -> "Medium: blocks wind and engine, lets normal speech through."
+    GateSettings.Preset.HIGH -> "High: even quiet speech gets through, but so does more noise."
+}
+
+/** Sliders for each part of the filter, each explained in plain words. */
+@Composable
+internal fun FineTune(settings: GateSettings, onSettings: (GateSettings) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionLabel("Fine-tune", Modifier.weight(1f))
+            if (settings != GateSettings.MEDIUM) {
+                Text(
+                    "Reset",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Palette.Cyan,
+                    modifier = Modifier.clickable { onSettings(GateSettings.MEDIUM) }.padding(4.dp),
+                )
+            }
+        }
+        TuneSlider(
+            title = "Voice sensitivity",
+            help = "How quiet your voice can be and still get through.",
+            value = settings.thresholdDb,
+            // Left = only loud speech (high threshold), right = quiet speech too (low threshold).
+            range = GateSettings.THRESHOLD_MIN..GateSettings.THRESHOLD_MAX,
+            reversed = true,
+            left = "Loud voice only",
+            right = "Quiet voice too",
+            valueText = "${settings.thresholdDb.roundToInt()} dB",
+        ) { onSettings(settings.copy(thresholdDb = it.roundToInt().toFloat())) }
+        TuneSlider(
+            title = "Wind rejection",
+            help = "How strictly deep rumble counts as wind. Strong blocks more wind, but can cut a deep or muffled voice.",
+            value = settings.rumbleAllowanceDb,
+            range = GateSettings.RUMBLE_MIN..GateSettings.RUMBLE_MAX,
+            reversed = true,
+            left = "Gentle",
+            right = "Strong",
+            valueText = windLabel(settings.rumbleAllowanceDb),
+        ) { onSettings(settings.copy(rumbleAllowanceDb = it.roundToInt().toFloat())) }
+        TuneSlider(
+            title = "Keep sending after you stop",
+            help = "So the ends of words aren't cut. Longer lets a little more wind through after you speak.",
+            value = settings.holdMs.toFloat(),
+            range = GateSettings.HOLD_MIN.toFloat()..GateSettings.HOLD_MAX.toFloat(),
+            left = "Short",
+            right = "Long",
+            valueText = String.format(Locale.US, "%.1f s", settings.holdMs / 1000f),
+        ) { onSettings(settings.copy(holdMs = ((it / 50).roundToInt() * 50))) }
+        TuneSlider(
+            title = "Noise reduction",
+            help = "How much quieter blocked noise gets. Less than silence keeps a bit of natural background.",
+            value = settings.reductionDb,
+            range = GateSettings.REDUCTION_MIN..GateSettings.SILENCE_DB,
+            left = "A little",
+            right = "Silence",
+            valueText = if (settings.reductionDb >= GateSettings.SILENCE_DB) "Silence" else "−${settings.reductionDb.roundToInt()} dB",
+        ) { onSettings(settings.copy(reductionDb = it.roundToInt().toFloat())) }
+    }
+}
+
+private fun windLabel(allowanceDb: Float) = when {
+    allowanceDb <= -3f -> "Very strong"
+    allowanceDb <= 3f -> "Strong"
+    allowanceDb <= 9f -> "Normal"
+    else -> "Gentle"
+}
+
+@Composable
+private fun TuneSlider(
+    title: String,
+    help: String,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    left: String,
+    right: String,
+    valueText: String,
+    reversed: Boolean = false,
+    onChange: (Float) -> Unit,
+) {
+    // A reversed slider runs from the top of the range on the left to the bottom on the right.
+    val shown = if (reversed) range.endInclusive + range.start - value else value
+    Column {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(valueText, style = MaterialTheme.typography.labelLarge, color = Palette.Orange)
+        }
+        Text(help, style = MaterialTheme.typography.bodyMedium)
+        Slider(
+            value = shown.coerceIn(range),
+            onValueChange = { onChange(if (reversed) range.endInclusive + range.start - it else it) },
+            valueRange = range,
+            colors = SliderDefaults.colors(
+                thumbColor = Color.White,
+                activeTrackColor = Palette.Orange,
+                inactiveTrackColor = Color.White.copy(alpha = 0.15f),
+            ),
+        )
+        Row {
+            Text(left, style = MaterialTheme.typography.labelSmall, color = Palette.TextTertiary, modifier = Modifier.weight(1f))
+            Text(right, style = MaterialTheme.typography.labelSmall, color = Palette.TextTertiary)
+        }
+    }
 }
 
 /** On a ride: the call's mic, live, plus totals since the ride started. */
@@ -109,13 +220,13 @@ private fun LiveRideMeter() {
 
 /** Off a ride: record, look, listen. */
 @Composable
-private fun RecordedTest(sensitivity: NoiseGate.Sensitivity?) {
+private fun RecordedTest(settings: GateSettings?) {
     val context = LocalContext.current
     val tester = remember { FilterTester() }
     DisposableEffect(tester) { onDispose { tester.release() } }
     val state by tester.state.collectAsStateWithLifecycle()
     val live by tester.live.collectAsStateWithLifecycle()
-    val current by rememberUpdatedState(sensitivity)
+    val current by rememberUpdatedState(settings)
     val record = { tester.record(context) { current } }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) record() else Toast.makeText(context, "The test needs the microphone", Toast.LENGTH_LONG).show()
@@ -134,7 +245,11 @@ private fun RecordedTest(sensitivity: NoiseGate.Sensitivity?) {
             Text("Talk, then blow on the mic…", style = MaterialTheme.typography.bodyMedium, color = Palette.TextSecondary)
         }
         is FilterTester.State.Recorded -> {
-            val analysis = remember(s, sensitivity) { GateAnalysis.run(s.clip, FilterTester.RATE, sensitivity) }
+            // Re-run off the main thread, a moment after a slider stops moving; keep showing the last result meanwhile.
+            val analysis by produceState(remember(s) { GateAnalysis.run(s.clip, FilterTester.RATE, settings) }, s, settings) {
+                delay(120)
+                value = withContext(Dispatchers.Default) { GateAnalysis.run(s.clip, FilterTester.RATE, settings) }
+            }
             var playhead by remember { mutableStateOf<Float?>(null) }
             var playing by remember { mutableStateOf<String?>(null) }
             LaunchedEffect(playing) {
@@ -393,31 +508,36 @@ private fun duration(ms: Long): String {
     return if (s < 60) String.format(Locale.US, "%.1f s", s) else String.format(Locale.US, "%d:%02d", (s / 60).toInt(), (s % 60).toInt())
 }
 
-/** Off / Low / Medium / High chips for the wind filter. */
+/** Off / Low / Medium / High chips for the wind filter, plus Custom once it's been fine-tuned. */
 @Composable
-internal fun SensitivityChips(value: NoiseGate.Sensitivity?, onChange: (NoiseGate.Sensitivity?) -> Unit) {
+internal fun GateChips(value: GateSettings?, onChange: (GateSettings?) -> Unit) {
+    val custom = value != null && value.preset == null
+    val options = buildList {
+        add(Triple("Off", value == null) { onChange(null) })
+        GateSettings.Preset.entries.forEach { p -> add(Triple(p.label, value == p.settings) { onChange(p.settings) }) }
+        if (custom) add(Triple("Custom", true) {})
+    }
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        listOf(null to "Off", NoiseGate.Sensitivity.LOW to "Low", NoiseGate.Sensitivity.MEDIUM to "Medium", NoiseGate.Sensitivity.HIGH to "High")
-            .forEach { (option, label) ->
-                val selected = option == value
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .height(44.dp)
-                        .glass(
-                            RoundedCornerShape(14.dp),
-                            tint = if (selected) Palette.Orange else Color.White,
-                            fillAlpha = if (selected) 0.32f else 0.06f,
-                        )
-                        .clickable { onChange(option) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        label,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (selected) Color.White else Palette.TextSecondary,
+        options.forEach { (label, selected, onClick) ->
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(44.dp)
+                    .glass(
+                        RoundedCornerShape(14.dp),
+                        tint = if (selected) Palette.Orange else Color.White,
+                        fillAlpha = if (selected) 0.32f else 0.06f,
                     )
-                }
+                    .clickable(onClick = onClick),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (selected) Color.White else Palette.TextSecondary,
+                    maxLines = 1,
+                )
             }
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.ridecomm.app.voice
 
 import com.ridecomm.app.audio.Biquad
+import com.ridecomm.app.audio.GateSettings
 import com.ridecomm.app.audio.NoiseGate
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -26,7 +27,7 @@ class SpeechSegmenter(inputRate: Int) {
     val outputRate: Int = if (inputRate % TARGET_RATE == 0) TARGET_RATE else inputRate
     private val factor = inputRate / outputRate
     private val antiAlias = if (factor > 1) Biquad.lowPass(ANTI_ALIAS_HZ, inputRate) else null
-    private val detector = NoiseGate(inputRate, NoiseGate.Sensitivity.MEDIUM)
+    private val detector = NoiseGate(inputRate, GateSettings.MEDIUM)
     private var phase = 0
     private var scratch = FloatArray(0)
 

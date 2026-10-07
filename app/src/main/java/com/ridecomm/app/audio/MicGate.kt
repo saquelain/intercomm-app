@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * the first buffer (that's when the sample rate is known) and rebuilt if the format changes.
  */
 object MicGate {
-    @Volatile private var sensitivity: NoiseGate.Sensitivity? = NoiseGate.Sensitivity.MEDIUM
+    @Volatile private var settings: GateSettings? = GateSettings.MEDIUM
     private var gate: NoiseGate? = null
     private var gateRate = 0
     private var samples = FloatArray(0)
@@ -38,8 +38,8 @@ object MicGate {
     @Volatile var tap: ((samples: FloatArray, count: Int, sampleRate: Int) -> Unit)? = null
 
     /** null switches the gate off (the mic goes out as WebRTC captured it). */
-    fun setSensitivity(value: NoiseGate.Sensitivity?) {
-        sensitivity = value
+    fun setSettings(value: GateSettings?) {
+        settings = value
     }
 
     /** New ride: start the totals from zero. */
@@ -76,7 +76,7 @@ object MicGate {
 
     // Called on WebRTC's capture thread only.
     private fun process(buffer: ByteBuffer, audioFormat: Int, channelCount: Int, sampleRate: Int, bytesRead: Int) {
-        val level = sensitivity
+        val level = settings
         val listener = tap
         val bytesPerSample = when (audioFormat) {
             AudioFormat.ENCODING_PCM_16BIT -> 2
@@ -108,7 +108,7 @@ object MicGate {
             return
         }
         val g = gate?.takeIf { gateRate == rate } ?: NoiseGate(rate).also { gate = it; gateRate = rate }
-        g.sensitivity = level
+        g.settings = level
         g.process(samples, count)
         m.afterGate(samples, count, g)?.let { publish(it, m) }
         if (bytesPerSample == 2) {

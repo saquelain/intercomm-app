@@ -23,7 +23,11 @@ other over mobile internet through their helmet headset.
   aren't cut and fades in/out over 5 ms. Silence also lets DTX send almost nothing, saving data, and wind no
   longer makes you show as "talking" or duck everyone's music. Settings → Wind noise filter: Off / Low / Medium
   (default) / High; applies immediately, even mid-ride.
-  Settings → Wind noise filter → **See it working** shows it at work. Off a ride, record 8 seconds (talk, then blow on
+  Low / Medium / High are presets; **Fine-tune and test** adds four sliders, each re-running the test recording live:
+  voice sensitivity (how quiet a voice still gets through), wind rejection (how strictly deep rumble counts as wind),
+  keep sending after you stop (0.15–1.5 s) and noise reduction (from a little quieter to complete silence, which
+  keeps some natural background). Changed values show as "Custom".
+  Settings → Wind noise filter → **Fine-tune and test** shows it at work. Off a ride, record 8 seconds (talk, then blow on
   the mic) and see two waveforms, "your mic heard" (green = voice sent, amber = noise blocked) and "the group
   hears", with playback of both, and totals for voice sent, noise blocked and how much quieter the noise got.
   Switching Low/Medium/High re-runs the same recording instantly. On a ride it shows live meters (mic, sent,
@@ -78,6 +82,8 @@ other over mobile internet through their helmet headset.
 - **Profile:** name and photo are set once (first run, then Settings). Photos are shared with the ride and shown
   on rider cards and, while another app is open, as small semi-transparent bubbles of whoever is talking at the
   top-left corner (they ignore touches, so Maps underneath stays usable).
+- **Floating button:** long-press and drag it to move it; drag it onto the ✕ at the bottom to hide it until you
+  next open RideComm (or turn it off for good in Settings).
 - **Headset button:** the helmet headset's play/pause button controls the ride: 1 press mute/unmute, 2 presses
   next song (DJ) or music off/on, 3 presses SOS countdown; each confirmed by voice. Android routes the button to the
   app that last played media, so while Spotify plays it may control Spotify instead. Switchable in Settings.

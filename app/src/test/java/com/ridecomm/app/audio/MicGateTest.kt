@@ -18,7 +18,7 @@ class MicGateTest {
 
     @After
     fun reset() {
-        MicGate.setSensitivity(NoiseGate.Sensitivity.MEDIUM)
+        MicGate.setSettings(GateSettings.MEDIUM)
         MicGate.tap = null
     }
 
@@ -68,7 +68,7 @@ class MicGateTest {
 
     @Test
     fun offLeavesTheMicUntouched() {
-        MicGate.setSensitivity(null)
+        MicGate.setSettings(null)
         val random = Random(5)
         val lp = Biquad.lowPass(150f, rate)
         val out = feed(20) { lp.filter(0.8f * (random.nextFloat() * 2 - 1)) * 3f }
@@ -77,7 +77,7 @@ class MicGateTest {
 
     @Test
     fun tapGetsTheRawMicEvenWithTheGateOff() {
-        MicGate.setSensitivity(null)
+        MicGate.setSettings(null)
         var got = 0
         var rateSeen = 0
         MicGate.tap = { samples, count, sampleRate ->

@@ -197,7 +197,7 @@ object RideManager {
         try {
             r.connect(details.serverUrl, details.participantToken)
             r.localParticipant.setMicrophoneEnabled(!_state.value.micMuted)
-            MicGate.setSensitivity(Prefs.windGate(appContext))
+            MicGate.setSettings(Prefs.windGate(appContext))
             MicGate.attach(r)
             VoiceCommands.start(appContext)
             onConnected()

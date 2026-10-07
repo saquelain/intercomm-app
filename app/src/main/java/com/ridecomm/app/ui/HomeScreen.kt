@@ -54,7 +54,7 @@ import com.ridecomm.app.CrashLog
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
 import com.ridecomm.app.audio.MicGate
-import com.ridecomm.app.audio.NoiseGate
+import com.ridecomm.app.audio.GateSettings
 import com.ridecomm.app.crash.CrashDetector
 import com.ridecomm.app.profile.Profile
 import com.ridecomm.app.group.GroupTracker
@@ -338,7 +338,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var testingFilter by remember { mutableStateOf(false) }
     // The test can change the filter live during a ride; closing without saving puts it back.
     val cancel = {
-        MicGate.setSensitivity(Prefs.windGate(context))
+        MicGate.setSettings(Prefs.windGate(context))
         onClose()
     }
     val voiceAvailable = remember { VoiceCommands.available(context) }
@@ -457,7 +457,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setRiderAlerts(context, riderAlerts)
                 if (voiceAvailable) Prefs.setVoiceCommands(context, voiceCommands)
                 VoiceCommands.applySettings(context)
-                MicGate.setSensitivity(windGate)
+                MicGate.setSettings(windGate)
                 HeadsetButtons.applySettings(context)
                 CrashDetector.applySettings(context)
                 GroupTracker.applySettings()
@@ -469,10 +469,10 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
 
     if (testingFilter) {
         WindFilterTestDialog(
-            sensitivity = windGate,
-            onSensitivity = {
+            settings = windGate,
+            onSettings = {
                 windGate = it
-                if (inRide) MicGate.setSensitivity(it)
+                if (inRide) MicGate.setSettings(it)
             },
             inRide = inRide,
             onClose = { testingFilter = false },
@@ -482,7 +482,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
 
 /** Off / Low / Medium / High choice for the mic's wind noise gate, and a way to see it work. */
 @Composable
-internal fun WindGateSetting(value: NoiseGate.Sensitivity?, onTest: () -> Unit = {}, onChange: (NoiseGate.Sensitivity?) -> Unit) {
+internal fun WindGateSetting(value: GateSettings?, onTest: () -> Unit = {}, onChange: (GateSettings?) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Wind noise filter", style = MaterialTheme.typography.titleMedium)
         Text(
@@ -490,8 +490,8 @@ internal fun WindGateSetting(value: NoiseGate.Sensitivity?, onTest: () -> Unit =
                 "Higher catches quieter voices but lets more noise through.",
             style = MaterialTheme.typography.bodyMedium,
         )
-        SensitivityChips(value, onChange)
-        GlassButton("See it working", R.drawable.ms_graphic_eq, Modifier.fillMaxWidth(), height = 48.dp, onClick = onTest)
+        GateChips(value, onChange)
+        GlassButton("Fine-tune and test", R.drawable.ms_graphic_eq, Modifier.fillMaxWidth(), height = 48.dp, onClick = onTest)
     }
 }
 

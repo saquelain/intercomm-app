@@ -83,7 +83,9 @@ class RideService : Service() {
             combine(RideManager.state, AppVisibility.inForeground, VoteManager.state) { ride, appVisible, vote ->
                 Triple(ride, appVisible, vote)
             }.collect { (ride, appVisible, vote) ->
-                val wanted = ride.status != RideStatus.IDLE && !appVisible && Prefs.bubbleEnabled(this@RideService)
+                // Hidden by dragging it onto the ✕: back once RideComm itself has been opened.
+                if (appVisible || ride.status == RideStatus.IDLE) bubble.undismiss()
+                val wanted = ride.status != RideStatus.IDLE && !appVisible && !bubble.dismissed && Prefs.bubbleEnabled(this@RideService)
                 if (wanted) bubble.show() else bubble.hide()
                 bubble.setMuted(ride.micMuted)
                 bubble.setVotePending(vote.needsMyVote)

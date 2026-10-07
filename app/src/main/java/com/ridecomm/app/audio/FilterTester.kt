@@ -40,9 +40,9 @@ class FilterTester {
     fun hasPermission(context: Context) =
         ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
-    /** Records [RECORD_MS], running the live meter with whatever [sensitivity] returns at the time. */
+    /** Records [RECORD_MS], running the live meter with whatever [settings] returns at the time. */
     @SuppressLint("MissingPermission")
-    fun record(context: Context, sensitivity: () -> NoiseGate.Sensitivity?) {
+    fun record(context: Context, settings: () -> GateSettings?) {
         if (thread != null || !hasPermission(context)) return
         stopPlayback()
         stopRequested = false
@@ -82,10 +82,10 @@ class FilterTester {
                         clip[at + i] = work[i]
                     }
                     at += n
-                    val level = sensitivity()
+                    val level = settings()
                     meter.beforeGate(work, n)
                     if (level != null) {
-                        gate.sensitivity = level
+                        gate.settings = level
                         gate.process(work, n)
                     }
                     meter.afterGate(work, n, if (level != null) gate else null)?.let { _live.value = it }
