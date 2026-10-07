@@ -139,12 +139,15 @@ class SlideMenuView(
         // The floating button, redrawn above the scrim so the starting point stays visible.
         val ax = anchorX - location[0]
         val ay = anchorY - location[1]
-        if (hypot(ax - cx, ay - cy) >= density) {
+        val fanMoved = hypot(ax - cx, ay - cy) >= density
+        if (fanMoved) {
             drawGlassCircle(canvas, ax, ay, centerRadius, highlight = null)
             drawIcon(canvas, brandIcon, ax, ay, centerRadius * 0.95f)
         }
+        // Only one bike icon on screen: when the fan sits away from the button, its centre is a
+        // close mark rather than a second copy of the button.
         drawGlassCircle(canvas, cx, cy, centerRadius, highlight = null)
-        drawIcon(canvas, if (centerIsClose) closeIcon else brandIcon, cx, cy, centerRadius * 0.95f)
+        drawIcon(canvas, if (centerIsClose || fanMoved) closeIcon else brandIcon, cx, cy, centerRadius * 0.95f)
 
         val rings = rings
         options.forEachIndexed { i, option ->

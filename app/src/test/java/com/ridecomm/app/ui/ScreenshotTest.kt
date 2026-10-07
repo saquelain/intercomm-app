@@ -149,7 +149,7 @@ class ScreenshotTest {
         val margin = com.ridecomm.app.overlay.SlideMenuView.FIT_MARGIN_DP * 3
         val gap = com.ridecomm.app.overlay.SlideMenuView.MOVED_FAN_GAP_DP * 3
         menu.centerY = if (buttonY < margin) (buttonY + gap).coerceIn(margin, h - margin) else buttonY
-        menu.centerIsClose = true
+        menu.centerIsClose = false
         menu.selected = 1
         menu.measure(
             android.view.View.MeasureSpec.makeMeasureSpec(w, android.view.View.MeasureSpec.EXACTLY),
