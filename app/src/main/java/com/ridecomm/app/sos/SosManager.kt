@@ -16,8 +16,9 @@ import com.ridecomm.app.R
 import com.ridecomm.app.overlay.Haptics
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideStatus
+import com.ridecomm.app.ride.safeMainScope
+import com.ridecomm.app.ride.trySendText
 import io.livekit.android.room.Room
-import io.livekit.android.room.datastream.StreamTextOptions
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
@@ -64,7 +65,7 @@ object SosManager {
     private const val CHANNEL_ID = "sos"
     private const val NOTIFICATION_ID = 2
 
-    private val scope = MainScope()
+    private val scope = safeMainScope()
     private val _state = MutableStateFlow(SosState())
     val state: StateFlow<SosState> = _state.asStateFlow()
 
@@ -190,7 +191,7 @@ object SosManager {
 
     private suspend fun broadcast(o: JSONObject): Boolean {
         val r = room ?: return false
-        return r.localParticipant.sendText(o.toString(), StreamTextOptions(topic = TOPIC)).isSuccess
+        return r.trySendText(o.toString(), TOPIC)
     }
 
     // ---- Receiving ----

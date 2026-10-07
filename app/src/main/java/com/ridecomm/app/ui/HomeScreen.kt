@@ -1,6 +1,7 @@
 package com.ridecomm.app.ui
 
 import android.Manifest
+import android.content.Intent
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ridecomm.app.CrashLog
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
 import com.ridecomm.app.ride.RideCode
@@ -100,6 +102,8 @@ fun HomeScreen(state: RideState) {
             }
             GlassIconButton(R.drawable.ms_settings, "Settings", size = 48.dp, iconSize = 22.dp) { showSettings = true }
         }
+
+        CrashReportCard()
 
         state.error?.let { error ->
             GlassCard(tint = Palette.Stop, fillAlpha = 0.18f) {
@@ -260,5 +264,33 @@ private fun SettingSwitch(title: String, subtitle: String, checked: Boolean, onC
                 uncheckedTrackColor = Color.White.copy(alpha = 0.1f),
             ),
         )
+    }
+}
+
+/** Shown after a crash: lets the rider send the saved details to whoever maintains the app. */
+@Composable
+private fun CrashReportCard() {
+    val context = LocalContext.current
+    var report by remember { mutableStateOf(CrashLog.read(context)) }
+    val text = report ?: return
+    GlassCard(tint = Palette.Amber, fillAlpha = 0.14f) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Ico(R.drawable.ms_warning, 24.dp, Palette.Amber)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("RideComm closed unexpectedly", style = MaterialTheme.typography.titleMedium)
+                Text("Share the report so it can be fixed.", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            GlassButton("Dismiss", modifier = Modifier.weight(1f)) {
+                CrashLog.clear(context)
+                report = null
+            }
+            PrimaryButton("Share report", R.drawable.ms_share, Modifier.weight(1f), height = 56.dp) {
+                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+                context.startActivity(Intent.createChooser(send, "Share crash report"))
+            }
+        }
     }
 }

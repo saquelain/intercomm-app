@@ -41,7 +41,7 @@ object RideManager {
     private const val VOICE_BITRATE = 24_000
     private const val MAX_RETRY_DELAY_MS = 15_000L
 
-    private val scope = MainScope()
+    private val scope = safeMainScope()
     private val _state = MutableStateFlow(RideState())
     val state: StateFlow<RideState> = _state.asStateFlow()
 
@@ -158,6 +158,7 @@ object RideManager {
             r.localParticipant.setMicrophoneEnabled(!_state.value.micMuted)
             onConnected()
             MusicManager.onConnected()
+            GroupTracker.onConnected()
             _state.update { it.copy(status = RideStatus.CONNECTED) }
             refreshRiders()
             ended.await()

@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
  */
 class RideService : Service() {
 
-    private val scope = MainScope()
+    private val scope = safeMainScope()
     private var wakeLock: PowerManager.WakeLock? = null
     private var lastStartId = 0
     private lateinit var bubble: BubbleOverlay

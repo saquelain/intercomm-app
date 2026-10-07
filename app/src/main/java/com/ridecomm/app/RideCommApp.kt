@@ -7,6 +7,7 @@ import com.ridecomm.app.sos.SosManager
 class RideCommApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        CrashLog.install(this)
         RideService.createNotificationChannel(this)
         SosManager.init(this)
     }

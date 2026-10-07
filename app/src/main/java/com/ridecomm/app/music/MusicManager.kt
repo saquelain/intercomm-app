@@ -12,9 +12,10 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.ridecomm.app.Announcer
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.sos.SosManager
+import com.ridecomm.app.ride.safeMainScope
+import com.ridecomm.app.ride.trySendText
 import io.livekit.android.room.Room
 import io.livekit.android.room.datastream.StreamBytesOptions
-import io.livekit.android.room.datastream.StreamTextOptions
 import io.livekit.android.room.datastream.incoming.ByteStreamReceiver
 import io.livekit.android.room.datastream.outgoing.write
 import io.livekit.android.room.participant.Participant
@@ -78,7 +79,7 @@ object MusicManager {
 
     private class Song(val id: String, val title: String, val uri: Uri, val size: Long?)
 
-    private val scope = MainScope()
+    private val scope = safeMainScope()
     private val _state = MutableStateFlow(MusicState())
     val state: StateFlow<MusicState> = _state.asStateFlow()
 
@@ -476,10 +477,7 @@ object MusicManager {
     private suspend fun send(message: MusicMessage, to: List<Participant.Identity> = emptyList()) {
         val r = room ?: return
         // Best effort: a lost message is repaired by the DJ's periodic re-sync.
-        r.localParticipant.sendText(
-            message.encode(),
-            StreamTextOptions(topic = TEXT_TOPIC, destinationIdentities = to),
-        ).onFailure { }
+        r.trySendText(message.encode(), TEXT_TOPIC, to)
     }
 
     // ---- Player ----

@@ -9,8 +9,9 @@ import android.os.Looper
 import com.ridecomm.app.Announcer
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.sos.LocationHelper
+import com.ridecomm.app.ride.safeMainScope
+import com.ridecomm.app.ride.trySendText
 import io.livekit.android.room.Room
-import io.livekit.android.room.datastream.StreamTextOptions
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
@@ -51,7 +52,7 @@ object GroupTracker {
     /** Below this speed the GPS heading is noise. */
     private const val MIN_SPEED_FOR_HEADING_MS = 2f
 
-    private val scope = MainScope()
+    private val scope = safeMainScope()
     private val _state = MutableStateFlow(GroupState())
     val state: StateFlow<GroupState> = _state.asStateFlow()
 
@@ -79,6 +80,10 @@ object GroupTracker {
             }
         }
         startLocation()
+    }
+
+    /** Joined (or rejoined) the ride: start sharing my position. Sending before this would fail. */
+    fun onConnected() {
         sendJob?.cancel()
         sendJob = scope.launch {
             while (isActive) {
@@ -148,7 +153,7 @@ object GroupTracker {
         val firstFix = previous == null
         me = location
         recompute(announce = true)
-        if (firstFix) scope.launch { sendMyPosition() }
+        if (firstFix && sendJob != null) scope.launch { sendMyPosition() }
     }
 
     private suspend fun sendMyPosition() {
@@ -159,7 +164,7 @@ object GroupTracker {
             .put("lat", loc.latitude)
             .put("lon", loc.longitude)
             .put("at", System.currentTimeMillis())
-        r.localParticipant.sendText(o.toString(), StreamTextOptions(topic = TOPIC)).onFailure { }
+        r.trySendText(o.toString(), TOPIC)
     }
 
     // ---- Other riders ----

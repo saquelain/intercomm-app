@@ -5,8 +5,9 @@ import com.ridecomm.app.Announcer
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.overlay.Haptics
 import com.ridecomm.app.ride.RideManager
+import com.ridecomm.app.ride.safeMainScope
+import com.ridecomm.app.ride.trySendText
 import io.livekit.android.room.Room
-import io.livekit.android.room.datastream.StreamTextOptions
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
@@ -56,7 +57,7 @@ object VoteManager {
     const val VOTE_TIMEOUT_MS = 45_000L
     private const val RESULT_SHOWN_MS = 15_000L
 
-    private val scope = MainScope()
+    private val scope = safeMainScope()
     private val _state = MutableStateFlow(VoteState())
     val state: StateFlow<VoteState> = _state.asStateFlow()
 
@@ -202,7 +203,7 @@ object VoteManager {
         val r = room ?: return
         scope.launch {
             // Best effort: a rider who misses a ballot still gets the result when the vote times out.
-            r.localParticipant.sendText(o.toString(), StreamTextOptions(topic = TOPIC)).onFailure { }
+            r.trySendText(o.toString(), TOPIC)
         }
     }
 
