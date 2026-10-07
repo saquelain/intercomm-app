@@ -1,6 +1,7 @@
 package com.ridecomm.app.ui
 
 import android.content.Intent
+import android.widget.Toast
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
@@ -32,6 +33,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,6 +58,7 @@ import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.music.MusicState
 import com.ridecomm.app.profile.Profile
 import com.ridecomm.app.profile.ProfileSync
+import com.ridecomm.app.ride.InviteLink
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideState
 import com.ridecomm.app.ride.RideStatus
@@ -96,10 +99,20 @@ fun RideContent(
     var confirmLeave by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
 
+    // An invite tapped while already riding: same ride → nothing to do; another ride → say how.
+    val invite by InviteLink.pending.collectAsStateWithLifecycle()
+    LaunchedEffect(invite) {
+        val code = invite ?: return@LaunchedEffect
+        InviteLink.consume()
+        if (code != state.code) {
+            Toast.makeText(context, "You're already in ride ${state.code}. Leave it to join $code.", Toast.LENGTH_LONG).show()
+        }
+    }
+
     val shareCode = {
         val share = Intent(Intent.ACTION_SEND)
             .setType("text/plain")
-            .putExtra(Intent.EXTRA_TEXT, "Join my RideComm ride! Code: ${state.code}")
+            .putExtra(Intent.EXTRA_TEXT, InviteLink.shareText(state.code))
         context.startActivity(Intent.createChooser(share, "Share ride code"))
     }
 

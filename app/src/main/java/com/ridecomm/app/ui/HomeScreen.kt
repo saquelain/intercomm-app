@@ -31,6 +31,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,6 +56,7 @@ import com.ridecomm.app.R
 import com.ridecomm.app.crash.CrashDetector
 import com.ridecomm.app.profile.Profile
 import com.ridecomm.app.group.GroupTracker
+import com.ridecomm.app.ride.InviteLink
 import com.ridecomm.app.ride.RideCode
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideState
@@ -90,6 +92,18 @@ fun HomeScreen(state: RideState) {
             RideManager.start(context, code)
         } else if (code != null) {
             Toast.makeText(context, "RideComm needs the microphone to talk to your group", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // Invite link tapped: fill in the code and, if the app is set up, join straight away.
+    val invite by InviteLink.pending.collectAsStateWithLifecycle()
+    LaunchedEffect(invite) {
+        val code = invite ?: return@LaunchedEffect
+        InviteLink.consume()
+        joinCode = code
+        if (savedName.isNotBlank() && tokenServerId.isNotBlank()) {
+            pendingCode = code
+            permissionLauncher.launch(permissions)
         }
     }
 
