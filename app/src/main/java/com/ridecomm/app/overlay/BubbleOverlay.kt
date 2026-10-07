@@ -187,8 +187,10 @@ class BubbleOverlay(private val context: Context) {
         currentOptions = view.options
         val location = IntArray(2)
         b.getLocationOnScreen(location)
-        view.centerX = location[0] + sizePx / 2f
-        view.centerY = location[1] + sizePx / 2f
+        view.anchorX = location[0] + sizePx / 2f
+        view.anchorY = location[1] + sizePx / 2f
+        view.centerX = view.anchorX
+        view.centerY = fanCenterY(view.anchorY)
         view.onLeftEdge = onLeftEdge
         view.centerIsClose = tapMode
         if (tapMode) view.setOnTouchListener { _, event -> onMenuTouch(event) }
@@ -301,11 +303,26 @@ class BubbleOverlay(private val context: Context) {
 
     private fun edgeX() = if (onLeftEdge) 0 else screenWidth() - sizePx
 
-    /** Keeps the button far enough from the top and bottom for the whole fan to fit on screen. */
+    /** The button can go almost anywhere along the edge, just clear of the status and navigation bars. */
     private fun clampY(y: Int): Int {
-        val margin = ((SlideMenuView.OUTER_RADIUS_DP + SlideMenuView.ITEM_RADIUS_DP * 1.6f) * density).roundToInt() - sizePx / 2
-        val max = (screenHeight() - margin - sizePx).coerceAtLeast(margin)
-        return y.coerceIn(margin, max)
+        val top = (EDGE_MARGIN_DP * density).roundToInt()
+        val bottom = (screenHeight() - sizePx - top).coerceAtLeast(top)
+        return y.coerceIn(top, bottom)
+    }
+
+    /**
+     * Keeps the fan on screen. If it fits around the button it opens there; near the top or bottom
+     * it opens further down or up, far enough that no option sits on top of the button.
+     */
+    private fun fanCenterY(buttonCenterY: Float): Float {
+        val margin = SlideMenuView.FIT_MARGIN_DP * density
+        val max = (screenHeight() - margin).coerceAtLeast(margin)
+        val gap = SlideMenuView.MOVED_FAN_GAP_DP * density
+        return when {
+            buttonCenterY < margin -> (buttonCenterY + gap).coerceIn(margin, max)
+            buttonCenterY > max -> (buttonCenterY - gap).coerceIn(margin, max)
+            else -> buttonCenterY
+        }
     }
 
     private fun screenWidth() = context.resources.displayMetrics.widthPixels
@@ -378,6 +395,7 @@ class BubbleOverlay(private val context: Context) {
         private const val MOVE_HOLD_MS = 600L
         private const val MENU_IDLE_CLOSE_MS = 8_000L
         private const val HOLD_TOLERANCE_DP = 14f
+        private const val EDGE_MARGIN_DP = 28f
 
         private val ORANGE = Color.rgb(0xFF, 0x8A, 0x1F)
         private val RED = Color.rgb(0xFF, 0x4D, 0x6D)

@@ -79,7 +79,13 @@ class ScreenshotTest {
     fun sosCountdown() = shot("5_sos_countdown") { SosCountdown(3) }
 
     @Test
-    fun floatingMenu() {
+    fun floatingMenu() = renderMenu("6_floating_menu", buttonY = 2640 * 0.5f)
+
+    /** Button dragged near the top: the fan opens lower so every option stays on screen. */
+    @Test
+    fun floatingMenuNearTop() = renderMenu("7_floating_menu_top", buttonY = 3 * 70f)
+
+    private fun renderMenu(name: String, buttonY: Float) {
         val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
         fun opt(icon: Int, label: String, color: Int) = com.ridecomm.app.overlay.SlideOption(icon, label, color, "") {}
         val green = android.graphics.Color.rgb(0x34, 0xE8, 0x9E)
@@ -107,8 +113,12 @@ class ScreenshotTest {
         )
         val w = 1200
         val h = 2640
-        menu.centerX = w - 34 * 3f
-        menu.centerY = h * 0.5f
+        menu.anchorX = w - 40 * 3f
+        menu.anchorY = buttonY
+        menu.centerX = menu.anchorX
+        val margin = com.ridecomm.app.overlay.SlideMenuView.FIT_MARGIN_DP * 3
+        val gap = com.ridecomm.app.overlay.SlideMenuView.MOVED_FAN_GAP_DP * 3
+        menu.centerY = if (buttonY < margin) (buttonY + gap).coerceIn(margin, h - margin) else buttonY
         menu.centerIsClose = true
         menu.selected = 1
         menu.measure(
@@ -121,6 +131,6 @@ class ScreenshotTest {
         // Stand-in for the app underneath (e.g. Maps).
         canvas.drawColor(android.graphics.Color.rgb(0xDD, 0xE6, 0xD8))
         menu.draw(canvas)
-        bitmap.captureRoboImage("screenshots/6_floating_menu.png")
+        bitmap.captureRoboImage("screenshots/$name.png")
     }
 }

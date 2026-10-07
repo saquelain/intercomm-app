@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import com.ridecomm.app.R
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
@@ -47,9 +48,15 @@ class SlideMenuView(
     private val itemRadius = ITEM_RADIUS_DP * density
     private val deadZone = DEAD_ZONE_DP * density
 
-    /** Centre of the floating button, in screen coordinates. */
+    /** Centre of the fan, in screen coordinates. */
     var centerX = 0f
     var centerY = 0f
+    /**
+     * Centre of the floating button. Usually the same as the fan centre; near the top or bottom of
+     * the screen the fan is moved toward the middle so every option fits.
+     */
+    var anchorX = 0f
+    var anchorY = 0f
     /** The fan opens away from the screen edge the button sits on. */
     var onLeftEdge = false
     /** Icon in the middle: a close mark when the menu was opened with a tap. */
@@ -94,8 +101,30 @@ class SlideMenuView(
             deadZone = deadZone,
         )
 
-    /** Which option the finger at screen position ([rawX], [rawY]) points to, or -1. */
-    fun pick(rawX: Float, rawY: Float): Int = rings.pick(rawX - centerX, rawY - centerY)
+    /**
+     * Which option the finger at screen position ([rawX], [rawY]) points to, or -1. When the fan
+     * sits at the button, pointing roughly in an option's direction is enough. When the fan was
+     * moved away from the button, the finger has to be on (or right next to) an option, so the
+     * finger starting at the button can't select anything by accident.
+     */
+    fun pick(rawX: Float, rawY: Float): Int {
+        val rings = rings
+        if (hypot(anchorX - centerX, anchorY - centerY) < density) return rings.pick(rawX - centerX, rawY - centerY)
+        if (hypot(rawX - anchorX, rawY - anchorY) < centerRadius * HIT_SLOP) return -1
+        var best = -1
+        var bestDistance = itemRadius * HIT_SLOP
+        options.indices.forEach { i ->
+            val a = Math.toRadians(rings.angleOf(i).toDouble())
+            val x = centerX + rings.radiusOf(i) * cos(a).toFloat()
+            val y = centerY + rings.radiusOf(i) * sin(a).toFloat()
+            val d = hypot(rawX - x, rawY - y)
+            if (d < bestDistance) {
+                bestDistance = d
+                best = i
+            }
+        }
+        return best
+    }
 
     override fun onDraw(canvas: Canvas) {
         scrim.shader = LinearGradient(
@@ -108,6 +137,12 @@ class SlideMenuView(
         val cy = centerY - location[1]
 
         // The floating button, redrawn above the scrim so the starting point stays visible.
+        val ax = anchorX - location[0]
+        val ay = anchorY - location[1]
+        if (hypot(ax - cx, ay - cy) >= density) {
+            drawGlassCircle(canvas, ax, ay, centerRadius, highlight = null)
+            drawIcon(canvas, brandIcon, ax, ay, centerRadius * 0.95f)
+        }
         drawGlassCircle(canvas, cx, cy, centerRadius, highlight = null)
         drawIcon(canvas, if (centerIsClose) closeIcon else brandIcon, cx, cy, centerRadius * 0.95f)
 
@@ -160,5 +195,12 @@ class SlideMenuView(
         const val ITEM_RADIUS_DP = 44f
         /** Finger must move this far from the button before anything is selected. */
         private const val DEAD_ZONE_DP = 56f
+        /** For a moved fan: how close (in item radii) the finger must be to an option. */
+        private const val HIT_SLOP = 1.5f
+
+        /** Distance from the fan centre to the screen edge needed for the whole fan to fit. */
+        const val FIT_MARGIN_DP = OUTER_RADIUS_DP + ITEM_RADIUS_DP + 12f
+        /** When the fan has to move, how far from the button it goes so no option covers the button. */
+        const val MOVED_FAN_GAP_DP = OUTER_RADIUS_DP + 50f
     }
 }
