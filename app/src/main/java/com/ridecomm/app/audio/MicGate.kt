@@ -18,6 +18,12 @@ object MicGate {
     private var gateRate = 0
     private var samples = FloatArray(0)
 
+    /**
+     * Also gets each mono mic chunk (as it was captured, before the gate), on the audio thread.
+     * Used for voice commands; must return quickly.
+     */
+    @Volatile var tap: ((samples: FloatArray, count: Int, sampleRate: Int) -> Unit)? = null
+
     /** null switches the gate off (the mic goes out as WebRTC captured it). */
     fun setSensitivity(value: NoiseGate.Sensitivity?) {
         sensitivity = value
@@ -45,7 +51,9 @@ object MicGate {
 
     // Called on WebRTC's capture thread only.
     private fun process(buffer: ByteBuffer, audioFormat: Int, channelCount: Int, sampleRate: Int, bytesRead: Int) {
-        val level = sensitivity ?: return
+        val level = sensitivity
+        val listener = tap
+        if (level == null && listener == null) return
         val bytesPerSample = when (audioFormat) {
             AudioFormat.ENCODING_PCM_16BIT -> 2
             AudioFormat.ENCODING_PCM_FLOAT -> 4
@@ -54,19 +62,23 @@ object MicGate {
         // Gating the mixed signal is fine for mono and stereo alike: every channel opens together.
         val count = bytesRead / bytesPerSample
         if (count <= 0 || channelCount <= 0) return
-        val g = gate?.takeIf { gateRate == sampleRate * channelCount }
-            ?: NoiseGate(sampleRate * channelCount).also { gate = it; gateRate = sampleRate * channelCount }
-        g.sensitivity = level
         if (samples.size < count) samples = FloatArray(count)
         // WebRTC fills the buffer in the device's byte order but leaves it marked big-endian.
         val data = buffer.duplicate().order(ByteOrder.nativeOrder())
         if (bytesPerSample == 2) {
             for (i in 0 until count) samples[i] = data.getShort(i * 2) / 32768f
-            g.process(samples, count)
-            for (i in 0 until count) data.putShort(i * 2, (samples[i] * 32767f).toInt().toShort())
         } else {
             for (i in 0 until count) samples[i] = data.getFloat(i * 4)
-            g.process(samples, count)
+        }
+        if (listener != null && channelCount == 1) runCatching { listener(samples, count, sampleRate) }
+        if (level == null) return
+        val g = gate?.takeIf { gateRate == sampleRate * channelCount }
+            ?: NoiseGate(sampleRate * channelCount).also { gate = it; gateRate = sampleRate * channelCount }
+        g.sensitivity = level
+        g.process(samples, count)
+        if (bytesPerSample == 2) {
+            for (i in 0 until count) data.putShort(i * 2, (samples[i] * 32767f).toInt().toShort())
+        } else {
             for (i in 0 until count) data.putFloat(i * 4, samples[i])
         }
     }

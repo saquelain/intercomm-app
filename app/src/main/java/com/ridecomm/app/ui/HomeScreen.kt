@@ -61,6 +61,7 @@ import com.ridecomm.app.group.GroupTracker
 import com.ridecomm.app.headset.HeadsetButtons
 import com.ridecomm.app.ride.InviteLink
 import com.ridecomm.app.ride.RecentRide
+import com.ridecomm.app.voice.VoiceCommands
 import com.ridecomm.app.ride.RecentRides
 import com.ridecomm.app.ride.RideCode
 import com.ridecomm.app.ride.RideManager
@@ -334,6 +335,8 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var headsetButtons by remember { mutableStateOf(Prefs.headsetButtons(context)) }
     var windGate by remember { mutableStateOf(Prefs.windGate(context)) }
     var riderAlerts by remember { mutableStateOf(Prefs.riderAlerts(context)) }
+    val voiceAvailable = remember { VoiceCommands.available(context) }
+    var voiceCommands by remember { mutableStateOf(Prefs.voiceCommands(context) && voiceAvailable) }
 
     GlassDialog(onDismiss = onClose) {
         Text("Settings", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp))
@@ -401,6 +404,17 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             headsetButtons,
         ) { headsetButtons = it }
         SettingSwitch(
+            "Voice commands",
+            if (voiceAvailable) {
+                "Say \"RideComm\" then: break, fuel, food, yes, no, slow down, wait for me, mute, next song, " +
+                    "music off, who's here, battery, SOS, cancel. Works while your mic is on."
+            } else {
+                "Needs Android 13 or newer with Google speech recognition"
+            },
+            voiceCommands,
+            warning = !voiceAvailable,
+        ) { if (voiceAvailable) voiceCommands = it }
+        SettingSwitch(
             "Rider alerts",
             "Speaks when someone joins, drops out or is back, and when a phone's battery gets low",
             riderAlerts,
@@ -435,6 +449,8 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setHeadsetButtons(context, headsetButtons)
                 Prefs.setWindGate(context, windGate)
                 Prefs.setRiderAlerts(context, riderAlerts)
+                if (voiceAvailable) Prefs.setVoiceCommands(context, voiceCommands)
+                VoiceCommands.applySettings(context)
                 MicGate.setSensitivity(windGate)
                 HeadsetButtons.applySettings(context)
                 CrashDetector.applySettings(context)

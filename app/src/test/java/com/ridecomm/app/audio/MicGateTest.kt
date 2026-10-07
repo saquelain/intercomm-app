@@ -17,7 +17,10 @@ class MicGateTest {
     private val frames = 480
 
     @After
-    fun reset() = MicGate.setSensitivity(NoiseGate.Sensitivity.MEDIUM)
+    fun reset() {
+        MicGate.setSensitivity(NoiseGate.Sensitivity.MEDIUM)
+        MicGate.tap = null
+    }
 
     /** Like WebRTC: a direct buffer left marked big-endian, filled with native-order PCM16. */
     private fun pcm(sample: (Int) -> Float): ByteBuffer {
@@ -70,5 +73,20 @@ class MicGateTest {
         val lp = Biquad.lowPass(150f, rate)
         val out = feed(20) { lp.filter(0.8f * (random.nextFloat() * 2 - 1)) * 3f }
         assertTrue(peak(out) > 1_000)
+    }
+
+    @Test
+    fun tapGetsTheRawMicEvenWithTheGateOff() {
+        MicGate.setSensitivity(null)
+        var got = 0
+        var rateSeen = 0
+        MicGate.tap = { samples, count, sampleRate ->
+            got += count
+            rateSeen = sampleRate
+            assertTrue(samples.take(count).any { it != 0f })
+        }
+        feed(3) { voice(it) }
+        assertEquals(frames * 3, got)
+        assertEquals(rate, rateSeen)
     }
 }

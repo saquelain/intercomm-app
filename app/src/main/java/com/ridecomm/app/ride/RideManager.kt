@@ -4,6 +4,7 @@ import android.content.Context
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.alerts.RiderAlerts
 import com.ridecomm.app.audio.MicGate
+import com.ridecomm.app.voice.VoiceCommands
 import com.ridecomm.app.crash.CrashDetector
 import com.ridecomm.app.group.GroupTracker
 import com.ridecomm.app.music.MusicManager
@@ -90,6 +91,7 @@ object RideManager {
         GroupTracker.release()
         ProfileSync.release()
         RiderAlerts.release()
+        VoiceCommands.stop()
         CrashDetector.stop()
         _state.value = RideState()
     }
@@ -196,6 +198,7 @@ object RideManager {
             r.localParticipant.setMicrophoneEnabled(!_state.value.micMuted)
             MicGate.setSensitivity(Prefs.windGate(appContext))
             MicGate.attach(r)
+            VoiceCommands.start(appContext)
             onConnected()
             MusicManager.onConnected()
             GroupTracker.onConnected()
@@ -227,6 +230,7 @@ object RideManager {
         GroupTracker.release()
         ProfileSync.release()
         RiderAlerts.release()
+        VoiceCommands.stop()
         CrashDetector.stop()
         _state.value = RideState(error = message)
     }

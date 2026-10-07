@@ -31,6 +31,13 @@ other over mobile internet through their helmet headset.
   "Amit's phone battery is at 15 percent" (once each at 20%, 10% and 5%, not while charging). Phones share their
   battery level only when it changes by 5%. Low batteries (30% or less) also show on rider cards. Switchable in
   Settings.
+- **Voice commands (Android 13+):** say "RideComm" and then a command: break / fuel / food (start a vote), yes / no,
+  slow down, wait for me, mute / unmute, next song, music off / on, who's here, battery, SOS, cancel. The call
+  already owns the mic, so each burst of your speech (found with the same voice detector as the wind filter, with
+  0.3 s of lead-in, at most 5 s) is cut from the call's own mic stream, converted to 16 kHz and piped to the phone's
+  speech recogniser (on-device when available, nudged towards these words). Only speech that starts with
+  "RideComm" (or how recognisers tend to spell it: "ride comm", "ride calm"…) does anything, and each command is
+  confirmed by voice. The group still hears you say it. Switchable in Settings.
 - **Quick rejoin:** if a ride ends without the rider leaving (app closed, phone restarted or out of battery), the
   home screen offers "Back to ride CODE?" with a one-tap Rejoin for 12 hours. The join card also lists up to three
   recent ride codes from the past week ("Ride again"); one tap joins that ride again.

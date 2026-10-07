@@ -28,6 +28,7 @@ object Prefs {
     private const val KEY_RECENT_RIDES = "recent_rides"
     private const val KEY_UNFINISHED_RIDE = "unfinished_ride"
     private const val KEY_RIDER_ALERTS = "rider_alerts"
+    private const val KEY_VOICE_COMMANDS = "voice_commands"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -162,4 +163,10 @@ object Prefs {
 
     fun setRiderAlerts(context: Context, on: Boolean) =
         prefs(context).edit().putBoolean(KEY_RIDER_ALERTS, on).apply()
+
+    /** "RideComm, vote break": hands-free commands spoken into the mic. */
+    fun voiceCommands(context: Context): Boolean = prefs(context).getBoolean(KEY_VOICE_COMMANDS, true)
+
+    fun setVoiceCommands(context: Context, on: Boolean) =
+        prefs(context).edit().putBoolean(KEY_VOICE_COMMANDS, on).apply()
 }
