@@ -1,35 +1,25 @@
 package com.ridecomm.app.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.ridecomm.app.R
 import com.ridecomm.app.vote.QuickMessage
 import com.ridecomm.app.vote.Vote
 import com.ridecomm.app.vote.VoteKind
 import com.ridecomm.app.vote.VoteManager
 import com.ridecomm.app.vote.VoteState
 
-private val Yellow = Color(0xFFFFC82E)
-
-/** Active vote with big Yes/No buttons; otherwise the last result; otherwise quick-action buttons. */
+/** Active vote with big Yes/No buttons; otherwise the last result; otherwise quick actions. */
 @Composable
 fun VoteCard(vote: VoteState) {
     val active = vote.active
@@ -43,82 +33,65 @@ fun VoteCard(vote: VoteState) {
 
 @Composable
 private fun ActiveVote(vote: Vote, myVote: Boolean?) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(Yellow.copy(alpha = 0.18f), RoundedCornerShape(16.dp))
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text("${vote.kind.emoji} ${vote.starterName} ${vote.kind.asking}", fontSize = 19.sp, fontWeight = FontWeight.Bold)
+    GlassCard(tint = Palette.Amber, fillAlpha = 0.14f, spacing = 14.dp) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Ico(vote.kind.icon, 30.dp, Palette.Amber)
+            Spacer(Modifier.width(12.dp))
+            Text("${vote.starterName} ${vote.kind.asking}", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+        }
         val waiting = (vote.riders - vote.ballots.size).coerceAtLeast(0)
-        Text(
-            "👍 ${vote.yes}   👎 ${vote.no}" + if (waiting > 0) "   ⏳ $waiting waiting" else "",
-            fontSize = 16.sp,
-        )
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StatusPill("${vote.yes} yes", Palette.Go)
+            StatusPill("${vote.no} no", Palette.Stop)
+            if (waiting > 0) StatusPill("$waiting waiting", Palette.TextTertiary)
+        }
         if (myVote == null) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                VoteButton("👍 YES", Talking) { VoteManager.cast(yes = true) }
-                VoteButton("👎 NO", Danger) { VoteManager.cast(yes = false) }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                PrimaryButton("Yes", R.drawable.ms_thumb_up, Modifier.weight(1f), brush = Palette.GoGradient, height = 66.dp) {
+                    VoteManager.cast(yes = true)
+                }
+                PrimaryButton("No", R.drawable.ms_thumb_down, Modifier.weight(1f), brush = Palette.StopGradient, height = 66.dp) {
+                    VoteManager.cast(yes = false)
+                }
             }
         } else {
-            Text("You voted ${if (myVote) "yes" else "no"}", fontSize = 15.sp, color = Muted)
+            Text("You voted ${if (myVote) "yes" else "no"}", style = MaterialTheme.typography.bodyMedium)
         }
     }
-}
-
-@Composable
-private fun RowScope.VoteButton(text: String, color: Color, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.weight(1f).height(64.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = color, contentColor = Color.Black),
-    ) { Text(text, fontSize = 22.sp, fontWeight = FontWeight.Black) }
 }
 
 @Composable
 private fun Result(vote: Vote) {
     val approved = vote.approved == true
-    Text(
-        "${vote.kind.emoji} ${vote.kind.stopName} ${if (approved) "approved" else "not approved"} · 👍 ${vote.yes} 👎 ${vote.no}",
-        fontSize = 17.sp,
-        fontWeight = FontWeight.Bold,
-        color = if (approved) Talking else Muted,
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-            .padding(14.dp),
-    )
-}
-
-@Composable
-private fun QuickActions() {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        VoteKind.entries.forEach { kind ->
-            QuickButton(kind.emoji, "${kind.label}?") { VoteManager.startVote(kind) }
-        }
-        QuickMessage.entries.forEach { message ->
-            QuickButton(message.emoji, message.label) { VoteManager.sendQuick(message) }
+    GlassCard(tint = if (approved) Palette.Go else Color.White, fillAlpha = if (approved) 0.14f else 0.09f) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Ico(if (approved) R.drawable.ms_check_circle else R.drawable.ms_close, 28.dp, if (approved) Palette.Go else Palette.TextSecondary)
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(
+                    "${vote.kind.stopName} ${if (approved) "approved" else "not approved"}",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text("${vote.yes} yes · ${vote.no} no", style = MaterialTheme.typography.bodyMedium)
+            }
         }
     }
 }
 
 @Composable
-private fun RowScope.QuickButton(emoji: String, label: String, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.weight(1f).height(68.dp),
-        shape = RoundedCornerShape(14.dp),
-        contentPadding = PaddingValues(2.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-        ),
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(emoji, fontSize = 22.sp)
-            Text(label, fontSize = 11.sp, maxLines = 1)
+private fun QuickActions() {
+    GlassCard(spacing = 12.dp) {
+        SectionLabel("Ask the group")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            VoteKind.entries.forEach { kind ->
+                GlassTile(kind.icon, kind.label, Modifier.weight(1f), accent = Palette.Amber) { VoteManager.startVote(kind) }
+            }
+        }
+        SectionLabel("Quick message")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            QuickMessage.entries.forEach { message ->
+                GlassTile(message.icon, message.label, Modifier.weight(1f), accent = Palette.Cyan) { VoteManager.sendQuick(message) }
+            }
         }
     }
 }

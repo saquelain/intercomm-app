@@ -278,13 +278,13 @@ object SosManager {
         )
         val builder = NotificationCompat.Builder(appContext, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("🚨 SOS: ${alert.name} needs help")
+            .setContentTitle("SOS: ${alert.name} needs help")
             .setContentText(alert.distanceM?.let { "${formatDistance(it)} away" } ?: "Location not available yet")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setContentIntent(open)
             .setOnlyAlertOnce(true)
-        mapIntent(alert)?.let { builder.addAction(0, "🗺 Open map", it) }
+        mapIntent(alert)?.let { builder.addAction(0, "Open map", it) }
         NotificationManagerCompat.from(appContext).notify(NOTIFICATION_ID, builder.build())
     }
 

@@ -120,7 +120,7 @@ class RideService : Service() {
     private fun buildNotification(state: RideState, vote: VoteState): android.app.Notification {
         val pending = vote.active?.takeIf { vote.needsMyVote }
         val title = when {
-            pending != null -> "${pending.kind.emoji} ${pending.starterName} ${pending.kind.asking}"
+            pending != null -> "${pending.starterName} ${pending.kind.asking}"
             state.status == RideStatus.CONNECTING -> "Joining ride ${state.code}…"
             state.status == RideStatus.RECONNECTING -> "Reconnecting to ride ${state.code}…"
             else -> "On ride ${state.code}"
@@ -143,8 +143,8 @@ class RideService : Service() {
             .setCategory(NotificationCompat.CATEGORY_CALL)
         if (pending != null) {
             builder
-                .addAction(0, "👍 Yes", actionIntent(ACTION_VOTE_YES, 3))
-                .addAction(0, "👎 No", actionIntent(ACTION_VOTE_NO, 4))
+                .addAction(0, "Yes", actionIntent(ACTION_VOTE_YES, 3))
+                .addAction(0, "No", actionIntent(ACTION_VOTE_NO, 4))
         }
         builder.addAction(0, if (state.micMuted) "Unmute" else "Mute", actionIntent(ACTION_TOGGLE_MUTE, 1))
         if (pending == null) builder.addAction(0, "Leave ride", actionIntent(ACTION_LEAVE, 2))

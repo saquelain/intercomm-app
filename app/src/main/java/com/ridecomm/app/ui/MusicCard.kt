@@ -5,31 +5,30 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.ridecomm.app.R
 import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.music.MusicState
-import kotlin.math.roundToInt
 
 private const val VOLUME_STEP = 0.1f
 
@@ -43,65 +42,102 @@ fun MusicCard(music: MusicState) {
     }
     val pickSongs = { picker.launch(arrayOf("audio/*")) }
 
-    if (music.title == null) {
-        OutlinedButton(onClick = pickSongs, modifier = Modifier.fillMaxWidth().height(64.dp)) {
-            Text("🎵  Play music for the group", fontSize = 19.sp, fontWeight = FontWeight.Bold)
-        }
-        return
-    }
-
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text("🎵 ${music.title}", fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(subtitle(music), fontSize = 15.sp, color = if (music.ducked) Orange else Muted)
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (music.iAmDj) {
-                CardButton(if (music.playing) "⏸ Pause" else "▶ Play", onClick = MusicManager::playPause)
-                CardButton("⏭ Next", onClick = MusicManager::next)
-                CardButton("＋ Add", onClick = pickSongs)
-                CardButton("⏹ Stop", danger = true, onClick = MusicManager::stopMusic)
-            } else {
-                CardButton(if (music.offForMe) "🔈 Music on" else "🔇 Music off", onClick = MusicManager::toggleOffForMe)
-                CardButton("＋ Play mine", onClick = pickSongs)
+    GlassCard(spacing = 16.dp) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(56.dp).clip(RoundedCornerShape(18.dp)).background(Palette.Brand),
+                contentAlignment = Alignment.Center,
+            ) { Ico(R.drawable.ms_music_note, 30.dp, Color.White) }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    music.title ?: "Group music",
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    subtitle(music),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (music.ducked) Palette.Amber else Palette.TextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            CardButton("−", onClick = { MusicManager.setVolume(music.volume - VOLUME_STEP) })
-            Text(
-                "Volume ${(music.volume * 100).roundToInt()}%",
-                fontSize = 16.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.width(120.dp),
-            )
-            CardButton("+", onClick = { MusicManager.setVolume(music.volume + VOLUME_STEP) })
+        if (music.title == null) {
+            GlassButton("Play music for the group", R.drawable.ms_library_music, Modifier.fillMaxWidth(), height = 58.dp, onClick = pickSongs)
+            return@GlassCard
+        }
+
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (music.iAmDj) {
+                GlassIconButton(R.drawable.ms_stop, "Stop music", tint = Palette.Stop, onClick = MusicManager::stopMusic)
+                GlassIconButton(
+                    if (music.playing) R.drawable.ms_pause else R.drawable.ms_play_arrow,
+                    if (music.playing) "Pause" else "Play",
+                    size = 72.dp,
+                    iconSize = 36.dp,
+                    brush = Palette.Brand,
+                    onClick = MusicManager::playPause,
+                )
+                GlassIconButton(R.drawable.ms_skip_next, "Next song", onClick = MusicManager::next)
+                GlassIconButton(R.drawable.ms_add, "Add songs", onClick = pickSongs)
+            } else {
+                GlassButton(
+                    if (music.offForMe) "Turn music on" else "Music off for me",
+                    if (music.offForMe) R.drawable.ms_volume_up else R.drawable.ms_volume_off,
+                    Modifier.weight(1f),
+                    onClick = MusicManager::toggleOffForMe,
+                )
+                Spacer(Modifier.width(10.dp))
+                GlassIconButton(R.drawable.ms_add, "Play my songs", onClick = pickSongs)
+            }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            GlassIconButton(R.drawable.ms_remove, "Volume down", size = 48.dp, iconSize = 22.dp) {
+                MusicManager.setVolume(music.volume - VOLUME_STEP)
+            }
+            VolumeBar(music.volume, Modifier.weight(1f))
+            GlassIconButton(R.drawable.ms_add, "Volume up", size = 48.dp, iconSize = 22.dp) {
+                MusicManager.setVolume(music.volume + VOLUME_STEP)
+            }
         }
     }
 }
 
-private fun subtitle(music: MusicState): String = buildString {
-    append(music.status ?: if (music.playing) "Playing" else "Paused")
-    append(" · DJ: ")
-    append(if (music.iAmDj) "you" else music.djName ?: "?")
-    if (music.iAmDj && music.queued > 0) append(" · ${music.queued} up next")
-    if (music.ducked) append(" · lowered for talk")
+@Composable
+private fun VolumeBar(volume: Float, modifier: Modifier) {
+    Box(
+        modifier
+            .padding(horizontal = 14.dp)
+            .height(10.dp)
+            .clip(RoundedCornerShape(50))
+            .background(Color.White.copy(alpha = 0.12f)),
+    ) {
+        Box(
+            Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(volume.coerceIn(0f, 1f))
+                .clip(RoundedCornerShape(50))
+                .background(Palette.Brand),
+        )
+    }
 }
 
-@Composable
-private fun RowScope.CardButton(text: String, danger: Boolean = false, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.weight(1f).height(56.dp),
-        shape = RoundedCornerShape(14.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (danger) Danger.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = if (danger) Danger else MaterialTheme.colorScheme.onSurface,
-        ),
-    ) { Text(text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1) }
+private fun subtitle(music: MusicState): String = when {
+    music.title == null -> "Pick songs from your phone; everyone hears them"
+    else -> buildString {
+        append(music.status ?: if (music.playing) "Playing" else "Paused")
+        append(" · DJ ")
+        append(if (music.iAmDj) "you" else music.djName ?: "?")
+        if (music.iAmDj && music.queued > 0) append(" · ${music.queued} up next")
+        if (music.ducked) append(" · lowered for talk")
+    }
 }

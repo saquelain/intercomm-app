@@ -63,6 +63,19 @@ Every push builds an APK on GitHub Actions. Download `RideComm.apk` from the
 [`latest` release](../../releases/tag/latest) on your phone and install it (allow "Install unknown apps" for your
 browser once). Builds are signed with the same test key, so new versions install over old ones.
 
+## Design
+
+Glassmorphism on a dark night background: translucent "frosted" cards with a light sheen and thin
+bright rims over soft violet, pink, orange and cyan glows; big rounded, glove-friendly controls.
+Icons are [Material Symbols Rounded](https://fonts.google.com/icons) (Apache 2.0) and the typeface is
+[Outfit](https://fonts.google.com/specimen/Outfit) (SIL OFL 1.1).
+
+Screenshots of the main screens render on the JVM, no phone needed:
+
+```sh
+./gradlew recordRoborazziRelease   # PNGs in app/screenshots/
+```
+
 ## Building locally
 
 ```sh

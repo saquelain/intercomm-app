@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Canvas
+import android.graphics.LinearGradient
+import android.graphics.Shader
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PixelFormat
@@ -188,7 +190,7 @@ class BubbleOverlay(private val context: Context) {
         view.centerX = location[0] + sizePx / 2f
         view.centerY = location[1] + sizePx / 2f
         view.onLeftEdge = onLeftEdge
-        view.hint = if (tapMode) "Close" else "Slide"
+        view.centerIsClose = tapMode
         if (tapMode) view.setOnTouchListener { _, event -> onMenuTouch(event) }
         val params = overlayParams(
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -217,15 +219,15 @@ class BubbleOverlay(private val context: Context) {
      */
     private fun innerOptions(): List<SlideOption> = buildList {
         if (VoteManager.state.value.needsMyVote) {
-            add(SlideOption("👍", "Yes", GREEN, "Voted yes") { VoteManager.cast(yes = true) })
-            add(SlideOption("👎", "No", RED, "Voted no") { VoteManager.cast(yes = false) })
+            add(SlideOption(R.drawable.ms_thumb_up, "Yes", GREEN, "Voted yes") { VoteManager.cast(yes = true) })
+            add(SlideOption(R.drawable.ms_thumb_down, "No", RED, "Voted no") { VoteManager.cast(yes = false) })
         }
         val muted = RideManager.state.value.micMuted
         add(
             if (muted) {
-                SlideOption("🎙", "Unmute", GREEN, "Mic on") { RideManager.toggleMute() }
+                SlideOption(R.drawable.ms_mic, "Unmute", GREEN, "Mic on") { RideManager.toggleMute() }
             } else {
-                SlideOption("🔇", "Mute", RED, "Mic off") { RideManager.toggleMute() }
+                SlideOption(R.drawable.ms_mic_off, "Mute", RED, "Mic off") { RideManager.toggleMute() }
             },
         )
         val music = MusicManager.state.value
@@ -233,17 +235,17 @@ class BubbleOverlay(private val context: Context) {
             if (music.iAmDj) {
                 add(
                     SlideOption(
-                        if (music.playing) "⏸" else "▶",
+                        if (music.playing) R.drawable.ms_pause else R.drawable.ms_play_arrow,
                         if (music.playing) "Pause" else "Play",
                         ORANGE,
                         if (music.playing) "Music paused" else "Music playing",
                     ) { MusicManager.playPause() },
                 )
-                add(SlideOption("⏭", "Next song", ORANGE, "Next song") { MusicManager.next() })
+                add(SlideOption(R.drawable.ms_skip_next, "Next song", ORANGE, "Next song") { MusicManager.next() })
             } else {
                 add(
                     SlideOption(
-                        if (music.offForMe) "🔈" else "🔕",
+                        if (music.offForMe) R.drawable.ms_volume_up else R.drawable.ms_volume_off,
                         if (music.offForMe) "Music on" else "Music off",
                         ORANGE,
                         if (music.offForMe) "Music on" else "Music off",
@@ -251,24 +253,24 @@ class BubbleOverlay(private val context: Context) {
                 )
             }
         }
-        add(SlideOption("📱", "Open app", BLUE, "Opening RideComm") { openApp() })
+        add(SlideOption(R.drawable.ms_smartphone, "Open app", BLUE, "Opening RideComm") { openApp() })
     }
 
     /** Long-slide ring: SOS, start a vote (one at a time) and quick messages to the group. */
     private fun outerOptions(): List<SlideOption> = buildList {
         if (SosManager.state.value.mySosActive) {
-            add(SlideOption("✅", "I'm OK", GREEN, "") { SosManager.imOk() })
+            add(SlideOption(R.drawable.ms_check_circle, "I'm OK", GREEN, "") { SosManager.imOk() })
         } else {
             // Starts a cancellable countdown, which announces itself.
-            add(SlideOption("🚨", "SOS", RED, "") { SosManager.startCountdown() })
+            add(SlideOption(R.drawable.ms_sos, "SOS", RED, "") { SosManager.startCountdown() })
         }
         if (VoteManager.state.value.active == null) {
             VoteKind.entries.forEach { kind ->
-                add(SlideOption(kind.emoji, "${kind.label}?", YELLOW, "${kind.label} vote sent") { VoteManager.startVote(kind) })
+                add(SlideOption(kind.icon, "${kind.label}?", YELLOW, "${kind.label} vote sent") { VoteManager.startVote(kind) })
             }
         }
         QuickMessage.entries.forEach { message ->
-            add(SlideOption(message.emoji, message.label, YELLOW, "Sent: ${message.label}") { VoteManager.sendQuick(message) })
+            add(SlideOption(message.icon, message.label, CYAN, "Sent: ${message.label}") { VoteManager.sendQuick(message) })
         }
     }
 
@@ -320,7 +322,10 @@ class BubbleOverlay(private val context: Context) {
         PixelFormat.TRANSLUCENT,
     )
 
-    /** Round button with the RideComm headset icon. */
+    /**
+     * Frosted dark-glass button with a brand-gradient rim and the RideComm bike icon. The rim turns
+     * red with a crossed-out mic while muted, and thick amber while a vote waits for an answer.
+     */
     @SuppressLint("ViewConstructor")
     private class BubbleView(context: Context) : View(context) {
         var muted = false
@@ -333,24 +338,37 @@ class BubbleOverlay(private val context: Context) {
                 field = value
                 invalidate()
             }
+        private val density = context.resources.displayMetrics.density
         private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
-        private val border = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            color = Color.WHITE
-            strokeWidth = 3 * context.resources.displayMetrics.density
-        }
-        private val icon = ContextCompat.getDrawable(context, R.drawable.ic_notification)!!.mutate()
+        private val rim = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+        private val bike = ContextCompat.getDrawable(context, R.drawable.ms_two_wheeler)!!.mutate()
+        private val micOff = ContextCompat.getDrawable(context, R.drawable.ms_mic_off)!!.mutate()
 
         override fun onDraw(canvas: Canvas) {
-            val r = width / 2f
-            fill.color = if (muted) RED else ORANGE
-            border.color = if (votePending) YELLOW else Color.WHITE
-            border.strokeWidth = (if (votePending) 7 else 3) * resources.displayMetrics.density
-            canvas.drawCircle(r, r, r - border.strokeWidth / 2, fill)
-            canvas.drawCircle(r, r, r - border.strokeWidth / 2, border)
-            val inset = (width * 0.25f).roundToInt()
+            val c = width / 2f
+            val stroke = (if (votePending) 6f else 3.5f) * density
+            val r = c - stroke / 2 - density
+            fill.shader = LinearGradient(
+                0f, 0f, width.toFloat(), height.toFloat(),
+                Color.argb(235, 34, 38, 58), Color.argb(235, 16, 14, 36), Shader.TileMode.CLAMP,
+            )
+            canvas.drawCircle(c, c, r, fill)
+            rim.strokeWidth = stroke
+            rim.shader = when {
+                votePending -> null
+                muted -> null
+                else -> LinearGradient(0f, 0f, width.toFloat(), height.toFloat(), ORANGE, PINK, Shader.TileMode.CLAMP)
+            }
+            rim.color = when {
+                votePending -> YELLOW
+                muted -> RED
+                else -> Color.WHITE
+            }
+            canvas.drawCircle(c, c, r, rim)
+            val icon = if (muted) micOff else bike
+            val inset = (width * 0.27f).roundToInt()
             icon.setBounds(inset, inset, width - inset, height - inset)
-            icon.setTint(if (muted) Color.WHITE else Color.BLACK)
+            icon.setTint(if (muted) RED else Color.WHITE)
             icon.draw(canvas)
         }
     }
@@ -362,9 +380,11 @@ class BubbleOverlay(private val context: Context) {
         private const val HOLD_TOLERANCE_DP = 14f
 
         private val ORANGE = Color.rgb(0xFF, 0x8A, 0x1F)
-        private val RED = Color.rgb(0xFF, 0x4D, 0x4D)
-        private val GREEN = Color.rgb(0x3D, 0xDC, 0x84)
-        private val BLUE = Color.rgb(0x4D, 0x9F, 0xFF)
-        private val YELLOW = Color.rgb(0xFF, 0xC8, 0x2E)
+        private val RED = Color.rgb(0xFF, 0x4D, 0x6D)
+        private val GREEN = Color.rgb(0x34, 0xE8, 0x9E)
+        private val BLUE = Color.rgb(0x7C, 0x5C, 0xFF)
+        private val YELLOW = Color.rgb(0xFF, 0xC9, 0x3C)
+        private val CYAN = Color.rgb(0x22, 0xD3, 0xEE)
+        private val PINK = Color.rgb(0xFF, 0x3D, 0x81)
     }
 }

@@ -5,15 +5,18 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
-import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.DrawableRes
+import androidx.core.content.res.ResourcesCompat
+import com.ridecomm.app.R
 import kotlin.math.roundToInt
 
 /**
@@ -68,35 +71,48 @@ class SosOverlay(private val context: Context) {
     }
 
     @SuppressLint("SetTextI18n")
-    private fun countdownView(seconds: Int): View = column(RED).apply {
-        addView(text("🚨 SOS", 44f, bold = true))
-        val number = text(seconds.toString(), 120f, bold = true)
+    private fun countdownView(seconds: Int): View = column().apply {
+        addView(icon(R.drawable.ms_sos, 72))
+        val number = text(seconds.toString(), 96f, bold = true)
         tag = number
-        addView(number)
-        addView(text("Sending to your group…", 22f))
-        addView(text("TAP ANYWHERE TO CANCEL", 26f, bold = true).apply { setPadding(0, dp(40), 0, 0) })
+        addView(
+            FrameLayout(context).apply {
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(Color.argb(36, 255, 255, 255))
+                    setStroke(dp(2), Color.argb(130, 255, 255, 255))
+                }
+                addView(number, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+            },
+            LinearLayout.LayoutParams(dp(190), dp(190)).apply { setMargins(0, dp(16), 0, dp(16)) },
+        )
+        addView(text("Sending SOS to your group", 22f, bold = true))
+        addView(pill(R.drawable.ms_close, "Tap anywhere to cancel"))
         setOnClickListener { SosManager.cancelCountdown() }
     }
 
     @SuppressLint("SetTextI18n")
-    private fun alertView(alert: SosAlert): View = column(RED).apply {
-        addView(text("🚨 SOS", 44f, bold = true))
-        addView(text("${alert.name} needs help", 30f, bold = true))
+    private fun alertView(alert: SosAlert): View = column().apply {
+        addView(icon(R.drawable.ms_sos, 80))
+        addView(text("${alert.name} needs help", 30f, bold = true).apply { setPadding(0, dp(12), 0, 0) })
         addView(
             text(
                 alert.distanceM?.let { "${SosManager.formatDistance(it)} away" } ?: "Location not available yet",
-                22f,
-            ).apply { setPadding(0, dp(8), 0, dp(32)) },
+                20f,
+            ).apply {
+                alpha = 0.85f
+                setPadding(0, dp(6), 0, dp(28))
+            },
         )
         SosManager.mapsUri(alert)?.let { uri ->
             addView(
-                button("🗺  OPEN MAP", Color.WHITE, RED) {
+                button(R.drawable.ms_map, "Open map", solid = true) {
                     close(alert)
                     context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 },
             )
         }
-        addView(button("✓  SEEN — STOP ALARM", DARK, Color.WHITE) { close(alert) })
+        addView(button(R.drawable.ms_check_circle, "Seen, stop alarm", solid = false) { close(alert) })
     }
 
     private fun close(alert: SosAlert) {
@@ -105,11 +121,17 @@ class SosOverlay(private val context: Context) {
         hide()
     }
 
-    private fun column(background: Int) = LinearLayout(context).apply {
+    private fun column() = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
         gravity = Gravity.CENTER
-        setBackgroundColor(background)
-        setPadding(dp(24), dp(24), dp(24), dp(24))
+        background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(RED_TOP, RED_BOTTOM))
+        setPadding(dp(28), dp(28), dp(28), dp(28))
+    }
+
+    private fun icon(@DrawableRes res: Int, sizeDp: Int) = ImageView(context).apply {
+        setImageResource(res)
+        setColorFilter(Color.WHITE)
+        layoutParams = LinearLayout.LayoutParams(dp(sizeDp), dp(sizeDp))
     }
 
     private fun text(value: String, sizeSp: Float, bold: Boolean = false) = TextView(context).apply {
@@ -117,28 +139,64 @@ class SosOverlay(private val context: Context) {
         textSize = sizeSp
         setTextColor(Color.WHITE)
         gravity = Gravity.CENTER
-        if (bold) typeface = Typeface.DEFAULT_BOLD
+        typeface = if (bold) boldFont else regularFont
     }
 
-    private fun button(label: String, bgColor: Int, textColor: Int, onClick: () -> Unit) = Button(context).apply {
-        text = label
-        textSize = 22f
-        setTextColor(textColor)
-        typeface = Typeface.DEFAULT_BOLD
-        background = GradientDrawable().apply {
-            setColor(bgColor)
-            cornerRadius = dp(20).toFloat()
+    /** Frosted capsule with an icon and a short instruction. */
+    private fun pill(@DrawableRes res: Int, label: String) = LinearLayout(context).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        background = glassDrawable(dp(40).toFloat())
+        setPadding(dp(22), dp(14), dp(22), dp(14))
+        addView(icon(res, 26))
+        addView(text(label, 18f, bold = true).apply { setPadding(dp(10), 0, 0, 0) })
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply { topMargin = dp(36) }
+    }
+
+    /** Big glove-friendly button: white ([solid]) or frosted glass. */
+    private fun button(@DrawableRes res: Int, label: String, solid: Boolean, onClick: () -> Unit) = LinearLayout(context).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER
+        background = if (solid) {
+            GradientDrawable().apply {
+                setColor(Color.WHITE)
+                cornerRadius = dp(40).toFloat()
+            }
+        } else {
+            glassDrawable(dp(40).toFloat())
         }
-        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(80)).apply {
-            topMargin = dp(16)
+        val color = if (solid) RED_BOTTOM else Color.WHITE
+        addView(icon(res, 28).apply { setColorFilter(color) })
+        addView(
+            text(label, 21f, bold = true).apply {
+                setTextColor(color)
+                setPadding(dp(12), 0, 0, 0)
+            },
+        )
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(78)).apply {
+            topMargin = dp(14)
         }
         setOnClickListener { onClick() }
     }
 
+    private fun glassDrawable(radius: Float) = GradientDrawable(
+        GradientDrawable.Orientation.TL_BR,
+        intArrayOf(Color.argb(70, 255, 255, 255), Color.argb(28, 255, 255, 255)),
+    ).apply {
+        cornerRadius = radius
+        setStroke(dp(1), Color.argb(120, 255, 255, 255))
+    }
+
     private fun dp(value: Int) = (value * density).roundToInt()
 
+    private val regularFont = ResourcesCompat.getFont(context, R.font.outfit_medium)
+    private val boldFont = ResourcesCompat.getFont(context, R.font.outfit_bold)
+
     private companion object {
-        val RED = Color.rgb(0xC6, 0x28, 0x28)
-        val DARK = Color.rgb(0x40, 0x10, 0x10)
+        val RED_TOP = Color.rgb(0xE5, 0x24, 0x5E)
+        val RED_BOTTOM = Color.rgb(0x7A, 0x0F, 0x2E)
     }
 }
