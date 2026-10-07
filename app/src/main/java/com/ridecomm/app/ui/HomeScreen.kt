@@ -1,5 +1,10 @@
 package com.ridecomm.app.ui
 
+import kotlin.math.roundToInt
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Slider
+import com.ridecomm.app.trip.UpdateEvery
+import com.ridecomm.app.trip.TripTracker
 import android.Manifest
 import android.graphics.Bitmap
 import android.content.Intent
@@ -336,6 +341,8 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var windGate by remember { mutableStateOf(Prefs.windGate(context)) }
     var riderAlerts by remember { mutableStateOf(Prefs.riderAlerts(context)) }
     var testingFilter by remember { mutableStateOf(false) }
+    var speedLimit by remember { mutableStateOf(Prefs.speedLimit(context)) }
+    var rideUpdates by remember { mutableStateOf(Prefs.rideUpdates(context)) }
     // The test can change the filter live during a ride; closing without saving puts it back.
     val cancel = {
         MicGate.setSettings(Prefs.windGate(context))
@@ -413,7 +420,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             "Voice commands",
             if (voiceAvailable) {
                 "Say \"RideComm\" then: break, fuel, food, yes, no, slow down, wait for me, mute, next song, " +
-                    "music off, who's here, battery, SOS, cancel. Works while your mic is on."
+                    "music off, who's here, battery, speed, SOS, cancel. Works while your mic is on."
             } else {
                 "Needs Android 13 or newer with Google speech recognition"
             },
@@ -425,6 +432,8 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             "Speaks when someone joins, drops out or is back, and when a phone's battery gets low",
             riderAlerts,
         ) { riderAlerts = it }
+        SpeedAlertSetting(speedLimit) { speedLimit = it }
+        RideUpdatesSetting(rideUpdates) { rideUpdates = it }
         SettingSwitch("Show who's talking", "Small photos at the top-left over Maps and other apps", speakerOverlay) {
             speakerOverlay = it
         }
@@ -455,6 +464,9 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setHeadsetButtons(context, headsetButtons)
                 Prefs.setWindGate(context, windGate)
                 Prefs.setRiderAlerts(context, riderAlerts)
+                Prefs.setSpeedLimit(context, speedLimit)
+                Prefs.setRideUpdates(context, rideUpdates)
+                TripTracker.applySettings(context)
                 if (voiceAvailable) Prefs.setVoiceCommands(context, voiceCommands)
                 VoiceCommands.applySettings(context)
                 MicGate.setSettings(windGate)
@@ -492,6 +504,70 @@ internal fun WindGateSetting(value: GateSettings?, onTest: () -> Unit = {}, onCh
         )
         GateChips(value, onChange)
         GlassButton("Fine-tune and test", R.drawable.ms_graphic_eq, Modifier.fillMaxWidth(), height = 48.dp, onClick = onTest)
+    }
+}
+
+/** "Speed alert": a switch, and the limit when it's on. */
+@Composable
+internal fun SpeedAlertSetting(limitKmh: Int, onChange: (Int) -> Unit) {
+    Column {
+        SettingSwitch(
+            "Speed alert",
+            if (limitKmh > 0) "Says your speed in the headset when you go over $limitKmh km/h" else "Says your speed in the headset when you go over a limit you set",
+            limitKmh > 0,
+        ) { onChange(if (it) DEFAULT_SPEED_LIMIT else 0) }
+        if (limitKmh > 0) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Slider(
+                    value = limitKmh.toFloat(),
+                    onValueChange = { onChange(((it / 5).roundToInt() * 5)) },
+                    valueRange = 30f..160f,
+                    modifier = Modifier.weight(1f),
+                    colors = SliderDefaults.colors(
+                        thumbColor = Color.White,
+                        activeTrackColor = Palette.Orange,
+                        inactiveTrackColor = Color.White.copy(alpha = 0.15f),
+                    ),
+                )
+                Spacer(Modifier.width(12.dp))
+                Text("$limitKmh km/h", style = MaterialTheme.typography.titleMedium, color = Palette.Orange)
+            }
+        }
+    }
+}
+
+private const val DEFAULT_SPEED_LIMIT = 90
+
+/** How often to hear distance, riding time and average speed. */
+@Composable
+internal fun RideUpdatesSetting(value: UpdateEvery, onChange: (UpdateEvery) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Ride updates", style = MaterialTheme.typography.titleMedium)
+        Text("Hear distance, riding time and average speed every:", style = MaterialTheme.typography.bodyMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            UpdateEvery.entries.forEach { option ->
+                val selected = option == value
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .height(44.dp)
+                        .glass(
+                            RoundedCornerShape(14.dp),
+                            tint = if (selected) Palette.Orange else Color.White,
+                            fillAlpha = if (selected) 0.32f else 0.06f,
+                        )
+                        .clickable { onChange(option) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        option.label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (selected) Color.White else Palette.TextSecondary,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
     }
 }
 

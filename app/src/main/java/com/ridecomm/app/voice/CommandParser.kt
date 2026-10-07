@@ -15,6 +15,7 @@ sealed interface VoiceCommand {
     data object Cancel : VoiceCommand
     data object WhoIsHere : VoiceCommand
     data object Battery : VoiceCommand
+    data object Trip : VoiceCommand
     /** Said "RideComm" but nothing we know after it. */
     data object Unknown : VoiceCommand
 }
@@ -34,7 +35,7 @@ object CommandParser {
     /** Words the recogniser is nudged towards. */
     val BIASING = listOf(
         "RideComm", "break", "fuel", "food", "yes", "no", "slow down", "wait for me", "mute", "unmute",
-        "next song", "music off", "music on", "SOS", "cancel", "who's here", "battery",
+        "next song", "music off", "music on", "SOS", "cancel", "who's here", "battery", "speed", "how far",
     )
 
     /** Rules in priority order: the first whose phrase appears in the command wins. */
@@ -53,6 +54,7 @@ object CommandParser {
         listOf("wait for me", "wait") to VoiceCommand.Quick(QuickMessage.WAIT),
         listOf("who's here", "who is here", "whos here", "who's on", "who is on", "riders", "who") to VoiceCommand.WhoIsHere,
         listOf("battery", "batteries") to VoiceCommand.Battery,
+        listOf("speed", "how fast", "distance", "how far", "stats", "status", "update") to VoiceCommand.Trip,
         listOf("yes", "yeah", "yep", "agree", "okay", "ok") to VoiceCommand.Cast(yes = true),
         listOf("no", "nope", "nah", "disagree") to VoiceCommand.Cast(yes = false),
     )

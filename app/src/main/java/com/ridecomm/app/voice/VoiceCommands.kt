@@ -22,6 +22,7 @@ import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideStatus
 import com.ridecomm.app.sos.SosManager
+import com.ridecomm.app.trip.TripTracker
 import com.ridecomm.app.vote.VoteManager
 import android.system.ErrnoException
 import android.system.Os
@@ -309,6 +310,7 @@ object VoiceCommands {
                 if (SosManager.state.value.countdown != null) SosManager.cancelCountdown() else say("Nothing to cancel")
             VoiceCommand.WhoIsHere -> say(whoIsHere())
             VoiceCommand.Battery -> say(batteries())
+            VoiceCommand.Trip -> TripTracker.speakNow()
             VoiceCommand.Unknown -> say("Say RideComm, then a command, like break or slow down")
         }
     }

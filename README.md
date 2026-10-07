@@ -42,12 +42,17 @@ other over mobile internet through their helmet headset.
   battery level only when it changes by 5%. Low batteries (30% or less) also show on rider cards. Switchable in
   Settings.
 - **Voice commands (Android 13+):** say "RideComm" and then a command: break / fuel / food (start a vote), yes / no,
-  slow down, wait for me, mute / unmute, next song, music off / on, who's here, battery, SOS, cancel. The call
+  slow down, wait for me, mute / unmute, next song, music off / on, who's here, battery, speed, SOS, cancel. The call
   already owns the mic, so each burst of your speech (found with the same voice detector as the wind filter, with
   0.3 s of lead-in, at most 5 s) is cut from the call's own mic stream, converted to 16 kHz and piped to the phone's
   speech recogniser (on-device when available, nudged towards these words). Only speech that starts with
   "RideComm" (or how recognisers tend to spell it: "ride comm", "ride calm"…) does anything, and each command is
   confirmed by voice. The group still hears you say it. Switchable in Settings.
+- **Speed, distance and ride updates:** my own GPS (nothing shared) gives speed now, distance and riding time on the
+  ride screen. GPS drift while parked and impossible jumps are filtered out. **Speed alert** (Settings, off by
+  default) says "Speed 96" in the headset after 3 s over your limit (30–160 km/h), at most every 30 s.
+  **Ride updates** speak "42.3 kilometres. 1 hour 10 minutes riding. Average 56." every 15/30 min or 10/25 km.
+  "RideComm, speed" gives the same on demand.
 - **Quick rejoin:** if a ride ends without the rider leaving (app closed, phone restarted or out of battery), the
   home screen offers "Back to ride CODE?" with a one-tap Rejoin for 12 hours. The join card also lists up to three
   recent ride codes from the past week ("Ride again"); one tap joins that ride again.

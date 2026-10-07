@@ -4,6 +4,7 @@ import android.content.Context
 import com.ridecomm.app.audio.GateSettings
 import com.ridecomm.app.ride.RecentRide
 import com.ridecomm.app.ride.RecentRides
+import com.ridecomm.app.trip.UpdateEvery
 import java.util.UUID
 
 /** Small on-device settings: rider name, a stable device id, and the LiveKit token server id. */
@@ -33,6 +34,8 @@ object Prefs {
     private const val KEY_UNFINISHED_RIDE = "unfinished_ride"
     private const val KEY_RIDER_ALERTS = "rider_alerts"
     private const val KEY_VOICE_COMMANDS = "voice_commands"
+    private const val KEY_SPEED_LIMIT = "speed_limit_kmh"
+    private const val KEY_RIDE_UPDATES = "ride_updates"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -193,4 +196,16 @@ object Prefs {
 
     fun setVoiceCommands(context: Context, on: Boolean) =
         prefs(context).edit().putBoolean(KEY_VOICE_COMMANDS, on).apply()
+
+    /** Warn by voice above this speed (km/h); 0 = off. */
+    fun speedLimit(context: Context): Int = prefs(context).getInt(KEY_SPEED_LIMIT, 0)
+
+    fun setSpeedLimit(context: Context, kmh: Int) = prefs(context).edit().putInt(KEY_SPEED_LIMIT, kmh).apply()
+
+    /** How often to speak "42 kilometres, 1 hour riding…". */
+    fun rideUpdates(context: Context): UpdateEvery =
+        UpdateEvery.entries.firstOrNull { it.name == prefs(context).getString(KEY_RIDE_UPDATES, null) } ?: UpdateEvery.OFF
+
+    fun setRideUpdates(context: Context, every: UpdateEvery) =
+        prefs(context).edit().putString(KEY_RIDE_UPDATES, every.name).apply()
 }

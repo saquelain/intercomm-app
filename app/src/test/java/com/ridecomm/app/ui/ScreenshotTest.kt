@@ -151,6 +151,13 @@ class ScreenshotTest {
                 ),
             ),
             dataUsed = 18_400_000,
+            trip = com.ridecomm.app.trip.TripState(
+                active = true,
+                startedAtMs = System.currentTimeMillis() - 74 * 60_000L,
+                distanceM = 42_300.0,
+                speedKmh = 68f,
+                gps = true,
+            ),
             batteries = mapOf(
                 "r" to com.ridecomm.app.alerts.BatteryInfo(8, charging = false),
                 "v" to com.ridecomm.app.alerts.BatteryInfo(24, charging = false),
@@ -235,6 +242,14 @@ class ScreenshotTest {
     fun windFilterFineTune() = shot("15_wind_fine_tune") {
         Box(Modifier.padding(16.dp)) {
             FineTune(com.ridecomm.app.audio.GateSettings(thresholdDb = -46f, rumbleAllowanceDb = 0f, holdMs = 700, reductionDb = 24f)) {}
+        }
+    }
+
+    @Test
+    fun speedAndUpdatesSettings() = shot("16_speed_settings") {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            SpeedAlertSetting(90) {}
+            RideUpdatesSetting(com.ridecomm.app.trip.UpdateEvery.MIN_15) {}
         }
     }
 

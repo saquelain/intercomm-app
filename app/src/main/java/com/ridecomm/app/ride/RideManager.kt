@@ -4,6 +4,7 @@ import android.content.Context
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.alerts.RiderAlerts
 import com.ridecomm.app.audio.MicGate
+import com.ridecomm.app.trip.TripTracker
 import com.ridecomm.app.voice.VoiceCommands
 import com.ridecomm.app.crash.CrashDetector
 import com.ridecomm.app.group.GroupTracker
@@ -68,6 +69,7 @@ object RideManager {
         Prefs.rideStarted(appContext, code)
         MicGate.resetTotals()
         RiderAlerts.start(appContext)
+        TripTracker.start(appContext)
         RideService.start(appContext)
         CrashDetector.start(appContext)
         rideJob = scope.launch { runRide(code) }
@@ -93,6 +95,7 @@ object RideManager {
         ProfileSync.release()
         RiderAlerts.release()
         VoiceCommands.stop()
+        TripTracker.stop()
         CrashDetector.stop()
         _state.value = RideState()
     }
@@ -232,6 +235,7 @@ object RideManager {
         ProfileSync.release()
         RiderAlerts.release()
         VoiceCommands.stop()
+        TripTracker.stop()
         CrashDetector.stop()
         _state.value = RideState(error = message)
     }

@@ -1,5 +1,9 @@
 package com.ridecomm.app.ui
 
+import kotlin.math.roundToInt
+import java.util.Locale
+import com.ridecomm.app.trip.TripTracker
+import com.ridecomm.app.trip.TripState
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import com.ridecomm.app.audio.MicGate
@@ -91,6 +95,7 @@ fun RideScreen(state: RideState) {
     val photos by ProfileSync.photos.collectAsStateWithLifecycle()
     val myPhoto by Profile.photo.collectAsStateWithLifecycle()
     val batteries by RiderAlerts.batteries.collectAsStateWithLifecycle()
+    val trip by TripTracker.state.collectAsStateWithLifecycle()
     val filterStatus by remember { MicGate.live.map { it?.status }.distinctUntilChanged() }.collectAsStateWithLifecycle(null)
     val dataUsed by produceState(DataUsage.usedBytes()) {
         while (true) {
@@ -98,7 +103,7 @@ fun RideScreen(state: RideState) {
             value = DataUsage.usedBytes()
         }
     }
-    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed, batteries, filterStatus)
+    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed, batteries, filterStatus, trip)
 }
 
 /** The ride screen for given states (split out so screenshots can render any situation). */
@@ -115,6 +120,7 @@ fun RideContent(
     dataUsed: Long? = null,
     batteries: Map<String, BatteryInfo> = emptyMap(),
     filterStatus: GateStatus? = null,
+    trip: TripState? = null,
 ) {
     val context = LocalContext.current
     var confirmLeave by remember { mutableStateOf(false) }
@@ -164,6 +170,7 @@ fun RideContent(
                 }
 
                 StatusLine(state, dataUsed)
+                if (trip != null) TripRow(trip)
                 SosCards(sos)
                 RidersCard(state.riders, group, batteries) { rider -> if (rider.isMe) myPhoto else photos[rider.id] }
                 VoteCard(vote)
@@ -303,6 +310,53 @@ private fun DistanceChip(position: RiderPosition, onClick: () -> Unit) {
             Relation.NEARBY -> if (distance != null && distance < GroupMath.TOGETHER_M) "with you" else null
         }
         if (label != null) Text(label, style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
+    }
+}
+
+/** Speed now, distance and riding time from my own GPS. */
+@Composable
+private fun TripRow(trip: TripState) {
+    // Riding time ticks every second, even when GPS is quiet.
+    val now by produceState(System.currentTimeMillis(), trip.startedAtMs) {
+        while (true) {
+            value = System.currentTimeMillis()
+            delay(1_000)
+        }
+    }
+    val elapsedMin = ((now - trip.startedAtMs).coerceAtLeast(0) / 60_000)
+    val time = String.format(Locale.US, "%d:%02d", elapsedMin / 60, elapsedMin % 60)
+    if (!trip.gps) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Ico(R.drawable.ms_location_on, 16.dp, Palette.TextTertiary)
+            Spacer(Modifier.width(6.dp))
+            Text(
+                "Riding $time h · allow location to see speed and distance",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Palette.TextTertiary,
+            )
+        }
+        return
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TripTile(trip.speedKmh?.let { "${it.roundToInt()}" } ?: "–", "km/h", "Speed", Modifier.weight(1f))
+        TripTile(String.format(Locale.US, "%.1f", trip.distanceM / 1000), "km", "Distance", Modifier.weight(1f))
+        TripTile(time, "h", "Riding", Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun TripTile(value: String, unit: String, label: String, modifier: Modifier) {
+    Column(
+        modifier
+            .glass(RoundedCornerShape(18.dp), fillAlpha = 0.06f, rimAlpha = 0.18f)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(value, style = MaterialTheme.typography.titleLarge, maxLines = 1)
+            Spacer(Modifier.width(4.dp))
+            Text(unit, style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary, modifier = Modifier.padding(bottom = 3.dp))
+        }
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Palette.TextTertiary)
     }
 }
 
