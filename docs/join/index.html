@@ -54,7 +54,8 @@
   <div class="code" id="code">······</div>
   <a class="btn primary" id="open" href="#">Open in RideComm</a>
   <a class="btn secondary" id="get" href="https://github.com/saquelain/intercomm-app/releases/download/latest/RideComm.apk">Get the app (APK)</a>
-  <p class="hint">Android only. After installing, come back and tap “Open in RideComm”.</p>
+  <a class="btn secondary" id="web" href="../ride/">Join in browser (iPhone)</a>
+  <p class="hint" id="hint">Android: install the app, then come back and tap “Open in RideComm”. iPhone or no app: join in the browser.</p>
 </main>
 <script>
   // The ride code comes from ?code=XXXXXX (or #XXXXXX). Same alphabet the app uses.
@@ -67,6 +68,16 @@
     document.getElementById('sub').textContent = 'This invite link is missing its ride code. Ask for the code instead.';
   } else {
     document.getElementById('code').textContent = code;
+    const web = document.getElementById('web');
+    web.href = '../ride/?code=' + code;
+    // iPhone and iPad can't install the APK: the browser version is the way in.
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+      document.getElementById('open').style.display = 'none';
+      document.getElementById('get').style.display = 'none';
+      web.className = 'btn primary';
+      web.textContent = 'Join the ride';
+      document.getElementById('hint').textContent = 'Opens RideComm in Safari: talk, listen, votes and SOS. No app needed.';
+    }
     // Android intent: opens the app if installed, otherwise falls back to the APK download.
     const intent = 'intent://join/' + code + '#Intent;scheme=ridecomm;package=com.ridecomm.app;' +
       'S.browser_fallback_url=' + encodeURIComponent(apk) + ';end';

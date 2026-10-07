@@ -18,7 +18,8 @@ object InviteLink {
 
     fun url(code: String) = "$PAGE?code=$code"
 
-    fun shareText(code: String) = "Join my RideComm ride: ${url(code)}\nOr enter the code $code in the app."
+    fun shareText(code: String) =
+        "Join my RideComm ride: ${url(code)}\nOr enter the code $code in the app. On iPhone the link opens it in the browser, no app needed."
 
     /** Picks up ridecomm://join/CODE from an incoming intent. */
     fun handle(intent: Intent?) {

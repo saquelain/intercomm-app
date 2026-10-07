@@ -112,6 +112,17 @@ other over mobile internet through their helmet headset.
   send with one tap (sending silently needs SEND_SMS, which Play Protect blocks for sideloaded apps). "I'm OK" stops everyone's
   alarm.
 
+## iPhone and browser riders
+
+iPhones can't install the APK, so there's a browser version at
+`https://saquelain.github.io/intercomm-app/ride/?code=CODE` (`docs/ride/index.html`). Invite links open it
+automatically on iPhone ("Join the ride"); on Android they still open the app. It joins the same LiveKit ride and
+speaks the app's message formats, so web and app riders ride together: talk and listen, the rider list (with
+photos, mic and phone-call status, low batteries), Break/Fuel/Food votes, quick messages, SOS with location both
+ways and "I'm OK", spoken alerts, catch-up after a drop, and automatic rejoin. Shared music isn't played in the
+browser (it tells the DJ not to send it the song files). On iPhone, keep the page open: Safari pauses the mic when
+the screen locks or another app is in front.
+
 ## One-time setup
 
 1. Create a free project at [cloud.livekit.io](https://cloud.livekit.io).

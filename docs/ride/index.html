@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RideComm Web</title>
+<meta name="description" content="Join your group's RideComm ride from the browser: talk, listen, votes and SOS. Works on iPhone.">
+<meta name="theme-color" content="#070A14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night: #070A14; --deep: #0E0B22; --text: rgba(255,255,255,.96); --muted: rgba(255,255,255,.7); --faint: rgba(255,255,255,.45);
+    --orange: #FF8A1F; --pink: #FF3D81; --violet: #7C5CFF; --cyan: #22D3EE; --go: #34E89E; --stop: #FF4D6D; --amber: #FFC93C;
+    --glass: linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.04)); --rim: rgba(255,255,255,.22);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh; font-family: Outfit, system-ui, sans-serif; color: var(--text); overflow-x: hidden;
+    background: linear-gradient(var(--night), var(--deep)); background-attachment: fixed;
+  }
+  .glow { position: fixed; border-radius: 50%; filter: blur(70px); z-index: 0; pointer-events: none; }
+  .g1 { width: 70vw; height: 70vw; background: var(--violet); top: -20vw; left: -20vw; opacity: .5; }
+  .g2 { width: 60vw; height: 60vw; background: var(--pink); top: 35vh; right: -25vw; opacity: .35; }
+  .g3 { width: 60vw; height: 60vw; background: var(--cyan); bottom: -25vw; left: -10vw; opacity: .25; }
+  main { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px calc(210px + env(safe-area-inset-bottom)); }
+  .card { background: var(--glass); border: 1px solid var(--rim); border-radius: 26px; padding: 20px; margin-top: 14px;
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+  h1 { margin: 0; font-size: 26px; font-weight: 800; }
+  p { margin: 6px 0 0; color: var(--muted); font-size: 16px; line-height: 1.35; }
+  .label { font-size: 13px; letter-spacing: 1.4px; color: var(--faint); font-weight: 600; text-transform: uppercase; }
+  .hidden { display: none !important; }
+  svg.i { width: 24px; height: 24px; fill: currentColor; flex: none; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 58px; border-radius: 999px;
+    font-weight: 600; font-size: 18px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.1); color: var(--text); text-decoration: none; }
+  .btn.primary { background: linear-gradient(90deg, var(--orange), var(--pink)); border-color: rgba(255,255,255,.4); }
+  .btn.go { background: linear-gradient(90deg, #34E89E, #0FB5A8); color: #052; }
+  .btn.stop { background: linear-gradient(90deg, #FF5E62, #E5245E); }
+  .btn:disabled { opacity: .45; }
+  input { width: 100%; height: 58px; border-radius: 18px; border: 1px solid var(--rim); background: rgba(255,255,255,.07);
+    color: var(--text); font: 600 20px Outfit, sans-serif; padding: 0 16px; margin-top: 8px; outline: none; }
+  input.code { text-align: center; letter-spacing: 8px; font-size: 30px; text-transform: uppercase; }
+  .field { margin-top: 16px; }
+  .logo { width: 60px; height: 60px; border-radius: 18px; display: grid; place-items: center; flex: none;
+    background: linear-gradient(135deg, var(--orange), var(--pink)); border: 1px solid rgba(255,255,255,.4); }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .grow { flex: 1; min-width: 0; }
+  .note { margin-top: 14px; font-size: 14px; color: var(--faint); }
+  .error { color: var(--stop); margin-top: 12px; font-size: 15px; }
+
+  /* Ride */
+  .code-big { font-size: 38px; font-weight: 800; letter-spacing: 4px; line-height: 1.1; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; margin-top: 12px;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.18); font-size: 15px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--go); }
+  .sos-btn { width: 76px; height: 76px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); font-weight: 800; font-size: 22px;
+    background: radial-gradient(circle at 35% 30%, #FF7A8E, #E5245E); flex: none; }
+  .rider { display: flex; align-items: center; gap: 14px; padding: 9px 0; }
+  .avatar { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 20px; flex: none;
+    background: linear-gradient(135deg, var(--violet), var(--cyan)) center/cover; border: 3px solid transparent; }
+  .avatar.me { background-image: linear-gradient(135deg, var(--orange), var(--pink)); }
+  .avatar.talking { border-color: var(--go); box-shadow: 0 0 0 3px rgba(52,232,158,.25); }
+  .rname { font-weight: 600; font-size: 18px; }
+  .rsub { color: var(--muted); font-size: 15px; }
+  .rsub.talking { color: var(--go); } .rsub.call { color: var(--amber); }
+  .tag { font-size: 14px; color: var(--amber); display: flex; align-items: center; gap: 4px; }
+  .tag.low { color: var(--stop); }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+  .tile { min-height: 92px; border-radius: 22px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.07);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 16px; }
+  .tile svg { width: 32px; height: 32px; }
+  .tile.vote svg { color: var(--amber); } .tile.say svg { color: var(--cyan); }
+  .tile:disabled { opacity: .4; }
+  .timeline { height: 6px; border-radius: 999px; background: rgba(255,255,255,.12); overflow: hidden; margin-top: 12px; }
+  .timeline > div { height: 100%; width: 100%; background: linear-gradient(90deg, var(--orange), var(--pink)); transform-origin: left; }
+  .alert { border-color: rgba(255,77,109,.7); background: linear-gradient(135deg, rgba(255,77,109,.35), rgba(255,77,109,.12)); }
+  .music { color: var(--muted); font-size: 15px; margin-top: 10px; display: flex; gap: 8px; align-items: center; }
+
+  .dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; padding: 12px 16px max(14px, env(safe-area-inset-bottom)); }
+  .dock-in { max-width: 520px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 12px 20px;
+    border-radius: 34px; border: 1px solid var(--rim); background: rgba(20,18,40,.75); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+  .side { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); background: none; border: 0; }
+  .side .circ { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--rim); background: rgba(255,255,255,.08); }
+  .mic { width: 92px; height: 92px; border-radius: 50%; border: 3px solid rgba(255,255,255,.25); display: grid; place-items: center;
+    background: linear-gradient(135deg, #34E89E, #0FB5A8); }
+  .mic svg { width: 42px; height: 42px; }
+  .mic.off { background: linear-gradient(135deg, #FF5E62, #E5245E); }
+  .mic.talking { border-color: rgba(255,255,255,.75); transform: scale(1.05); }
+  .miclabel { text-align: center; font-size: 13px; margin-top: 4px; color: var(--go); }
+  .miclabel.off { color: var(--stop); }
+
+  .banner { position: fixed; top: max(10px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 20; width: calc(100% - 32px);
+    max-width: 488px; padding: 14px 18px; border-radius: 20px; background: rgba(30,26,58,.92); border: 1px solid var(--rim); font-size: 17px;
+    transition: opacity .3s, transform .3s; }
+  .banner.gone { opacity: 0; transform: translate(-50%, -20px); pointer-events: none; }
+  .overlay { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    background: rgba(229,36,94,.92); text-align: center; padding: 24px; }
+  .overlay .n { font-size: 120px; font-weight: 800; line-height: 1; }
+  .unlock { position: fixed; inset: auto 16px 140px; z-index: 25; }
+</style>
+</head>
+<body>
+<div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>
+
+<main>
+  <!-- Join -->
+  <section id="join">
+    <div class="card">
+      <div class="row">
+        <div class="logo"><svg class="i" style="width:32px;height:32px;color:#fff" viewBox="0 -960 960 960"><path d="M160-200q-66 0-113-47T0-360q0-57 36.5-101t93.5-55l-28-24H30q-13 0-21.5-8.5T0-570q0-13 8.5-21.5T30-600h150l100 60 146-55q7-2 14-3.5t15-1.5h111l-62-80h-64q-17 0-28.5-11.5T400-720q0-17 11.5-28.5T440-760h63q19 0 35.5 8.5T566-729l60 77 105-53q10-5 19.5 1t9.5 17v67q0 8-6 14t-14 6h-72l70 92q15-6 30.5-9t31.5-3q66 0 113 47t47 113q0 66-47 113t-113 47q-66 0-113-47t-47-113q0-27 9.5-52.5T676-460l-20-24-124 186q-5 8-14 13t-19 5h-84q-8 0-14.5-2.5T389-290l-69-60q-5 63-51 106.5T160-200Zm0-80q33 0 56.5-23.5T240-360q0-33-23.5-56.5T160-440q-33 0-56.5 23.5T80-360q0 33 23.5 56.5T160-280Zm640 0q33 0 56.5-23.5T880-360q0-33-23.5-56.5T800-440q-33 0-56.5 23.5T720-360q0 33 23.5 56.5T800-280Z"/></svg></div>
+        <div class="grow"><h1>RideComm Web</h1><p>Ride with your group from the browser. Works on iPhone.</p></div>
+      </div>
+      <div class="field"><div class="label">Ride code</div><input id="codeIn" class="code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="CODE"></div>
+      <div class="field"><div class="label">Your name</div><input id="nameIn" maxlength="20" autocomplete="nickname" placeholder="e.g. Rahul"></div>
+      <div class="field"><button class="btn primary" id="joinBtn">Join ride</button></div>
+      <div class="error hidden" id="joinErr"></div>
+      <p class="note">Use earphones or your helmet headset. Keep this page open while riding: on iPhone, locking the screen or switching apps can pause your mic. Shared music plays in the Android app only.</p>
+    </div>
+  </section>
+
+  <!-- Ride -->
+  <section id="ride" class="hidden">
+    <div class="row" style="margin-top:6px">
+      <div class="grow">
+        <div class="label">Ride code</div>
+        <div class="code-big" id="codeOut"></div>
+      </div>
+      <button class="sos-btn" id="sosBtn" aria-label="SOS">SOS</button>
+    </div>
+    <div class="pill" id="status"><span class="dot" id="statusDot"></span><span id="statusText">Joining…</span></div>
+    <div id="alerts"></div>
+    <div class="card hidden" id="mySos">
+      <div class="rname">Your SOS was sent</div>
+      <p id="mySosText">The group can see where you are.</p>
+      <div class="field"><button class="btn go" id="okBtn">I'm OK</button></div>
+    </div>
+    <div class="card">
+      <div class="label">Riders</div>
+      <div id="riders" style="margin-top:6px"></div>
+      <div class="music hidden" id="music"></div>
+    </div>
+    <div class="card hidden" id="voteCard"></div>
+    <div class="card">
+      <div class="label">Ask the group</div>
+      <div class="grid3" id="votes"></div>
+      <div class="label" style="margin-top:18px">Quick message</div>
+      <div class="grid2" id="says"></div>
+    </div>
+  </section>
+</main>
+
+<div class="dock hidden" id="dock">
+  <div class="dock-in">
+    <button class="side" id="leaveBtn"><span class="circ" style="color:var(--stop)"><svg class="i" viewBox="0 -960 960 960"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h240q17 0 28.5 11.5T480-800q0 17-11.5 28.5T440-760H200v560h240q17 0 28.5 11.5T480-160q0 17-11.5 28.5T440-120H200Zm487-320H400q-17 0-28.5-11.5T360-480q0-17 11.5-28.5T400-520h287l-75-75q-11-11-11-27t11-28q11-12 28-12.5t29 11.5l143 143q12 12 12 28t-12 28L669-309q-12 12-28.5 11.5T612-310q-11-12-10.5-28.5T613-366l74-74Z"/></svg></span>Leave</button>
+    <div><button class="mic" id="micBtn" aria-label="Mute"></button><div class="miclabel" id="micLabel">Mic on</div></div>
+    <button class="side" id="shareBtn"><span class="circ"><svg class="i" viewBox="0 -960 960 960"><path d="M680-80q-50 0-85-35t-35-85q0-6 3-28L282-392q-16 15-37 23.5t-45 8.5q-50 0-85-35t-35-85q0-50 35-85t85-35q24 0 45 8.5t37 23.5l281-164q-2-7-2.5-13.5T560-760q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35q-24 0-45-8.5T598-672L317-508q2 7 2.5 13.5t.5 14.5q0 8-.5 14.5T317-452l281 164q16-15 37-23.5t45-8.5q50 0 85 35t35 85q0 50-35 85t-85 35Z"/></svg></span>Share</button>
+  </div>
+</div>
+
+<button class="btn primary unlock hidden" id="unlockBtn">Tap to turn on sound</button>
+<div class="banner gone" id="banner"></div>
+<div class="overlay hidden" id="countdown"><div class="label" style="color:#fff">Sending SOS in</div><div class="n" id="countN">5</div><div style="font-size:20px">Tap anywhere to cancel</div></div>
+<div id="audio" class="hidden"></div>
+
+<!-- Loaded in the background so the page works at once; a second CDN steps in if the first fails. -->
+<script async src="https://cdn.jsdelivr.net/npm/livekit-client@2.22.3/dist/livekit-client.umd.js"
+  onerror="var s=document.createElement('script');s.src='https://unpkg.com/livekit-client@2.22.3/dist/livekit-client.umd.js';document.head.appendChild(s)"></script>
+<script>
+(() => {
+  'use strict';
+  // Same server and message formats as the Android app, so web and app riders share one ride.
+  const params = new URLSearchParams(location.search);
+  const TOKEN_SERVER = params.get('ts') || 'ridecomm-xnnn94';
+  const CODE_RE = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/;
+  const T = { vote: 'rc-vote', sos: 'rc-sos', rider: 'rc-rider', music: 'rc-music', avatar: 'rc-avatar' };
+  const VOTE_TIMEOUT_MS = 45000, RESULT_SHOWN_MS = 6000, CATCH_UP_WINDOW_MS = 5 * 60000, BYE_VALID_MS = 30000;
+  const P = {
+    mic: 'M395-435q-35-35-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35q-50 0-85-35Zm45 275v-83q-92-13-157.5-78T203-479q-2-17 9-29t28-12q17 0 28.5 11.5T284-480q14 70 69.5 115T480-320q72 0 127-45.5T676-480q4-17 15.5-28.5T720-520q17 0 28 12t9 29q-14 91-79 157t-158 79v83q0 17-11.5 28.5T480-120q-17 0-28.5-11.5T440-160Z',
+    micOff: 'M672-377q-14-8-18-24.5t4-30.5q7-11 11.5-23.5T676-481q4-17 15.5-28t28.5-11q17 0 28 12t9 29q-3 23-10.5 45T727-392q-8 14-24.5 18.5T672-377ZM532-542 383-691q-11-11-17-25.5t-6-30.5v-13q0-50 35-85t85-35q50 0 85 35t35 85v189q0 27-24.5 37.5T532-542Zm-92 382v-84q-92-12-157.5-77T203-479q-2-17 9-29t28-12q17 0 28.5 11.5T284-480q14 70 69.5 115T480-320q34 0 64.5-10.5T600-360l57 57q-29 23-63.5 38.5T520-244v84q0 17-11.5 28.5T480-120q-17 0-28.5-11.5T440-160Zm324 76L84-764q-11-11-11-28t11-28q11-11 28-11t28 11l680 680q11 11 11 28t-11 28q-11 11-28 11t-28-11Z',
+    coffee: 'M440-240q-117 0-198.5-81.5T160-520v-240q0-33 23.5-56.5T240-840h500q58 0 99 41t41 99q0 58-41 99t-99 41h-20v40q0 117-81.5 198.5T440-240ZM240-640h400v-120H240v120Zm480 0h20q25 0 42.5-17.5T800-700q0-25-17.5-42.5T740-760h-20v120ZM200-120q-17 0-28.5-11.5T160-160q0-17 11.5-28.5T200-200h560q17 0 28.5 11.5T800-160q0 17-11.5 28.5T760-120H200Z',
+    fuel: 'M160-160v-600q0-33 23.5-56.5T240-840h240q33 0 56.5 23.5T560-760v280h40q33 0 56.5 23.5T680-400v180q0 17 11.5 28.5T720-180q17 0 28.5-11.5T760-220v-288q-9 5-19 6.5t-21 1.5q-42 0-71-29t-29-71q0-32 17.5-57.5T684-694l-63-63q-9-9-9-21t9-21q8-8 20.5-8.5T663-800l127 124q15 15 22.5 35t7.5 41v380q0 42-29 71t-71 29q-42 0-71-29t-29-71v-200h-60v260q0 17-11.5 28.5T520-120H200q-17 0-28.5-11.5T160-160Zm80-400h240v-200H240v200Zm480 0q17 0 28.5-11.5T760-600q0-17-11.5-28.5T720-640q-17 0-28.5 11.5T680-600q0 17 11.5 28.5T720-560Z',
+    food: 'M280-600v-240q0-17 11.5-28.5T320-880q17 0 28.5 11.5T360-840v240h40v-240q0-17 11.5-28.5T440-880q17 0 28.5 11.5T480-840v240q0 56-34.5 98T360-446v326q0 17-11.5 28.5T320-80q-17 0-28.5-11.5T280-120v-326q-51-14-85.5-56T160-600v-240q0-17 11.5-28.5T200-880q17 0 28.5 11.5T240-840v240h40Zm400 200h-80q-17 0-28.5-11.5T560-440v-240q0-70 51.5-135T718-880q18 0 30 14t12 33v713q0 17-11.5 28.5T720-80q-17 0-28.5-11.5T680-120v-280Z',
+    speed: 'M418-340q25 25 63 23.5t55-27.5l169-253q9-14-2.5-25.5T677-625L424-456q-26 18-28.5 54.5T418-340ZM204-160q-22 0-40.5-9.5T134-198q-26-47-40-97.5T80-400q0-83 31.5-156T197-683q54-54 127-85.5T480-800q82 0 154 31t126 84.5q54 53.5 86 125T879-406q1 55-12.5 107.5T825-198q-11 19-29.5 28.5T755-160H204Z',
+    hand: 'M259-139q-99-99-99-241v-380q0-17 11.5-28.5T200-800q17 0 28.5 11.5T240-760v240h80v-320q0-17 11.5-28.5T360-880q17 0 28.5 11.5T400-840v320h80v-360q0-17 11.5-28.5T520-920q17 0 28.5 11.5T560-880v360h80v-280q0-17 11.5-28.5T680-840q17 0 28.5 11.5T720-800v230q-29 21-44.5 53T660-450v50h-50q-63 0-106.5 43.5T460-250v50q0 13 8.5 21.5T490-170q13 0 21.5-8.5T520-200v-50q0-38 26-64t64-26h70q17 0 28.5-11.5T720-380v-70q0-38 26-64t64-26q13 0 21.5 8.5T840-510v130q0 142-99 241T500-40q-142 0-241-99Z',
+    pin: 'M452-112q-14-5-25-15-65-60-115-117t-83.5-110.5q-33.5-53.5-51-103T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 45-17.5 94.5t-51 103Q698-301 648-244T533-127q-11 10-25 15t-28 5q-14 0-28-5Zm84.5-391.5Q560-527 560-560t-23.5-56.5Q513-640 480-640t-56.5 23.5Q400-593 400-560t23.5 56.5Q447-480 480-480t56.5-23.5Z',
+    note: 'M400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-382q0-17 11.5-28.5T520-840h160q17 0 28.5 11.5T720-800v80q0 17-11.5 28.5T680-680H560v400q0 66-47 113t-113 47Z',
+  };
+  const icon = (d) => '<svg class="i" viewBox="0 -960 960 960"><path d="' + d + '"/></svg>';
+  const KINDS = {
+    BREAK: { label: 'Break', asking: 'wants a break', stop: 'Break', icon: P.coffee },
+    FUEL: { label: 'Fuel', asking: 'wants to stop for fuel', stop: 'Fuel stop', icon: P.fuel },
+    FOOD: { label: 'Food', asking: 'wants to stop for food', stop: 'Food stop', icon: P.food },
+  };
+  const QUICK = {
+    SLOW_DOWN: { label: 'Slow down', says: 'slow down', icon: P.speed },
+    WAIT: { label: 'Wait for me', says: 'wait for me', icon: P.hand },
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+  const newId = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+  // ---- State ----
+  let myId = store.get('rc-web-id');
+  if (!myId) { myId = 'web-' + newId(); store.set('rc-web-id', myId); }
+  const S = {
+    room: null, code: null, name: '', leaving: false, retry: null, offlineSince: null,
+    vote: null, myVote: null, voteTimer: null, result: null, resultTimer: null,
+    mySays: [], startedByMe: new Set(), myFinished: null,
+    alerts: new Map(), mySos: null, mySosDelivered: false, countdown: null,
+    photos: new Map(), batteries: new Map(), onCall: new Set(), byes: new Map(), dropped: new Set(), seen: new Set(),
+    music: null, wakeLock: null,
+  };
+
+  // ---- Speech, sound, banner ----
+  function speak(text) {
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-IN'; u.rate = 1.0;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  let bannerTimer = null;
+  function banner(text) {
+    const b = $('banner'); b.textContent = text; b.classList.remove('gone');
+    clearTimeout(bannerTimer); bannerTimer = setTimeout(() => b.classList.add('gone'), 3500);
+  }
+  let audioCtx = null;
+  function siren(seconds = 5) {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'square'; g.gain.value = 0.08; o.connect(g); g.connect(audioCtx.destination);
+      const t0 = audioCtx.currentTime;
+      for (let i = 0; i < seconds * 2; i++) o.frequency.setValueAtTime(i % 2 ? 620 : 960, t0 + i * 0.5);
+      o.start(t0); o.stop(t0 + seconds);
+    } catch (e) {}
+  }
+  function vibrate(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+
+  // ---- Sending ----
+  async function send(topic, obj, to) {
+    const r = S.room; if (!r) return false;
+    try {
+      await r.localParticipant.sendText(JSON.stringify(obj), { topic, destinationIdentities: to || [] });
+      return true;
+    } catch (e) { console.warn('send failed', topic, e); return false; }
+  }
+  const nameOf = (identity) => {
+    const p = S.room && S.room.remoteParticipants.get(identity);
+    return (p && p.name) || 'A rider';
+  };
+  const riderCount = () => (S.room ? S.room.remoteParticipants.size + 1 : 1);
+
+  // ---- Votes (same rules as the app) ----
+  function outcome(yes, no, riders, timedOut) {
+    const eligible = Math.max(riders, yes + no, 1);
+    if (yes * 2 > eligible) return true;
+    if (no * 2 >= eligible) return false;
+    if (yes + no >= eligible || timedOut) return yes > no;
+    return null;
+  }
+  const tally = (v) => { let y = 0, n = 0; Object.values(v.ballots).forEach((b) => (b.yes ? y++ : n++)); return [y, n]; };
+  const startMsg = (v) => ({ t: 'start', id: v.id, kind: v.kind, name: v.starterName, at: v.startedAt, riders: v.riders });
+
+  function openVote(v, myVote) {
+    S.vote = v; S.myVote = myVote; S.vote.openedAt = Date.now();
+    clearTimeout(S.voteTimer); S.voteTimer = setTimeout(() => check(true), VOTE_TIMEOUT_MS);
+    renderVote();
+  }
+  function check(timedOut) {
+    const v = S.vote; if (!v) return;
+    const [y, n] = tally(v);
+    const ok = outcome(y, n, v.riders, !!timedOut);
+    if (ok === null) { renderVote(); return; }
+    clearTimeout(S.voteTimer);
+    S.vote = null; S.myVote = null;
+    S.result = { kind: v.kind, approved: ok, yes: y, no: n };
+    if (S.startedByMe.has(v.id)) S.myFinished = { vote: v, approved: ok, yes: y, no: n, at: Date.now() };
+    speak(KINDS[v.kind].stop + (ok ? ' approved. ' : ' not approved. ') + y + ' yes, ' + n + ' no.');
+    clearTimeout(S.resultTimer); S.resultTimer = setTimeout(() => { S.result = null; renderVote(); }, RESULT_SHOWN_MS);
+    renderVote();
+  }
+  function startVote(kind) {
+    if (S.vote) { banner('A vote is already running'); return; }
+    const v = { id: newId(), kind, starterName: S.name, startedAt: Date.now(), riders: riderCount(), ballots: { [myId]: { name: S.name, yes: true } } };
+    S.startedByMe.add(v.id);
+    openVote(v, true);
+    send(T.vote, startMsg(v));
+    banner('Asked the group: ' + KINDS[kind].label.toLowerCase());
+    check(false);
+  }
+  function cast(yes) {
+    const v = S.vote; if (!v || S.myVote !== null) return;
+    v.ballots[myId] = { name: S.name, yes }; S.myVote = yes;
+    send(T.vote, { t: 'cast', id: v.id, name: S.name, yes });
+    vibrate(30); check(false);
+  }
+  function sendQuick(key) {
+    send(T.vote, { t: 'say', msg: key, name: S.name });
+    const now = Date.now();
+    S.mySays.push([key, now]); S.mySays = S.mySays.filter(([, at]) => now - at <= CATCH_UP_WINDOW_MS);
+    speak('Sent: ' + QUICK[key].label); banner('Sent: ' + QUICK[key].label); vibrate(30);
+  }
+  function onVote(o, from) {
+    switch (o.t) {
+      case 'start': {
+        if (!KINDS[o.kind]) return;
+        const ballots = {};
+        (o.ballots || []).forEach((b) => { ballots[b.id] = { name: b.name, yes: !!b.yes }; });
+        ballots[from] = { name: o.name, yes: true };
+        const v = { id: o.id, kind: o.kind, starterName: o.name, startedAt: o.at, riders: o.riders, ballots };
+        if (S.vote && S.vote.id === v.id) return;
+        const cur = S.vote;
+        if (cur && (cur.startedAt < v.startedAt || (cur.startedAt === v.startedAt && cur.id <= v.id))) return;
+        openVote(v, ballots[myId] ? ballots[myId].yes : null);
+        vibrate([60, 60, 60]);
+        speak((o.late ? 'While you were offline, ' : '') + v.starterName + ' ' + KINDS[v.kind].asking + '. Vote now.');
+        check(false);
+        break;
+      }
+      case 'cast': {
+        const v = S.vote; if (!v || v.id !== o.id) return;
+        v.ballots[from] = { name: o.name, yes: !!o.yes }; check(false);
+        break;
+      }
+      case 'say': {
+        const q = QUICK[o.msg]; if (!q) return;
+        vibrate(60);
+        const text = o.late ? 'While you were offline, ' + o.name + ' said ' + q.says : o.name + ' says ' + q.says;
+        speak(text); banner(text);
+        break;
+      }
+      case 'result': {
+        const k = KINDS[o.kind]; if (!k) return;
+        speak('While you were offline: ' + k.stop + (o.approved ? ' approved. ' : ' not approved. ') + o.yes + ' yes, ' + o.no + ' no.');
+        break;
+      }
+      case 'catchup': replyCatchUp(from, o.since); break;
+    }
+  }
+  function replyCatchUp(to, since) {
+    S.mySays.filter(([, at]) => at >= since).forEach(([key]) => send(T.vote, { t: 'say', msg: key, name: S.name, late: true }, [to]));
+    const v = S.vote;
+    if (v && S.startedByMe.has(v.id)) {
+      const ballots = Object.entries(v.ballots).map(([id, b]) => ({ id, name: b.name, yes: b.yes }));
+      send(T.vote, Object.assign(startMsg(v), { ballots, late: true }), [to]);
+    }
+    const f = S.myFinished;
+    if (f && f.at >= since) send(T.vote, { t: 'result', id: f.vote.id, kind: f.vote.kind, approved: f.approved, yes: f.yes, no: f.no }, [to]);
+  }
+
+  // ---- SOS ----
+  function sosMsg(lat, lon) {
+    const o = { t: 'sos', name: S.name, at: S.mySos.at, crash: false };
+    if (lat != null) { o.lat = lat; o.lon = lon; }
+    return o;
+  }
+  function startCountdown() {
+    if (S.countdown || S.mySos) return;
+    let left = 5;
+    $('countN').textContent = left; $('countdown').classList.remove('hidden');
+    speak('SOS in 5 seconds. Tap to cancel.'); vibrate(200);
+    S.countdown = setInterval(() => {
+      left--;
+      if (left <= 0) { stopCountdown(); sendSos(); return; }
+      $('countN').textContent = left; speak(String(left)); vibrate(200);
+    }, 1000);
+  }
+  function stopCountdown(cancelled) {
+    clearInterval(S.countdown); S.countdown = null; $('countdown').classList.add('hidden');
+    if (cancelled) speak('SOS cancelled');
+  }
+  async function sendSos() {
+    S.mySos = { at: Date.now(), lat: null, lon: null };
+    S.mySosDelivered = await send(T.sos, sosMsg());
+    renderMySos();
+    speak(S.mySosDelivered ? 'SOS sent to the group' : 'No connection. Your SOS will go out when you are back online.');
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((p) => {
+        if (!S.mySos) return;
+        S.mySos.lat = p.coords.latitude; S.mySos.lon = p.coords.longitude;
+        send(T.sos, sosMsg(S.mySos.lat, S.mySos.lon)).then((ok) => { if (ok) S.mySosDelivered = true; renderMySos(); });
+      }, () => {}, { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 });
+    }
+  }
+  function imOk() {
+    if (!S.mySos) return;
+    S.mySos = null; renderMySos();
+    send(T.sos, { t: 'ok', name: S.name });
+    speak("Told the group you're OK");
+  }
+  function onSos(o, from) {
+    if (o.t === 'sos') {
+      const isNew = !S.alerts.has(from);
+      S.alerts.set(from, { name: o.name, lat: o.lat, lon: o.lon, crash: !!o.crash, at: o.at });
+      if (isNew) {
+        siren(5); vibrate([400, 200, 400, 200, 400]);
+        setTimeout(() => speak('S O S. ' + o.name + (o.crash ? ' may have crashed.' : ' needs help.')), 300);
+      }
+      renderAlerts();
+    } else if (o.t === 'ok') {
+      if (!S.alerts.has(from)) return;
+      S.alerts.delete(from); renderAlerts(); speak(o.name + ' is OK');
+    } else if (o.t === 'catchup') {
+      if (S.mySos) send(T.sos, sosMsg(S.mySos.lat, S.mySos.lon), [from]);
+    }
+  }
+
+  // ---- Rider alerts ----
+  function onRider(o, from) {
+    if (o.t === 'bye') S.byes.set(from, Date.now());
+    else if (o.t === 'call') {
+      const on = !!o.on;
+      if (on === S.onCall.has(from)) return;
+      on ? S.onCall.add(from) : S.onCall.delete(from);
+      speak(nameOf(from) + (on ? ' is on a phone call' : ' is back from the phone call'));
+      renderRiders();
+    } else if (o.t === 'battery') {
+      S.batteries.set(from, { level: o.level, charging: !!o.charging });
+      renderRiders();
+    }
+  }
+  function onJoined(p) {
+    const id = p.identity;
+    S.byes.delete(id);
+    const back = S.dropped.delete(id);
+    S.seen.add(id);
+    speak((p.name || 'A rider') + (back ? ' is back' : ' joined the ride'));
+    // Song files are for the Android app; tell a DJ not to send them here.
+    send(T.music, { t: 'saving', on: true }, [id]);
+  }
+  function onLeft(p) {
+    const id = p.identity, name = p.name || 'A rider';
+    S.batteries.delete(id); S.onCall.delete(id);
+    const bye = S.byes.get(id); S.byes.delete(id);
+    if (bye && Date.now() - bye <= BYE_VALID_MS) { speak(name + ' left the ride'); return; }
+    S.dropped.add(id);
+    const room = S.room;
+    setTimeout(() => {
+      if (S.room === room && room && room.state === 'connected') speak(name + ' dropped out. Probably no signal.');
+    }, 2500);
+  }
+
+  // ---- Rendering ----
+  function renderRiders() {
+    const r = S.room; if (!r) return;
+    const list = [r.localParticipant, ...Array.from(r.remoteParticipants.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''))];
+    $('riders').innerHTML = list.map((p) => {
+      const me = p === r.localParticipant;
+      const muted = !p.isMicrophoneEnabled;
+      const talking = p.isSpeaking && !muted;
+      const call = S.onCall.has(p.identity);
+      const photo = S.photos.get(p.identity);
+      const bat = S.batteries.get(p.identity);
+      const sub = call ? 'On a phone call' : muted ? 'Mic off' : talking ? 'Talking' : 'Listening';
+      const subCls = call ? 'call' : talking ? 'talking' : '';
+      const batTag = bat && !bat.charging && bat.level <= 30 ? '<span class="tag' + (bat.level <= 10 ? ' low' : '') + '">' + bat.level + '%</span>' : '';
+      const name = esc(p.name || 'Rider') + (me ? ' (you)' : '');
+      const avatar = '<div class="avatar' + (me ? ' me' : '') + (talking ? ' talking' : '') + '"' +
+        (photo ? ' style="background-image:url(' + photo + ')"' : '') + '>' + (photo ? '' : esc((p.name || 'R').charAt(0).toUpperCase())) + '</div>';
+      return '<div class="rider">' + avatar + '<div class="grow"><div class="rname">' + name + '</div><div class="rsub ' + subCls + '">' + sub +
+        '</div></div>' + batTag + (muted ? '<span style="color:var(--stop)">' + icon(P.micOff) + '</span>' : '') + '</div>';
+    }).join('');
+    const me = r.localParticipant;
+    const muted = !me.isMicrophoneEnabled;
+    $('micBtn').className = 'mic' + (muted ? ' off' : '') + (me.isSpeaking && !muted ? ' talking' : '');
+    $('micBtn').innerHTML = icon(muted ? P.micOff : P.mic);
+    $('micLabel').className = 'miclabel' + (muted ? ' off' : '');
+    $('micLabel').textContent = muted ? 'Mic off · tap to talk' : 'Mic on';
+  }
+  function renderVote() {
+    const card = $('voteCard');
+    const v = S.vote, res = S.result;
+    document.querySelectorAll('#votes button').forEach((b) => { b.disabled = !!v; });
+    if (!v && !res) { card.classList.add('hidden'); return; }
+    card.classList.remove('hidden');
+    if (!v) {
+      const k = KINDS[res.kind];
+      card.innerHTML = '<div class="row">' + icon(k.icon) + '<div class="grow"><div class="rname">' + k.stop + (res.approved ? ' approved' : ' not approved') +
+        '</div><div class="rsub">' + res.yes + ' yes · ' + res.no + ' no</div></div></div>';
+      return;
+    }
+    const k = KINDS[v.kind];
+    const [y, n] = tally(v);
+    const left = Math.max(0, VOTE_TIMEOUT_MS - (Date.now() - v.openedAt));
+    let html = '<div class="row"><span style="color:var(--amber)">' + icon(k.icon) + '</span><div class="grow"><div class="rname">' +
+      esc(v.starterName) + ' ' + k.asking + '</div><div class="rsub">' + y + ' yes · ' + n + ' no · ' + v.riders + ' riders</div></div></div>' +
+      '<div class="timeline"><div id="voteLine"></div></div>';
+    if (S.myVote === null) {
+      html += '<div class="grid2"><button class="btn go" data-cast="yes">' + icon('M840-640q32 0 56 24t24 56v80q0 7-1.5 15t-4.5 15L794-168q-9 20-30 34t-44 14H400q-33 0-56.5-23.5T320-200v-407q0-16 6.5-30.5T344-663l217-216q15-14 35.5-17t39.5 7q19 10 27.5 28t3.5 37l-45 184h218ZM160-120q-33 0-56.5-23.5T80-200v-360q0-33 23.5-56.5T160-640q33 0 56.5 23.5T240-560v360q0 33-23.5 56.5T160-120Z') + 'Yes</button>' +
+        '<button class="btn stop" data-cast="no">' + icon('M120-320q-32 0-56-24t-24-56v-80q0-7 1.5-15t4.5-15l120-282q9-20 30-34t44-14h320q33 0 56.5 23.5T640-760v407q0 16-6.5 30.5T616-297L399-81q-15 14-35.5 17T324-71q-19-10-27.5-28t-3.5-37l45-184H120Zm680-520q33 0 56.5 23.5T880-760v360q0 33-23.5 56.5T800-320q-33 0-56.5-23.5T720-400v-360q0-33 23.5-56.5T800-840Z') + 'No</button></div>';
+    } else {
+      html += '<p>You voted ' + (S.myVote ? 'yes' : 'no') + '.</p>';
+    }
+    card.innerHTML = html;
+    const line = $('voteLine');
+    line.style.transition = 'none'; line.style.transform = 'scaleX(' + left / VOTE_TIMEOUT_MS + ')';
+    requestAnimationFrame(() => requestAnimationFrame(() => { line.style.transition = 'transform ' + left + 'ms linear'; line.style.transform = 'scaleX(0)'; }));
+  }
+  function renderAlerts() {
+    $('alerts').innerHTML = Array.from(S.alerts.entries()).map(([id, a]) => {
+      const map = a.lat != null ? '<a class="btn" style="margin-top:12px;text-decoration:none" target="_blank" rel="noopener" href="https://maps.google.com/?q=' +
+        a.lat + ',' + a.lon + '">' + icon(P.pin) + 'Open map</a>' : '<p>Getting their location…</p>';
+      return '<div class="card alert"><div class="rname">SOS · ' + esc(a.name) + (a.crash ? ' may have crashed' : ' needs help') + '</div>' + map +
+        '<button class="btn" style="margin-top:10px" data-dismiss="' + esc(id) + '">Dismiss</button></div>';
+    }).join('');
+  }
+  function renderMySos() {
+    $('mySos').classList.toggle('hidden', !S.mySos);
+    if (S.mySos) $('mySosText').textContent = S.mySosDelivered ? 'Sent to the group. They can see where you are.' : 'Waiting for internet: it goes out as soon as you are back online.';
+  }
+  function setStatus(text, color) { $('statusText').textContent = text; $('statusDot').style.background = color; }
+  function renderStatus() {
+    const r = S.room; if (!r) return;
+    if (r.state === 'connected') setStatus('Connected · ' + riderCount() + (riderCount() === 1 ? ' rider' : ' riders'), 'var(--go)');
+    else if (r.state === 'reconnecting' || r.state === 'signalReconnecting') setStatus('Weak network, reconnecting…', 'var(--amber)');
+  }
+  function renderAll() { renderRiders(); renderStatus(); }
+
+  // ---- Joining ----
+  async function getPass(code, name) {
+    const res = await fetch('https://cloud-api.livekit.io/api/v2/sandbox/connection-details', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Sandbox-ID': TOKEN_SERVER },
+      body: JSON.stringify({ room_name: 'ride-' + code, participant_name: name, participant_identity: myId }),
+    });
+    if (!res.ok) throw new Error('Could not get into the ride (' + res.status + '). Check the code and your internet.');
+    const d = await res.json();
+    return { url: d.server_url || d.serverUrl, token: d.participant_token || d.participantToken };
+  }
+
+  async function connect() {
+    const { Room, RoomEvent, Track } = LivekitClient;
+    const pass = await getPass(S.code, S.name);
+    const room = new Room({
+      adaptiveStream: false, dynacast: false,
+      audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      publishDefaults: { dtx: true, red: true, audioPreset: { maxBitrate: 24000 } },
+    });
+    const text = (topic, fn) => room.registerTextStreamHandler(topic, async (reader, info) => {
+      try { fn(JSON.parse(await reader.readAll()), info.identity); } catch (e) { console.warn(topic, e); }
+    });
+    text(T.vote, onVote); text(T.sos, onSos); text(T.rider, onRider);
+    text(T.music, (o) => {
+      if (o.t === 'now') { S.music = o; $('music').classList.remove('hidden'); $('music').innerHTML = icon(P.note) + esc(o.dj + ' is playing ' + o.title + ' (in the app)'); }
+      else if (o.t === 'stop') { S.music = null; $('music').classList.add('hidden'); }
+    });
+    room.registerByteStreamHandler(T.avatar, async (reader, info) => {
+      try {
+        const chunks = await reader.readAll();
+        const url = URL.createObjectURL(new Blob(chunks, { type: 'image/jpeg' }));
+        S.photos.set(info.identity, url); renderRiders();
+      } catch (e) {}
+    });
+
+    room
+      .on(RoomEvent.TrackSubscribed, (track) => {
+        if (track.kind !== Track.Kind.Audio) return;
+        const el = track.attach(); el.setAttribute('playsinline', ''); $('audio').appendChild(el);
+      })
+      .on(RoomEvent.TrackUnsubscribed, (track) => track.detach().forEach((el) => el.remove()))
+      .on(RoomEvent.ParticipantConnected, (p) => { onJoined(p); renderAll(); })
+      .on(RoomEvent.ParticipantDisconnected, (p) => { onLeft(p); renderAll(); })
+      .on(RoomEvent.ActiveSpeakersChanged, renderRiders)
+      .on(RoomEvent.TrackMuted, renderRiders).on(RoomEvent.TrackUnmuted, renderRiders)
+      .on(RoomEvent.TrackPublished, renderRiders).on(RoomEvent.LocalTrackPublished, renderRiders)
+      .on(RoomEvent.Reconnecting, () => { if (!S.offlineSince) S.offlineSince = Date.now(); renderStatus(); })
+      .on(RoomEvent.Reconnected, () => { renderStatus(); catchUp(); })
+      .on(RoomEvent.AudioPlaybackStatusChanged, () => $('unlockBtn').classList.toggle('hidden', room.canPlaybackAudio))
+      .on(RoomEvent.Disconnected, () => {
+        if (S.room !== room) return;
+        S.room = null;
+        $('audio').innerHTML = '';
+        if (S.leaving) return;
+        if (!S.offlineSince) S.offlineSince = Date.now();
+        setStatus('Connection lost, rejoining…', 'var(--amber)');
+        scheduleRetry();
+      });
+
+    await room.connect(pass.url, pass.token);
+    S.room = room;
+    room.remoteParticipants.forEach((p) => S.seen.add(p.identity));
+    try { await room.startAudio(); } catch (e) {}
+    $('unlockBtn').classList.toggle('hidden', room.canPlaybackAudio);
+    await room.localParticipant.setMicrophoneEnabled(!S.mutedWanted);
+    // Song files are for the Android app; this browser doesn't download them.
+    send(T.music, { t: 'saving', on: true });
+    renderAll();
+    catchUp();
+  }
+
+  let retryDelay = 2000;
+  function scheduleRetry() {
+    clearTimeout(S.retry);
+    S.retry = setTimeout(async () => {
+      try { await connect(); retryDelay = 2000; }
+      catch (e) { retryDelay = Math.min(retryDelay * 2, 15000); scheduleRetry(); }
+    }, retryDelay);
+  }
+
+  function catchUp() {
+    const since = S.offlineSince; if (!since) return;
+    S.offlineSince = null;
+    const from = since - 5000;
+    send(T.vote, { t: 'catchup', since: from });
+    send(T.sos, { t: 'catchup', since: from });
+    if (S.mySos && !S.mySosDelivered) {
+      send(T.sos, sosMsg(S.mySos.lat, S.mySos.lon)).then((ok) => {
+        if (ok) { S.mySosDelivered = true; renderMySos(); speak('Back online. SOS sent to the group.'); }
+      });
+    } else if (Date.now() - since > 5000) speak('Back online');
+  }
+
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator && !S.wakeLock) S.wakeLock = await navigator.wakeLock.request('screen'); S.wakeLock && S.wakeLock.addEventListener('release', () => { S.wakeLock = null; }); } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.code) keepAwake(); });
+
+  /** The LiveKit library loads in the background; wait for it (slow networks) before joining. */
+  async function liveKitReady() {
+    for (let i = 0; i < 60 && !window.LivekitClient; i++) await new Promise((ok) => setTimeout(ok, 250));
+    if (!window.LivekitClient) throw new Error("Couldn't load RideComm. Check your internet and reload the page.");
+  }
+
+  async function join() {
+    const code = $('codeIn').value.trim().toUpperCase();
+    const name = $('nameIn').value.trim();
+    const err = $('joinErr');
+    err.classList.add('hidden');
+    if (!CODE_RE.test(code)) { err.textContent = 'Enter the 6-letter ride code.'; err.classList.remove('hidden'); return; }
+    if (!name) { err.textContent = 'Enter your name.'; err.classList.remove('hidden'); return; }
+    // Speech and sound need a tap first on iPhone: unlock them now.
+    try { speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch (e) {}
+    try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); } catch (e) {}
+    store.set('rc-web-name', name);
+    S.code = code; S.name = name; S.leaving = false; S.mutedWanted = false;
+    const btn = $('joinBtn'); btn.disabled = true; btn.textContent = 'Joining…';
+    try {
+      await liveKitReady();
+      await connect();
+      $('join').classList.add('hidden'); $('ride').classList.remove('hidden'); $('dock').classList.remove('hidden');
+      $('codeOut').textContent = code;
+      history.replaceState(null, '', '?code=' + code + (params.get('ts') ? '&ts=' + params.get('ts') : ''));
+      keepAwake();
+      speak('Joined ride ' + code.split('').join(' '));
+    } catch (e) {
+      err.textContent = e && e.message && /Permission|NotAllowed/i.test(e.name + e.message)
+        ? 'RideComm needs the microphone. Allow it in the browser and try again.'
+        : (e && e.message) || 'Could not join the ride.';
+      err.classList.remove('hidden');
+      if (S.room) { S.leaving = true; S.room.disconnect(); }
+    } finally {
+      btn.disabled = false; btn.textContent = 'Join ride';
+    }
+  }
+
+  async function leave() {
+    if (!confirm('Leave the ride? You can rejoin with the same code.')) return;
+    S.leaving = true; clearTimeout(S.retry);
+    const r = S.room;
+    if (r) {
+      await Promise.race([send(T.rider, { t: 'bye' }), new Promise((ok) => setTimeout(ok, 600))]);
+      r.disconnect();
+    }
+    S.room = null; S.vote = null; S.result = null; S.alerts.clear(); S.mySos = null;
+    try { S.wakeLock && S.wakeLock.release(); } catch (e) {}
+    $('ride').classList.add('hidden'); $('dock').classList.add('hidden'); $('join').classList.remove('hidden');
+    $('audio').innerHTML = ''; renderAlerts(); renderMySos();
+  }
+
+  // ---- Wiring ----
+  $('votes').innerHTML = Object.entries(KINDS).map(([k, v]) => '<button class="tile vote" data-vote="' + k + '">' + icon(v.icon) + v.label + '</button>').join('');
+  $('says').innerHTML = Object.entries(QUICK).map(([k, v]) => '<button class="tile say" data-say="' + k + '">' + icon(v.icon) + v.label + '</button>').join('');
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-vote],[data-say],[data-cast],[data-dismiss]');
+    if (!t) return;
+    if (t.dataset.vote) startVote(t.dataset.vote);
+    else if (t.dataset.say) sendQuick(t.dataset.say);
+    else if (t.dataset.cast) cast(t.dataset.cast === 'yes');
+    else if (t.dataset.dismiss) { S.alerts.delete(t.dataset.dismiss); renderAlerts(); }
+  });
+  $('joinBtn').addEventListener('click', join);
+  $('leaveBtn').addEventListener('click', leave);
+  $('micBtn').addEventListener('click', async () => {
+    const r = S.room; if (!r) return;
+    const on = !r.localParticipant.isMicrophoneEnabled;
+    S.mutedWanted = !on;
+    try { await r.localParticipant.setMicrophoneEnabled(on); } catch (e) {}
+    speak(on ? 'Mic on' : 'Mic off'); renderRiders();
+  });
+  $('shareBtn').addEventListener('click', async () => {
+    const url = 'https://saquelain.github.io/intercomm-app/join/?code=' + S.code;
+    const text = 'Join my RideComm ride! Code: ' + S.code;
+    try { if (navigator.share) await navigator.share({ title: 'RideComm', text, url }); else { await navigator.clipboard.writeText(text + ' ' + url); banner('Invite link copied'); } } catch (e) {}
+  });
+  $('sosBtn').addEventListener('click', startCountdown);
+  $('countdown').addEventListener('click', () => stopCountdown(true));
+  $('okBtn').addEventListener('click', imOk);
+  $('unlockBtn').addEventListener('click', async () => { try { await S.room.startAudio(); } catch (e) {} $('unlockBtn').classList.add('hidden'); });
+  ['codeIn', 'nameIn'].forEach((id) => $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') join(); }));
+  // Closing the tab counts as leaving (not dropping out); a page kept for "back" doesn't.
+  window.addEventListener('pagehide', (e) => { if (S.room && !e.persisted) send(T.rider, { t: 'bye' }); });
+
+  const preset = (params.get('code') || location.hash.slice(1) || '').toUpperCase();
+  if (CODE_RE.test(preset)) $('codeIn').value = preset;
+  $('nameIn').value = store.get('rc-web-name') || '';
+})();
+</script>
+</body>
+</html>
