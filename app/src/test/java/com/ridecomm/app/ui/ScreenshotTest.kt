@@ -166,6 +166,32 @@ class ScreenshotTest {
     }
 
     @Test
+    fun windFilterTest() = shot("13_wind_filter_test") {
+        val rate = com.ridecomm.app.audio.FilterTester.RATE
+        val rnd = kotlin.random.Random(4)
+        val lp = com.ridecomm.app.audio.Biquad.lowPass(150f, rate)
+        fun voice(t: Int) = (0.25 * kotlin.math.sin(2 * Math.PI * 220 * t / rate) * (0.6 + 0.4 * kotlin.math.sin(2 * Math.PI * 3 * t / rate)) +
+            0.2 * kotlin.math.sin(2 * Math.PI * 1200 * t / rate)).toFloat()
+        // 0.5 s quiet, 2 s talk, 3 s wind, 1.5 s talk, 1 s quiet.
+        val clip = FloatArray(rate * 8) { t ->
+            val sec = t.toFloat() / rate
+            when {
+                sec < 0.5f -> 0f
+                sec < 2.5f -> voice(t)
+                sec < 5.5f -> lp.filter(0.8f * (rnd.nextFloat() * 2 - 1)) * 3f
+                sec < 7f -> voice(t)
+                else -> 0f
+            }
+        }
+        val analysis = com.ridecomm.app.audio.GateAnalysis.run(clip, rate, com.ridecomm.app.audio.NoiseGate.Sensitivity.MEDIUM)
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            LiveMeter(analysis.frames[80])
+            ClipView(clip, analysis, playhead = 0.42f)
+            TotalsRow(analysis.totals)
+        }
+    }
+
+    @Test
     fun windGateSetting() = shot("11_wind_gate_setting") {
         Box(Modifier.padding(16.dp)) { WindGateSetting(com.ridecomm.app.audio.NoiseGate.Sensitivity.MEDIUM) {} }
     }

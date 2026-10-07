@@ -1,5 +1,9 @@
 package com.ridecomm.app.ui
 
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import com.ridecomm.app.audio.MicGate
+import com.ridecomm.app.audio.GateStatus
 import com.ridecomm.app.alerts.BatteryInfo
 import com.ridecomm.app.alerts.BatteryWatch
 import com.ridecomm.app.alerts.RiderAlerts
@@ -87,13 +91,14 @@ fun RideScreen(state: RideState) {
     val photos by ProfileSync.photos.collectAsStateWithLifecycle()
     val myPhoto by Profile.photo.collectAsStateWithLifecycle()
     val batteries by RiderAlerts.batteries.collectAsStateWithLifecycle()
+    val filterStatus by remember { MicGate.live.map { it?.status }.distinctUntilChanged() }.collectAsStateWithLifecycle(null)
     val dataUsed by produceState(DataUsage.usedBytes()) {
         while (true) {
             delay(DATA_REFRESH_MS)
             value = DataUsage.usedBytes()
         }
     }
-    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed, batteries)
+    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed, batteries, filterStatus)
 }
 
 /** The ride screen for given states (split out so screenshots can render any situation). */
@@ -109,6 +114,7 @@ fun RideContent(
     myPhoto: Bitmap? = null,
     dataUsed: Long? = null,
     batteries: Map<String, BatteryInfo> = emptyMap(),
+    filterStatus: GateStatus? = null,
 ) {
     val context = LocalContext.current
     var confirmLeave by remember { mutableStateOf(false) }
@@ -168,6 +174,7 @@ fun RideContent(
             Dock(
                 muted = state.micMuted,
                 speaking = state.riders.firstOrNull { it.isMe }?.isSpeaking == true,
+                filterStatus = filterStatus,
                 onLeave = { confirmLeave = true },
                 onShare = shareCode,
             )
@@ -322,7 +329,7 @@ private fun SignalIcon(signal: Signal) {
 
 /** Bottom bar: Leave, the big mic button, Share. */
 @Composable
-private fun Dock(muted: Boolean, speaking: Boolean, onLeave: () -> Unit, onShare: () -> Unit) {
+private fun Dock(muted: Boolean, speaking: Boolean, filterStatus: GateStatus?, onLeave: () -> Unit, onShare: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -333,7 +340,7 @@ private fun Dock(muted: Boolean, speaking: Boolean, onLeave: () -> Unit, onShare
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         DockSide(R.drawable.ms_logout, "Leave", Palette.Stop, onLeave)
-        MicButton(muted, speaking)
+        MicButton(muted, speaking, filterStatus)
         DockSide(R.drawable.ms_share, "Share", Color.White, onShare)
     }
 }
@@ -348,7 +355,7 @@ private fun DockSide(icon: Int, label: String, tint: Color, onClick: () -> Unit)
 }
 
 @Composable
-private fun MicButton(muted: Boolean, speaking: Boolean) {
+private fun MicButton(muted: Boolean, speaking: Boolean, filterStatus: GateStatus?) {
     val pulse by animateFloatAsState(if (speaking && !muted) 1.06f else 1f, label = "pulse")
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
@@ -365,10 +372,13 @@ private fun MicButton(muted: Boolean, speaking: Boolean) {
             Ico(if (muted) R.drawable.ms_mic_off else R.drawable.ms_mic, 40.dp, Color.White, if (muted) "Unmute" else "Mute")
         }
         Spacer(Modifier.height(6.dp))
-        Text(
-            if (muted) "Mic off · tap to talk" else "Mic on",
-            style = MaterialTheme.typography.labelSmall,
-            color = if (muted) Palette.Stop else Palette.Go,
-        )
+        // The wind filter at work: shows when it's holding back wind instead of sending it.
+        val (label, color) = when {
+            muted -> "Mic off · tap to talk" to Palette.Stop
+            filterStatus == GateStatus.NOISE -> "Mic on · wind blocked" to Palette.Amber
+            filterStatus == GateStatus.VOICE -> "Mic on · sending" to Palette.Go
+            else -> "Mic on" to Palette.Go
+        }
+        Text(label, style = MaterialTheme.typography.labelSmall, color = color)
     }
 }

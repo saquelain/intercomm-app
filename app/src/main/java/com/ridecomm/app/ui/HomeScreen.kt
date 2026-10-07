@@ -335,10 +335,16 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var headsetButtons by remember { mutableStateOf(Prefs.headsetButtons(context)) }
     var windGate by remember { mutableStateOf(Prefs.windGate(context)) }
     var riderAlerts by remember { mutableStateOf(Prefs.riderAlerts(context)) }
+    var testingFilter by remember { mutableStateOf(false) }
+    // The test can change the filter live during a ride; closing without saving puts it back.
+    val cancel = {
+        MicGate.setSensitivity(Prefs.windGate(context))
+        onClose()
+    }
     val voiceAvailable = remember { VoiceCommands.available(context) }
     var voiceCommands by remember { mutableStateOf(Prefs.voiceCommands(context) && voiceAvailable) }
 
-    GlassDialog(onDismiss = onClose) {
+    GlassDialog(onDismiss = cancel) {
         Text("Settings", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp))
         ProfileEditor(riderName) { riderName = it }
         if (!inRide) {
@@ -391,7 +397,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
         )
         Text("Used for SOS when there's no internet.", style = MaterialTheme.typography.bodyMedium)
-        WindGateSetting(windGate) { windGate = it }
+        WindGateSetting(windGate, onTest = { testingFilter = true }) { windGate = it }
         SettingSwitch("Floating ride button", "Controls over Maps and other apps", bubbleOn) { bubbleOn = it }
         SettingSwitch(
             "Crash detection",
@@ -434,7 +440,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             keepMusic,
         ) { keepMusic = it }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            GlassButton("Cancel", modifier = Modifier.weight(1f), onClick = onClose)
+            GlassButton("Cancel", modifier = Modifier.weight(1f), onClick = cancel)
             PrimaryButton("Save", modifier = Modifier.weight(1f), height = 56.dp) {
                 Prefs.setTokenServerId(context, tokenId)
                 Prefs.setRideServerUrl(context, serverUrl)
@@ -460,11 +466,23 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             }
         }
     }
+
+    if (testingFilter) {
+        WindFilterTestDialog(
+            sensitivity = windGate,
+            onSensitivity = {
+                windGate = it
+                if (inRide) MicGate.setSensitivity(it)
+            },
+            inRide = inRide,
+            onClose = { testingFilter = false },
+        )
+    }
 }
 
-/** Off / Low / Medium / High choice for the mic's wind noise gate; applies straight away, even mid-ride. */
+/** Off / Low / Medium / High choice for the mic's wind noise gate, and a way to see it work. */
 @Composable
-internal fun WindGateSetting(value: NoiseGate.Sensitivity?, onChange: (NoiseGate.Sensitivity?) -> Unit) {
+internal fun WindGateSetting(value: NoiseGate.Sensitivity?, onTest: () -> Unit = {}, onChange: (NoiseGate.Sensitivity?) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Wind noise filter", style = MaterialTheme.typography.titleMedium)
         Text(
@@ -472,30 +490,8 @@ internal fun WindGateSetting(value: NoiseGate.Sensitivity?, onChange: (NoiseGate
                 "Higher catches quieter voices but lets more noise through.",
             style = MaterialTheme.typography.bodyMedium,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf(null to "Off", NoiseGate.Sensitivity.LOW to "Low", NoiseGate.Sensitivity.MEDIUM to "Medium", NoiseGate.Sensitivity.HIGH to "High")
-                .forEach { (option, label) ->
-                    val selected = option == value
-                    Box(
-                        Modifier
-                            .weight(1f)
-                            .height(44.dp)
-                            .glass(
-                                RoundedCornerShape(14.dp),
-                                tint = if (selected) Palette.Orange else Color.White,
-                                fillAlpha = if (selected) 0.32f else 0.06f,
-                            )
-                            .clickable { onChange(option) },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            label,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = if (selected) Color.White else Palette.TextSecondary,
-                        )
-                    }
-                }
-        }
+        SensitivityChips(value, onChange)
+        GlassButton("See it working", R.drawable.ms_graphic_eq, Modifier.fillMaxWidth(), height = 48.dp, onClick = onTest)
     }
 }
 

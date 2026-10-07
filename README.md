@@ -23,6 +23,12 @@ other over mobile internet through their helmet headset.
   aren't cut and fades in/out over 5 ms. Silence also lets DTX send almost nothing, saving data, and wind no
   longer makes you show as "talking" or duck everyone's music. Settings → Wind noise filter: Off / Low / Medium
   (default) / High; applies immediately, even mid-ride.
+  Settings → Wind noise filter → **See it working** shows it at work. Off a ride, record 8 seconds (talk, then blow on
+  the mic) and see two waveforms, "your mic heard" (green = voice sent, amber = noise blocked) and "the group
+  hears", with playback of both, and totals for voice sent, noise blocked and how much quieter the noise got.
+  Switching Low/Medium/High re-runs the same recording instantly. On a ride it shows live meters (mic, sent,
+  voice level against the sensitivity line, wind rumble) and totals for the ride, and the mic button's label
+  says "wind blocked" while it's filtering.
 - **Background:** a foreground service keeps the call alive with the screen off or Maps open; the notification has
   Mute and Leave buttons.
 - **Dead zones:** if the connection drops, the app keeps retrying (up to every 15 s) until the rider leaves.

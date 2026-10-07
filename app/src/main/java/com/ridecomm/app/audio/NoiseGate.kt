@@ -29,6 +29,11 @@ class NoiseGate(sampleRate: Int, var sensitivity: Sensitivity = Sensitivity.MEDI
     /** True while voice is getting through. */
     var open = false
         private set
+    /** Voice-band and low-band (wind, engine) levels the last decision was based on, in dBFS. */
+    var voiceDb = -120f
+        private set
+    var lowDb = -120f
+        private set
     private var voiceChunks = 0
     private var holdLeft = 0
     private var gain = 0f
@@ -49,8 +54,8 @@ class NoiseGate(sampleRate: Int, var sensitivity: Sensitivity = Sensitivity.MEDI
         // Smooth over ~30 ms: wind's low rumble swings a lot within a single 10 ms chunk.
         smoothVoice = smoothVoice * (1 - SMOOTHING) + (voiceEnergy / count) * SMOOTHING
         smoothLow = smoothLow * (1 - SMOOTHING) + (lowEnergy / count) * SMOOTHING
-        val voiceDb = db(smoothVoice)
-        val lowDb = db(smoothLow)
+        voiceDb = db(smoothVoice)
+        lowDb = db(smoothLow)
         val voiceLike = voiceDb > sensitivity.thresholdDb && voiceDb - lowDb > MAX_LOW_DOMINANCE_DB
 
         if (voiceLike) {

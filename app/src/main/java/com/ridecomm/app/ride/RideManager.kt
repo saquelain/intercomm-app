@@ -66,6 +66,7 @@ object RideManager {
         _state.value = RideState(status = RideStatus.CONNECTING, code = code)
         DataUsage.start()
         Prefs.rideStarted(appContext, code)
+        MicGate.resetTotals()
         RiderAlerts.start(appContext)
         RideService.start(appContext)
         CrashDetector.start(appContext)

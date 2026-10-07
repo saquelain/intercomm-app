@@ -7,6 +7,9 @@ import io.livekit.android.room.track.LocalAudioTrack
 import io.livekit.android.room.track.Track
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Runs the [NoiseGate] on the microphone before it's sent to the group. The gate is created on
@@ -17,6 +20,16 @@ object MicGate {
     private var gate: NoiseGate? = null
     private var gateRate = 0
     private var samples = FloatArray(0)
+    private var meter: GateMeter? = null
+    private var meterRate = 0
+    @Volatile private var resetMeter = false
+
+    private val _live = MutableStateFlow<GateFrame?>(null)
+    /** The filter's latest reading (every 50 ms while the mic runs), for the meters on screen. */
+    val live: StateFlow<GateFrame?> = _live.asStateFlow()
+    private val _totals = MutableStateFlow(GateTotals())
+    /** Voice sent and noise blocked since the ride started. */
+    val totals: StateFlow<GateTotals> = _totals.asStateFlow()
 
     /**
      * Also gets each mono mic chunk (as it was captured, before the gate), on the audio thread.
@@ -27,6 +40,13 @@ object MicGate {
     /** null switches the gate off (the mic goes out as WebRTC captured it). */
     fun setSensitivity(value: NoiseGate.Sensitivity?) {
         sensitivity = value
+    }
+
+    /** New ride: start the totals from zero. */
+    fun resetTotals() {
+        resetMeter = true
+        _live.value = null
+        _totals.value = GateTotals()
     }
 
     /** Hooks the gate onto the room's published microphone track; call after the mic is enabled. */
@@ -49,11 +69,15 @@ object MicGate {
         }
     }
 
+    private fun publish(frame: GateFrame, m: GateMeter) {
+        _live.value = frame
+        _totals.value = m.totals
+    }
+
     // Called on WebRTC's capture thread only.
     private fun process(buffer: ByteBuffer, audioFormat: Int, channelCount: Int, sampleRate: Int, bytesRead: Int) {
         val level = sensitivity
         val listener = tap
-        if (level == null && listener == null) return
         val bytesPerSample = when (audioFormat) {
             AudioFormat.ENCODING_PCM_16BIT -> 2
             AudioFormat.ENCODING_PCM_FLOAT -> 4
@@ -71,11 +95,22 @@ object MicGate {
             for (i in 0 until count) samples[i] = data.getFloat(i * 4)
         }
         if (listener != null && channelCount == 1) runCatching { listener(samples, count, sampleRate) }
-        if (level == null) return
-        val g = gate?.takeIf { gateRate == sampleRate * channelCount }
-            ?: NoiseGate(sampleRate * channelCount).also { gate = it; gateRate = sampleRate * channelCount }
+        val rate = sampleRate * channelCount
+        if (resetMeter || meterRate != rate) {
+            resetMeter = false
+            meter = GateMeter(rate)
+            meterRate = rate
+        }
+        val m = meter!!
+        m.beforeGate(samples, count)
+        if (level == null) {
+            m.afterGate(samples, count, null)?.let { publish(it, m) }
+            return
+        }
+        val g = gate?.takeIf { gateRate == rate } ?: NoiseGate(rate).also { gate = it; gateRate = rate }
         g.sensitivity = level
         g.process(samples, count)
+        m.afterGate(samples, count, g)?.let { publish(it, m) }
         if (bytesPerSample == 2) {
             for (i in 0 until count) data.putShort(i * 2, (samples[i] * 32767f).toInt().toShort())
         } else {
