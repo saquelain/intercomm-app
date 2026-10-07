@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import com.ridecomm.app.CrashLog
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
+import com.ridecomm.app.group.GroupTracker
 import com.ridecomm.app.ride.RideCode
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideState
@@ -201,8 +202,12 @@ private fun Feature(icon: Int, label: String, modifier: Modifier) {
     }
 }
 
+/**
+ * App settings, reachable from the home screen and during a ride. In a ride the server ID is
+ * hidden (it can't change mid-ride) and the other settings apply straight away.
+ */
 @Composable
-private fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit) {
+fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolean = false) {
     val context = LocalContext.current
     var tokenId by remember { mutableStateOf(Prefs.tokenServerId(context)) }
     var bubbleOn by remember { mutableStateOf(Prefs.bubbleEnabled(context)) }
@@ -212,17 +217,19 @@ private fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit) {
 
     GlassDialog(onDismiss = onClose) {
         Text("Settings", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp))
-        GlassTextField(
-            value = tokenId,
-            onValueChange = { tokenId = it },
-            label = "LiveKit token server ID",
-            placeholder = "ridecomm-xxxxxx",
-            textStyle = MaterialTheme.typography.bodyLarge,
-        )
-        Text(
-            "LiveKit Cloud → Settings → Development token server. Everyone in the group uses the same one.",
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        if (!inRide) {
+            GlassTextField(
+                value = tokenId,
+                onValueChange = { tokenId = it },
+                label = "LiveKit token server ID",
+                placeholder = "ridecomm-xxxxxx",
+                textStyle = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                "LiveKit Cloud → Settings → Development token server. Everyone in the group uses the same one.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
         GlassTextField(
             value = numbers,
             onValueChange = { numbers = it },
@@ -236,9 +243,11 @@ private fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit) {
         SettingSwitch("Share my location", "Distances and separation alerts for the group", shareLocation) {
             shareLocation = it
         }
-        SettingSwitch("Keep music apps playing", "Spotify, YouTube Music… get quieter when someone talks", keepMusic) {
-            keepMusic = it
-        }
+        SettingSwitch(
+            "Keep music apps playing",
+            "Spotify, YouTube Music… get quieter when someone talks" + if (inRide) ". Applies from your next ride." else "",
+            keepMusic,
+        ) { keepMusic = it }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             GlassButton("Cancel", modifier = Modifier.weight(1f), onClick = onClose)
             PrimaryButton("Save", modifier = Modifier.weight(1f), height = 56.dp) {
@@ -247,6 +256,7 @@ private fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit) {
                 Prefs.setEmergencyNumbers(context, numbers)
                 Prefs.setShareLocation(context, shareLocation)
                 Prefs.setKeepOtherMusic(context, keepMusic)
+                GroupTracker.applySettings()
                 onSaved()
                 onClose()
             }

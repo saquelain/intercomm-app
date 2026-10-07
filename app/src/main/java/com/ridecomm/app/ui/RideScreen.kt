@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ridecomm.app.R
 import com.ridecomm.app.group.GroupMath
@@ -85,6 +87,7 @@ fun RideContent(
 ) {
     val context = LocalContext.current
     var confirmLeave by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
 
     val shareCode = {
         val share = Intent(Intent.ACTION_SEND)
@@ -105,8 +108,17 @@ fun RideContent(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         SectionLabel("Ride code")
-                        Text(state.code, style = MaterialTheme.typography.displayMedium)
+                        // One line even on narrow phones: shrink rather than wrap the code.
+                        Text(
+                            state.code,
+                            style = MaterialTheme.typography.displayMedium,
+                            maxLines = 1,
+                            softWrap = false,
+                            autoSize = TextAutoSize.StepBased(minFontSize = 24.sp, maxFontSize = 40.sp),
+                        )
                     }
+                    GlassIconButton(R.drawable.ms_settings, "Settings", size = 52.dp, iconSize = 24.dp) { showSettings = true }
+                    Spacer(Modifier.width(10.dp))
                     SosButton(sos)
                 }
 
@@ -141,6 +153,8 @@ fun RideContent(
         // Drawn last so it covers the whole ride screen.
         sos.countdown?.let { SosCountdown(it) }
     }
+
+    if (showSettings) SettingsDialog(onClose = { showSettings = false }, inRide = true)
 
     if (confirmLeave) {
         GlassDialog(onDismiss = { confirmLeave = false }) {

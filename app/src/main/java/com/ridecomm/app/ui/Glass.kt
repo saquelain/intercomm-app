@@ -25,7 +25,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
@@ -320,6 +322,7 @@ fun GlassDialog(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Un
             Modifier
                 .padding(20.dp)
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .clip(CardShape)
                 .background(Brush.linearGradient(listOf(Color(0xF21B1F33), Color(0xF2120F26))))
                 .border(1.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.3f), Color.White.copy(alpha = 0.05f))), CardShape)

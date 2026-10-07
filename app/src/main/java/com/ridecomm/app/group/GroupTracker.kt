@@ -51,6 +51,7 @@ object GroupTracker {
     private const val GPS_MIN_DISTANCE_M = 10f
     /** Below this speed the GPS heading is noise. */
     private const val MIN_SPEED_FOR_HEADING_MS = 2f
+    private const val STALE_AFTER_MS = 2 * 60_000L
 
     private val scope = safeMainScope()
     private val _state = MutableStateFlow(GroupState())
@@ -90,6 +91,19 @@ object GroupTracker {
                 sendMyPosition()
                 delay(SEND_EVERY_MS)
             }
+        }
+    }
+
+    /** "Share my location" changed in Settings during a ride: start or stop right away. */
+    fun applySettings() {
+        if (!::appContext.isInitialized || room == null && sendJob == null && !listening) return
+        if (Prefs.shareLocation(appContext)) {
+            startLocation()
+        } else {
+            stopLocation()
+            me = null
+            myHeading = null
+            recompute(announce = false)
         }
     }
 
@@ -159,6 +173,7 @@ object GroupTracker {
     private suspend fun sendMyPosition() {
         val r = room ?: return
         val loc = me ?: return
+        if (!Prefs.shareLocation(appContext)) return
         val o = JSONObject()
             .put("name", Prefs.riderName(appContext).ifBlank { "Rider" })
             .put("lat", loc.latitude)
@@ -183,6 +198,9 @@ object GroupTracker {
 
     private fun recompute(announce: Boolean) {
         val mine = me
+        // Riders who stopped sharing (or lost signal for a while) drop off instead of showing an old distance.
+        val now = System.currentTimeMillis()
+        remotes.entries.removeAll { now - it.value.atMs > STALE_AFTER_MS }
         val positions = remotes.mapValues { (id, r) ->
             if (mine == null) {
                 RiderPosition(r.lat, r.lon, r.atMs, null, Relation.NEARBY)
