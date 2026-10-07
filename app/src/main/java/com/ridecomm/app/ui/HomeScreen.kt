@@ -255,6 +255,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var tokenId by remember { mutableStateOf(Prefs.tokenServerId(context)) }
     var serverUrl by remember { mutableStateOf(Prefs.rideServerUrl(context)) }
     var groupKey by remember { mutableStateOf(Prefs.groupKey(context)) }
+    var showAdvanced by remember { mutableStateOf(serverUrl.isNotBlank()) }
     var bubbleOn by remember { mutableStateOf(Prefs.bubbleEnabled(context)) }
     var numbers by remember { mutableStateOf(Prefs.emergencyNumbers(context)) }
     var shareLocation by remember { mutableStateOf(Prefs.shareLocation(context)) }
@@ -269,35 +270,44 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
         ProfileEditor(riderName) { riderName = it }
         if (!inRide) {
             GlassTextField(
-                value = groupKey,
-                onValueChange = { groupKey = it },
-                label = "Group key",
-                placeholder = "Ask your group admin",
-                textStyle = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                "Only riders with this key can join your group's rides (needs the private ride server below).",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            GlassTextField(
-                value = serverUrl,
-                onValueChange = { serverUrl = it },
-                label = "Private ride server",
-                placeholder = "https://ridecomm-token.….workers.dev",
-                textStyle = MaterialTheme.typography.bodyLarge,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-            )
-            GlassTextField(
                 value = tokenId,
                 onValueChange = { tokenId = it },
-                label = "Or: LiveKit test token server ID",
+                label = "LiveKit token server ID",
                 placeholder = "ridecomm-xxxxxx",
                 textStyle = MaterialTheme.typography.bodyLarge,
             )
             Text(
-                "Used only when no private server is set. Anyone with this ID can join, so switch to the private server for your group.",
+                "LiveKit Cloud → Settings → Development token server. Everyone in the group uses the same one.",
                 style = MaterialTheme.typography.bodyMedium,
             )
+            // The private ride server isn't set up yet; keep its fields out of the way.
+            Text(
+                if (showAdvanced) "Hide advanced" else "Advanced: private ride server",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Palette.Cyan,
+                modifier = Modifier.clickable { showAdvanced = !showAdvanced },
+            )
+            if (showAdvanced) {
+                GlassTextField(
+                    value = serverUrl,
+                    onValueChange = { serverUrl = it },
+                    label = "Private ride server",
+                    placeholder = "https://ridecomm-token.….workers.dev",
+                    textStyle = MaterialTheme.typography.bodyLarge,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                )
+                GlassTextField(
+                    value = groupKey,
+                    onValueChange = { groupKey = it },
+                    label = "Group key",
+                    placeholder = "Ask your group admin",
+                    textStyle = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    "When a private server is set, only riders with the group key can join, and the token server ID above isn't used.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
         }
         GlassTextField(
             value = numbers,

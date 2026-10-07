@@ -74,7 +74,7 @@ other over mobile internet through their helmet headset.
 > The development token server is fine for a private group but lets anyone with the ID join rooms.
 > Before sharing the app publicly we'll switch to our own token endpoint.
 
-## Private ride server (recommended)
+## Private ride server (optional, not set up)
 
 The LiveKit development token server lets anyone who has its ID join any ride. The private ride server
 (`server/token-worker`, a Cloudflare Worker) only gives a ride pass to riders who send the **group key**, and only
