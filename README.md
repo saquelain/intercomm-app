@@ -17,6 +17,12 @@ other over mobile internet through their helmet headset.
 
 - **Voice:** [LiveKit](https://livekit.io) (WebRTC). Opus at ~24 kbps with DTX (near zero data while silent) and
   RED (redundancy for patchy highway networks). WebRTC noise suppression, echo cancellation and auto gain are on.
+- **Wind noise filter:** a noise gate on the mic (before it's sent) lets sound through only while you speak.
+  Each 10 ms is split into a voice band (300–3400 Hz) and a low band (< 250 Hz); wind and engine roar are mostly
+  low, speech mostly in the voice band, so the gate opens only for voice-like sound, holds 0.5 s so word endings
+  aren't cut and fades in/out over 5 ms. Silence also lets DTX send almost nothing, saving data, and wind no
+  longer makes you show as "talking" or duck everyone's music. Settings → Wind noise filter: Off / Low / Medium
+  (default) / High; applies immediately, even mid-ride.
 - **Background:** a foreground service keeps the call alive with the screen off or Maps open; the notification has
   Mute and Leave buttons.
 - **Dead zones:** if the connection drops, the app keeps retrying (up to every 15 s) until the rider leaves.

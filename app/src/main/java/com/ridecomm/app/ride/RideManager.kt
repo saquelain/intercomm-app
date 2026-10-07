@@ -2,6 +2,7 @@ package com.ridecomm.app.ride
 
 import android.content.Context
 import com.ridecomm.app.Prefs
+import com.ridecomm.app.audio.MicGate
 import com.ridecomm.app.crash.CrashDetector
 import com.ridecomm.app.group.GroupTracker
 import com.ridecomm.app.music.MusicManager
@@ -83,6 +84,8 @@ object RideManager {
         val r = room ?: return
         scope.launch {
             r.localParticipant.setMicrophoneEnabled(!muted)
+            // Joining muted publishes the mic only now, so hook the gate onto it here too.
+            if (!muted) MicGate.attach(r)
             refreshRiders()
         }
     }
@@ -166,6 +169,8 @@ object RideManager {
         try {
             r.connect(details.serverUrl, details.participantToken)
             r.localParticipant.setMicrophoneEnabled(!_state.value.micMuted)
+            MicGate.setSensitivity(Prefs.windGate(appContext))
+            MicGate.attach(r)
             onConnected()
             MusicManager.onConnected()
             GroupTracker.onConnected()

@@ -53,6 +53,8 @@ import kotlinx.coroutines.launch
 import com.ridecomm.app.CrashLog
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
+import com.ridecomm.app.audio.MicGate
+import com.ridecomm.app.audio.NoiseGate
 import com.ridecomm.app.crash.CrashDetector
 import com.ridecomm.app.profile.Profile
 import com.ridecomm.app.group.GroupTracker
@@ -264,6 +266,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var crashDetection by remember { mutableStateOf(Prefs.crashDetection(context)) }
     var speakerOverlay by remember { mutableStateOf(Prefs.speakerOverlay(context)) }
     var headsetButtons by remember { mutableStateOf(Prefs.headsetButtons(context)) }
+    var windGate by remember { mutableStateOf(Prefs.windGate(context)) }
 
     GlassDialog(onDismiss = onClose) {
         Text("Settings", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp))
@@ -318,6 +321,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
         )
         Text("Used for SOS when there's no internet.", style = MaterialTheme.typography.bodyMedium)
+        WindGateSetting(windGate) { windGate = it }
         SettingSwitch("Floating ride button", "Controls over Maps and other apps", bubbleOn) { bubbleOn = it }
         SettingSwitch(
             "Crash detection",
@@ -357,12 +361,51 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setCrashDetection(context, crashDetection)
                 Prefs.setSpeakerOverlay(context, speakerOverlay)
                 Prefs.setHeadsetButtons(context, headsetButtons)
+                Prefs.setWindGate(context, windGate)
+                MicGate.setSensitivity(windGate)
                 HeadsetButtons.applySettings(context)
                 CrashDetector.applySettings(context)
                 GroupTracker.applySettings()
                 onSaved()
                 onClose()
             }
+        }
+    }
+}
+
+/** Off / Low / Medium / High choice for the mic's wind noise gate; applies straight away, even mid-ride. */
+@Composable
+internal fun WindGateSetting(value: NoiseGate.Sensitivity?, onChange: (NoiseGate.Sensitivity?) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Wind noise filter", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Sends your mic only while you speak, so others don't hear wind and engine. " +
+                "Higher catches quieter voices but lets more noise through.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf(null to "Off", NoiseGate.Sensitivity.LOW to "Low", NoiseGate.Sensitivity.MEDIUM to "Medium", NoiseGate.Sensitivity.HIGH to "High")
+                .forEach { (option, label) ->
+                    val selected = option == value
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .glass(
+                                RoundedCornerShape(14.dp),
+                                tint = if (selected) Palette.Orange else Color.White,
+                                fillAlpha = if (selected) 0.32f else 0.06f,
+                            )
+                            .clickable { onChange(option) },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            label,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = if (selected) Color.White else Palette.TextSecondary,
+                        )
+                    }
+                }
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.ridecomm.app
 
 import android.content.Context
+import com.ridecomm.app.audio.NoiseGate
 import java.util.UUID
 
 /** Small on-device settings: rider name, a stable device id, and the LiveKit token server id. */
@@ -21,6 +22,7 @@ object Prefs {
     private const val KEY_GROUP_KEY = "group_key"
     private const val KEY_SPEAKER_OVERLAY = "speaker_overlay"
     private const val KEY_KEEP_OTHER_MUSIC = "keep_other_music"
+    private const val KEY_WIND_GATE = "wind_gate"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -116,4 +118,16 @@ object Prefs {
 
     fun setBubblePosition(context: Context, y: Int, onLeft: Boolean) =
         prefs(context).edit().putInt(KEY_BUBBLE_Y, y).putBoolean(KEY_BUBBLE_LEFT, onLeft).apply()
+
+    /** How hard the wind noise gate filters the mic; null means off. */
+    fun windGate(context: Context): NoiseGate.Sensitivity? =
+        when (val v = prefs(context).getString(KEY_WIND_GATE, NoiseGate.Sensitivity.MEDIUM.name)) {
+            OFF -> null
+            else -> NoiseGate.Sensitivity.entries.firstOrNull { it.name == v } ?: NoiseGate.Sensitivity.MEDIUM
+        }
+
+    fun setWindGate(context: Context, value: NoiseGate.Sensitivity?) =
+        prefs(context).edit().putString(KEY_WIND_GATE, value?.name ?: OFF).apply()
+
+    private const val OFF = "OFF"
 }

@@ -149,6 +149,11 @@ class ScreenshotTest {
     }
 
     @Test
+    fun windGateSetting() = shot("11_wind_gate_setting") {
+        Box(Modifier.padding(16.dp)) { WindGateSetting(com.ridecomm.app.audio.NoiseGate.Sensitivity.MEDIUM) {} }
+    }
+
+    @Test
     fun sosCountdown() = shot("5_sos_countdown") { SosCountdown(3) }
 
     @Test
