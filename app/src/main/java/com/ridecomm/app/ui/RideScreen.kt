@@ -2,7 +2,12 @@ package com.ridecomm.app.ui
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -64,7 +69,8 @@ fun RideScreen(state: RideState) {
     val vote by VoteManager.state.collectAsStateWithLifecycle()
     val sos by SosManager.state.collectAsStateWithLifecycle()
     val group by GroupTracker.state.collectAsStateWithLifecycle()
-    RideContent(state, music, vote, sos, group)
+    val sent by VoteManager.sent.collectAsStateWithLifecycle()
+    RideContent(state, music, vote, sos, group, sent)
 }
 
 /** The ride screen for given states (split out so screenshots can render any situation). */
@@ -75,6 +81,7 @@ fun RideContent(
     vote: VoteState,
     sos: SosState,
     group: GroupState = GroupState(),
+    sent: VoteManager.Sent? = null,
 ) {
     val context = LocalContext.current
     var confirmLeave by remember { mutableStateOf(false) }
@@ -117,6 +124,18 @@ fun RideContent(
                 onLeave = { confirmLeave = true },
                 onShare = shareCode,
             )
+        }
+
+        AnimatedVisibility(
+            visible = sent != null,
+            enter = slideInVertically { -it } + fadeIn(),
+            exit = slideOutVertically { -it } + fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter).padding(horizontal = 16.dp, vertical = 8.dp),
+        ) {
+            // Keep showing the last message while the banner slides out.
+            var shown by remember { mutableStateOf(sent) }
+            if (sent != null) shown = sent
+            shown?.let { SentBanner(it) }
         }
 
         // Drawn last so it covers the whole ride screen.

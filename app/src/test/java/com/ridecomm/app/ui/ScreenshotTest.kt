@@ -19,7 +19,9 @@ import com.ridecomm.app.sos.SosAlert
 import com.ridecomm.app.sos.SosState
 import com.ridecomm.app.vote.Ballot
 import com.ridecomm.app.vote.Vote
+import com.ridecomm.app.vote.QuickMessage
 import com.ridecomm.app.vote.VoteKind
+import com.ridecomm.app.vote.VoteManager
 import com.ridecomm.app.vote.VoteState
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -78,6 +80,23 @@ class ScreenshotTest {
             ballots = mapOf("r" to Ballot("Rahul", true), "a" to Ballot("Amit", true)),
         )
         RideContent(ride.copy(micMuted = true), MusicState(), VoteState(active = vote), SosState())
+    }
+
+    @Test
+    fun rideResultAndSent() = shot("8_vote_result_and_sent") {
+        val now = System.currentTimeMillis()
+        val done = Vote(
+            id = "v2", kind = VoteKind.FOOD, starterName = "Saquelain", startedAtMs = 0, riders = 4,
+            ballots = mapOf("me" to Ballot("Saquelain", true), "a" to Ballot("Amit", true), "v" to Ballot("Vikram", true)),
+            approved = true,
+        )
+        RideContent(
+            ride,
+            MusicState(),
+            VoteState(lastResult = done, resultSinceMs = now - VoteManager.RESULT_SHOWN_MS * 4 / 10),
+            SosState(),
+            sent = VoteManager.Sent(QuickMessage.SLOW_DOWN, now - VoteManager.SENT_SHOWN_MS / 3),
+        )
     }
 
     @Test

@@ -1,6 +1,9 @@
 package com.ridecomm.app.ui
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,6 +32,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -339,6 +345,37 @@ fun Avatar(name: String, size: Dp, brush: Brush, ring: Color?) {
             name.firstOrNull()?.uppercase() ?: "?",
             style = MaterialTheme.typography.titleLarge,
             color = Color.White,
+        )
+    }
+}
+
+/**
+ * Thin bar that fills from left to right over [durationMs], counted from [startMs] (wall clock),
+ * so you can see how long a card stays before it goes away.
+ */
+@Composable
+fun TimeLine(startMs: Long, durationMs: Long, color: Color, modifier: Modifier = Modifier) {
+    val progress = remember(startMs, durationMs) {
+        val elapsed = (System.currentTimeMillis() - startMs).coerceIn(0, durationMs)
+        Animatable(elapsed.toFloat() / durationMs)
+    }
+    LaunchedEffect(startMs, durationMs) {
+        val remaining = ((1f - progress.value) * durationMs).toInt()
+        progress.animateTo(1f, tween(remaining.coerceAtLeast(1), easing = LinearEasing))
+    }
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(5.dp)
+            .clip(PillShape)
+            .background(Color.White.copy(alpha = 0.12f)),
+    ) {
+        Box(
+            Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(progress.value)
+                .clip(PillShape)
+                .background(color),
         )
     }
 }

@@ -43,6 +43,10 @@ data class VoteState(
     val myVote: Boolean? = null,
     /** The last finished vote, shown for a short while. */
     val lastResult: Vote? = null,
+    /** When the active vote opened on this phone (its timeout counts from here). */
+    val activeSinceMs: Long = 0,
+    /** When [lastResult] was decided (it's shown for [VoteManager.RESULT_SHOWN_MS]). */
+    val resultSinceMs: Long = 0,
 ) {
     val needsMyVote: Boolean get() = active != null && myVote == null
 }
@@ -55,7 +59,8 @@ data class VoteState(
 object VoteManager {
     private const val TOPIC = "rc-vote"
     const val VOTE_TIMEOUT_MS = 45_000L
-    private const val RESULT_SHOWN_MS = 15_000L
+    const val RESULT_SHOWN_MS = 6_000L
+    const val SENT_SHOWN_MS = 3_000L
 
     private val scope = safeMainScope()
     private val _state = MutableStateFlow(VoteState())
@@ -85,7 +90,9 @@ object VoteManager {
         room = null
         timeoutJob?.cancel()
         clearResultJob?.cancel()
+        clearSentJob?.cancel()
         _state.value = VoteState()
+        _sent.value = null
     }
 
     // ---- Actions ----
@@ -126,8 +133,24 @@ object VoteManager {
         check()
     }
 
+    /** A quick message I just sent, shown briefly as confirmation. */
+    data class Sent(val message: QuickMessage, val atMs: Long)
+
+    private val _sent = MutableStateFlow<Sent?>(null)
+    val sent: StateFlow<Sent?> = _sent.asStateFlow()
+    private var clearSentJob: Job? = null
+
     fun sendQuick(message: QuickMessage) {
         send(JSONObject().put("t", "say").put("msg", message.name).put("name", myName()))
+        // Same confirmation whether sent from the app or the floating button.
+        announce("Sent: ${message.label}")
+        val sent = Sent(message, System.currentTimeMillis())
+        _sent.value = sent
+        clearSentJob?.cancel()
+        clearSentJob = scope.launch {
+            delay(SENT_SHOWN_MS)
+            if (_sent.value == sent) _sent.value = null
+        }
     }
 
     // ---- Incoming ----
@@ -173,7 +196,7 @@ object VoteManager {
 
     private fun open(vote: Vote, myVote: Boolean?) {
         clearResultJob?.cancel()
-        _state.value = VoteState(active = vote, myVote = myVote)
+        _state.value = VoteState(active = vote, myVote = myVote, activeSinceMs = System.currentTimeMillis())
         timeoutJob?.cancel()
         timeoutJob = scope.launch {
             delay(VOTE_TIMEOUT_MS)
@@ -186,7 +209,7 @@ object VoteManager {
         val approved = VoteTally.outcome(vote.yes, vote.no, vote.riders, timedOut) ?: return
         timeoutJob?.cancel()
         val done = vote.copy(approved = approved)
-        _state.value = VoteState(lastResult = done)
+        _state.value = VoteState(lastResult = done, resultSinceMs = System.currentTimeMillis())
         announce(
             "${done.kind.stopName} ${if (approved) "approved" else "not approved"}. " +
                 "${done.yes} yes, ${done.no} no.",

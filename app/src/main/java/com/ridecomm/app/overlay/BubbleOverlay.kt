@@ -272,7 +272,7 @@ class BubbleOverlay(private val context: Context) {
             }
         }
         QuickMessage.entries.forEach { message ->
-            add(SlideOption(message.icon, message.label, CYAN, "Sent: ${message.label}") { VoteManager.sendQuick(message) })
+            add(SlideOption(message.icon, message.label, CYAN, "") { VoteManager.sendQuick(message) })
         }
     }
 
