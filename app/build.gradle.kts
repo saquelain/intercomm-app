@@ -99,6 +99,8 @@ kotlin {
 dependencies {
     implementation("io.livekit:livekit-android:2.29.0")
     implementation("androidx.media3:media3-exoplayer:1.11.1")
+    // Group map: OpenStreetMap-based, no API key or Google services needed.
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
 
     implementation(platform("androidx.compose:compose-bom:2025.12.01"))
     implementation("androidx.compose.ui:ui")

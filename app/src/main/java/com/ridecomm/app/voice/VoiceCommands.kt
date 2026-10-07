@@ -18,6 +18,7 @@ import com.ridecomm.app.Announcer
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.alerts.RiderAlerts
 import com.ridecomm.app.audio.MicGate
+import com.ridecomm.app.group.GroupTracker
 import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideStatus
@@ -311,6 +312,12 @@ object VoiceCommands {
             VoiceCommand.WhoIsHere -> say(whoIsHere())
             VoiceCommand.Battery -> say(batteries())
             VoiceCommand.Trip -> TripTracker.speakNow()
+            VoiceCommand.WhereIsEveryone -> say(GroupTracker.whereIsEveryone())
+            VoiceCommand.RegroupHere -> when {
+                !Prefs.shareLocation(appContext) -> say("Turn on Group map in Settings to set regroup points")
+                !GroupTracker.setRegroupHere() -> say("Waiting for your location. Try again in a moment.")
+                else -> Unit // GroupTracker confirms it.
+            }
             VoiceCommand.Unknown -> say("Say RideComm, then a command, like break or slow down")
         }
     }

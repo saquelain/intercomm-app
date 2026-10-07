@@ -54,7 +54,7 @@ other over mobile internet through their helmet headset.
   battery level only when it changes by 5%. Low batteries (30% or less) also show on rider cards. Switchable in
   Settings.
 - **Voice commands (Android 13+):** say "RideComm" and then a command: break / fuel / food (start a vote), yes / no,
-  slow down, wait for me, mute / unmute, next song, music off / on, who's here, battery, speed, SOS, cancel. The call
+  slow down, wait for me, mute / unmute, next song, music off / on, who's here, battery, speed, where is everyone, regroup here, SOS, cancel. The call
   already owns the mic, so each burst of your speech (found with the same voice detector as the wind filter, with
   0.3 s of lead-in, at most 5 s) is cut from the call's own mic stream, converted to 16 kHz and piped to the phone's
   speech recogniser (on-device when available, nudged towards these words). Only speech that starts with
@@ -65,6 +65,18 @@ other over mobile internet through their helmet headset.
   default) says "Speed 96" in the headset after 3 s over your limit (30–160 km/h), at most every 30 s.
   **Ride updates** speak "42.3 kilometres. 1 hour 10 minutes riding. Average 56." every 15/30 min or 10/25 km.
   "RideComm, speed" gives the same on demand.
+- **Group map** (Settings → Group map, **off by default**): with it on, your position is shared with the ride
+  every 5 s while moving (15 s when slow or saving data). The map (OpenStreetMap, no API key; darkened on the
+  phone to match the app, with a light option for bright sun) shows every rider's photo, name and direction,
+  you, and how far each one is ("Rahul · 2.5 km behind", tap to jump to them). You hear when someone falls 1 km
+  behind and when they're back. **Regroup point:** long-press the map (or "Regroup at my location", or say
+  "RideComm, regroup here"), pick a name (Petrol pump, Dhaba, Toll plaza…) and everyone hears "Amit set a regroup
+  point: Petrol pump, 5.4 kilometres ahead", sees it on the map and the ride screen, and gets one-tap Navigate
+  (Google Maps directions). Riders hear "Regroup point in 800 metres", arrivals are counted ("2 of 4 here"),
+  "Everyone is at the regroup point" is announced, and the point clears itself 2 minutes later. Riders who join or
+  reconnect get the current point; iPhone riders in the browser get it with a Navigate button too. "RideComm,
+  where is everyone" reads out each rider's distance. With the setting off, nothing is shared or announced.
+  Map tiles are cached (up to 60 MB), so roads seen before load without data.
 - **Quick rejoin:** if a ride ends without the rider leaving (app closed, phone restarted or out of battery), the
   home screen offers "Back to ride CODE?" with a one-tap Rejoin for 12 hours. The join card also lists up to three
   recent ride codes from the past week ("Ride again"); one tap joins that ride again.

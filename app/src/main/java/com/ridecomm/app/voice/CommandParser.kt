@@ -16,6 +16,8 @@ sealed interface VoiceCommand {
     data object WhoIsHere : VoiceCommand
     data object Battery : VoiceCommand
     data object Trip : VoiceCommand
+    data object WhereIsEveryone : VoiceCommand
+    data object RegroupHere : VoiceCommand
     /** Said "RideComm" but nothing we know after it. */
     data object Unknown : VoiceCommand
 }
@@ -35,13 +37,15 @@ object CommandParser {
     /** Words the recogniser is nudged towards. */
     val BIASING = listOf(
         "RideComm", "break", "fuel", "food", "yes", "no", "slow down", "wait for me", "mute", "unmute",
-        "next song", "music off", "music on", "SOS", "cancel", "who's here", "battery", "speed", "how far",
+        "next song", "music off", "music on", "SOS", "cancel", "who's here", "battery", "speed", "how far", "where is everyone", "regroup here",
     )
 
     /** Rules in priority order: the first whose phrase appears in the command wins. */
     private val RULES: List<Pair<List<String>, VoiceCommand>> = listOf(
         listOf("cancel", "stop sos", "i'm ok", "i am ok", "im ok", "false alarm") to VoiceCommand.Cancel,
         listOf("sos", "s o s", "emergency", "help") to VoiceCommand.Sos,
+        listOf("regroup", "re group", "meet here", "meeting point") to VoiceCommand.RegroupHere,
+        listOf("where is everyone", "where's everyone", "wheres everyone", "where is everybody", "where's everybody", "where is the group", "where are", "where is", "where's", "wheres") to VoiceCommand.WhereIsEveryone,
         listOf("next song", "next", "skip") to VoiceCommand.NextSong,
         listOf("music off", "stop music", "stop the music", "no music", "pause music") to VoiceCommand.Music(on = false),
         listOf("music on", "play music", "start music", "resume music") to VoiceCommand.Music(on = true),

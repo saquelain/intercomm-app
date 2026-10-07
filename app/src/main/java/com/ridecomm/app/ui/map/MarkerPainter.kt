@@ -1,0 +1,201 @@
+package com.ridecomm.app.ui.map
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapShader
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RectF
+import android.graphics.Shader
+import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
+import com.ridecomm.app.R
+import kotlin.math.cos
+import kotlin.math.sin
+
+/** Something to draw on the map, already placed in screen pixels. */
+sealed interface MapMarker {
+    val x: Float
+    val y: Float
+
+    data class Rider(
+        override val x: Float,
+        override val y: Float,
+        val name: String,
+        val photo: Bitmap?,
+        val talking: Boolean,
+        /** Direction of travel while moving, degrees from north. */
+        val headingDeg: Float?,
+        /** No update for a while: drawn faded. */
+        val stale: Boolean,
+    ) : MapMarker
+
+    data class Me(override val x: Float, override val y: Float, val headingDeg: Float?, val accuracyPx: Float) : MapMarker
+
+    data class Regroup(override val x: Float, override val y: Float, val label: String, val detail: String) : MapMarker
+}
+
+/**
+ * Draws rider avatars (photo or initial, name tag, direction arrow), my position and the regroup
+ * flag. Kept apart from the map library so it can be drawn and checked on its own.
+ */
+class MarkerPainter(context: Context) {
+    private val d = context.resources.displayMetrics.density
+    private val font = ResourcesCompat.getFont(context, R.font.outfit_semibold)
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val shadow = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(90, 0, 0, 0) }
+    private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        textAlign = Paint.Align.CENTER
+        typeface = font
+    }
+    private val tagBg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(225, 16, 14, 36) }
+    private val rect = RectF()
+    private val path = Path()
+    private val flag = ContextCompat.getDrawable(context, R.drawable.ms_flag)!!.mutate()
+
+    fun draw(canvas: Canvas, markers: List<MapMarker>) {
+        // Regroup flag at the back, me on top of everyone else.
+        markers.filterIsInstance<MapMarker.Regroup>().forEach { drawRegroup(canvas, it) }
+        markers.filterIsInstance<MapMarker.Rider>().forEach { drawRider(canvas, it) }
+        markers.filterIsInstance<MapMarker.Me>().forEach { drawMe(canvas, it) }
+    }
+
+    private fun drawRider(canvas: Canvas, m: MapMarker.Rider) {
+        val r = AVATAR_DP / 2 * d
+        val alpha = if (m.stale) 140 else 255
+        canvas.drawCircle(m.x, m.y + 2 * d, r + 3 * d, shadow)
+        // Direction of travel: a small arrow on the rim.
+        m.headingDeg?.let { h ->
+            val a = Math.toRadians(h.toDouble() - 90)
+            val tipX = m.x + cos(a).toFloat() * (r + 11 * d)
+            val tipY = m.y + sin(a).toFloat() * (r + 11 * d)
+            val left = a + Math.toRadians(140.0)
+            val right = a - Math.toRadians(140.0)
+            path.reset()
+            path.moveTo(tipX, tipY)
+            path.lineTo(m.x + cos(left).toFloat() * (r - 1 * d) + cos(a).toFloat() * 4 * d, m.y + sin(left).toFloat() * (r - 1 * d) + sin(a).toFloat() * 4 * d)
+            path.lineTo(m.x + cos(right).toFloat() * (r - 1 * d) + cos(a).toFloat() * 4 * d, m.y + sin(right).toFloat() * (r - 1 * d) + sin(a).toFloat() * 4 * d)
+            path.close()
+            fill.shader = null
+            fill.color = Color.argb(alpha, 0xFF, 0xFF, 0xFF)
+            canvas.drawPath(path, fill)
+        }
+        val photo = m.photo
+        fill.shader = if (photo != null) {
+            BitmapShader(photo, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+                val scale = (r * 2) / minOf(photo.width, photo.height)
+                setLocalMatrix(Matrix().apply {
+                    setScale(scale, scale)
+                    postTranslate(m.x - photo.width * scale / 2, m.y - photo.height * scale / 2)
+                })
+            }
+        } else {
+            LinearGradient(m.x - r, m.y - r, m.x + r, m.y + r, VIOLET, CYAN, Shader.TileMode.CLAMP)
+        }
+        fill.alpha = alpha
+        canvas.drawCircle(m.x, m.y, r, fill)
+        fill.shader = null
+        stroke.strokeWidth = 3 * d
+        stroke.color = if (m.talking) GREEN else Color.WHITE
+        stroke.alpha = alpha
+        canvas.drawCircle(m.x, m.y, r, stroke)
+        if (photo == null) {
+            text.textSize = 17 * d
+            text.alpha = alpha
+            canvas.drawText(m.name.take(1).uppercase(), m.x, m.y + 6 * d, text)
+        }
+        nameTag(canvas, m.x, m.y + r + 6 * d, m.name.substringBefore(' ').take(12), null, alpha)
+    }
+
+    private fun drawMe(canvas: Canvas, m: MapMarker.Me) {
+        if (m.accuracyPx > 24 * d) {
+            fill.shader = null
+            fill.color = Color.argb(40, 0xFF, 0x8A, 0x1F)
+            canvas.drawCircle(m.x, m.y, m.accuracyPx, fill)
+        }
+        val r = 11 * d
+        m.headingDeg?.let { h ->
+            // A soft cone showing which way I'm going.
+            val a = Math.toRadians(h.toDouble() - 90)
+            path.reset()
+            path.moveTo(m.x, m.y)
+            for (i in -30..30 step 10) {
+                val b = a + Math.toRadians(i.toDouble())
+                path.lineTo(m.x + cos(b).toFloat() * 34 * d, m.y + sin(b).toFloat() * 34 * d)
+            }
+            path.close()
+            fill.shader = null
+            fill.color = Color.argb(80, 0xFF, 0x8A, 0x1F)
+            canvas.drawPath(path, fill)
+        }
+        canvas.drawCircle(m.x, m.y + 1.5f * d, r + 3 * d, shadow)
+        fill.shader = LinearGradient(m.x - r, m.y - r, m.x + r, m.y + r, ORANGE, PINK, Shader.TileMode.CLAMP)
+        fill.alpha = 255
+        canvas.drawCircle(m.x, m.y, r, fill)
+        fill.shader = null
+        stroke.strokeWidth = 3 * d
+        stroke.color = Color.WHITE
+        canvas.drawCircle(m.x, m.y, r, stroke)
+    }
+
+    private fun drawRegroup(canvas: Canvas, m: MapMarker.Regroup) {
+        // A pin: circle on a short stem, with the point at the exact spot.
+        val r = 20 * d
+        val cy = m.y - 30 * d
+        stroke.strokeWidth = 3 * d
+        stroke.color = AMBER
+        canvas.drawLine(m.x, cy + r, m.x, m.y, stroke)
+        fill.shader = null
+        fill.color = AMBER
+        canvas.drawCircle(m.x, m.y, 4 * d, fill)
+        canvas.drawCircle(m.x, cy + 2 * d, r + 3 * d, shadow)
+        canvas.drawCircle(m.x, cy, r, fill)
+        stroke.color = Color.WHITE
+        canvas.drawCircle(m.x, cy, r, stroke)
+        val s = (12 * d).toInt()
+        flag.setBounds((m.x - s).toInt(), (cy - s).toInt(), (m.x + s).toInt(), (cy + s).toInt())
+        flag.setTint(Color.rgb(0x2A, 0x1E, 0x05))
+        flag.draw(canvas)
+        nameTag(canvas, m.x, cy - r - 30 * d, m.label, m.detail, 255)
+    }
+
+    /** A dark rounded tag with one or two lines, centred at [cx], top at [top]. */
+    private fun nameTag(canvas: Canvas, cx: Float, top: Float, title: String, detail: String?, alpha: Int) {
+        text.textSize = 13 * d
+        val small = 11 * d
+        val w1 = text.measureText(title)
+        text.textSize = small
+        val w2 = detail?.let { text.measureText(it) } ?: 0f
+        val w = maxOf(w1, w2) + 16 * d
+        val h = if (detail != null) 36 * d else 22 * d
+        rect.set(cx - w / 2, top, cx + w / 2, top + h)
+        tagBg.alpha = (225 * alpha / 255)
+        canvas.drawRoundRect(rect, h / 2, h / 2, tagBg)
+        text.textSize = 13 * d
+        text.color = Color.WHITE
+        text.alpha = alpha
+        canvas.drawText(title, cx, top + 15.5f * d, text)
+        if (detail != null) {
+            text.textSize = small
+            text.color = Color.argb(200, 255, 255, 255)
+            canvas.drawText(detail, cx, top + 29 * d, text)
+            text.color = Color.WHITE
+        }
+    }
+
+    companion object {
+        const val AVATAR_DP = 40f
+        private val ORANGE = Color.rgb(0xFF, 0x8A, 0x1F)
+        private val PINK = Color.rgb(0xFF, 0x3D, 0x81)
+        private val VIOLET = Color.rgb(0x7C, 0x5C, 0xFF)
+        private val CYAN = Color.rgb(0x22, 0xD3, 0xEE)
+        private val GREEN = Color.rgb(0x34, 0xE8, 0x9E)
+        private val AMBER = Color.rgb(0xFF, 0xC9, 0x3C)
+    }
+}

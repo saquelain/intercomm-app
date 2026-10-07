@@ -1,5 +1,7 @@
 package com.ridecomm.app.ui
 
+import com.ridecomm.app.ui.map.GroupMapCard
+import com.ridecomm.app.ui.map.GroupMapScreen
 import kotlin.math.roundToInt
 import java.util.Locale
 import com.ridecomm.app.trip.TripTracker
@@ -128,6 +130,7 @@ fun RideContent(
     val context = LocalContext.current
     var confirmLeave by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var showMap by remember { mutableStateOf(false) }
 
     // An invite tapped while already riding: same ride → nothing to do; another ride → say how.
     val invite by InviteLink.pending.collectAsStateWithLifecycle()
@@ -174,6 +177,7 @@ fun RideContent(
 
                 StatusLine(state, dataUsed)
                 if (trip != null) TripRow(trip)
+                if (group.enabled) GroupMapCard(group, state.riders.size) { showMap = true }
                 SosCards(sos)
                 RidersCard(state.riders, group, batteries, onCall) { rider -> if (rider.isMe) myPhoto else photos[rider.id] }
                 VoteCard(vote)
@@ -203,6 +207,12 @@ fun RideContent(
         }
 
         // Drawn last so it covers the whole ride screen.
+        if (showMap && group.enabled) {
+            val myId = state.riders.firstOrNull { it.isMe }?.id
+            val allPhotos = if (myId != null && myPhoto != null) photos + (myId to myPhoto) else photos
+            GroupMapScreen(group, state.riders, allPhotos, onClose = { showMap = false })
+        }
+
         sos.countdown?.let { SosCountdown(it, sos.countdownFromCrash) }
     }
 
@@ -253,10 +263,10 @@ private fun RidersCard(
     GlassCard(spacing = 14.dp) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             SectionLabel("Riders", Modifier.weight(1f))
-            if (group.sharing) StatusPill("Location (beta)", Palette.Cyan)
+            if (group.enabled && group.sharing) StatusPill("On the map", Palette.Cyan)
         }
         riders.forEach {
-            RiderRow(it, if (it.isMe) null else group.positions[it.id], photoOf(it), batteries[it.id], it.id in onCall)
+            RiderRow(it, if (it.isMe || !group.enabled) null else group.positions[it.id], photoOf(it), batteries[it.id], it.id in onCall)
         }
     }
 }

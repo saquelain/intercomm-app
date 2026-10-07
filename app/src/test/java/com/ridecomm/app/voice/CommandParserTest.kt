@@ -45,6 +45,9 @@ class CommandParserTest {
         assertEquals(VoiceCommand.WhoIsHere, p("RideComm who's here"))
         assertEquals(VoiceCommand.Battery, p("RideComm battery"))
         assertEquals(VoiceCommand.Trip, p("RideComm speed"))
+        assertEquals(VoiceCommand.WhereIsEveryone, p("RideComm where is everyone"))
+        assertEquals(VoiceCommand.WhereIsEveryone, p("RideComm where's Rahul"))
+        assertEquals(VoiceCommand.RegroupHere, p("RideComm regroup here"))
         assertEquals(VoiceCommand.Trip, p("RideComm how far have we gone"))
     }
 

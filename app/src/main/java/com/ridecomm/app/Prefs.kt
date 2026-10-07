@@ -38,6 +38,7 @@ object Prefs {
     private const val KEY_SPEED_LIMIT = "speed_limit_kmh"
     private const val KEY_RIDE_UPDATES = "ride_updates"
     private const val KEY_DATA_SAVER = "data_saver"
+    private const val KEY_MAP_DARK = "map_dark"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -217,4 +218,9 @@ object Prefs {
 
     fun setDataSaver(context: Context, mode: DataSaverMode) =
         prefs(context).edit().putString(KEY_DATA_SAVER, mode.name).apply()
+
+    /** Group map in dark colours (default) or the normal light map, which reads better in bright sun. */
+    fun mapDark(context: Context): Boolean = prefs(context).getBoolean(KEY_MAP_DARK, true)
+
+    fun setMapDark(context: Context, dark: Boolean) = prefs(context).edit().putBoolean(KEY_MAP_DARK, dark).apply()
 }

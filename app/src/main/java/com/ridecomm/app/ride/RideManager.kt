@@ -257,7 +257,10 @@ object RideManager {
                         RiderAlerts.onRiderLeft(event.participant)
                     }
                     is RoomEvent.ParticipantConnected -> {
-                        event.participant.identity?.let { ProfileSync.onRiderJoined(it) }
+                        event.participant.identity?.let {
+                            ProfileSync.onRiderJoined(it)
+                            GroupTracker.onRiderJoined(it)
+                        }
                         RiderAlerts.onRiderJoined(event.participant)
                     }
                     else -> Unit
@@ -316,6 +319,7 @@ object RideManager {
         val from = since - CATCH_UP_MARGIN_MS
         VoteManager.requestCatchUp(from)
         SosManager.onBackOnline(from)
+        GroupTracker.requestSync()
         if (System.currentTimeMillis() - since > BACK_ONLINE_ANNOUNCE_MS) Announcer.speak(appContext, "Back online")
     }
 

@@ -423,7 +423,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             "Voice commands",
             if (voiceAvailable) {
                 "Say \"RideComm\" then: break, fuel, food, yes, no, slow down, wait for me, mute, next song, " +
-                    "music off, who's here, battery, speed, SOS, cancel. Works while your mic is on."
+                    "music off, who's here, battery, speed, where is everyone, regroup here, SOS, cancel. Works while your mic is on."
             } else {
                 "Needs Android 13 or newer with Google speech recognition"
             },
@@ -442,10 +442,10 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             speakerOverlay = it
         }
         SettingSwitch(
-            "Share my location (beta)",
-            "Under construction: distances and separation alerts may not work correctly yet",
+            "Group map",
+            "Share your location with the group: a live map of everyone, how far each rider is, alerts when someone " +
+                "falls behind, and regroup points. Uses GPS; turned off unless you switch it on.",
             shareLocation,
-            warning = true,
         ) { shareLocation = it }
         SettingSwitch(
             "Keep music apps playing",

@@ -1,5 +1,6 @@
 package com.ridecomm.app.ui
 
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
@@ -251,6 +252,79 @@ class ScreenshotTest {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             SpeedAlertSetting(90) {}
             RideUpdatesSetting(com.ridecomm.app.trip.UpdateEvery.MIN_15) {}
+        }
+    }
+
+    /** Sample group spread along a highway, with a regroup point ahead. */
+    private val sampleGroup = com.ridecomm.app.group.GroupState(
+        positions = mapOf(
+            "a" to com.ridecomm.app.group.RiderPosition(12.7605, 77.3215, System.currentTimeMillis(), 3_600.0, com.ridecomm.app.group.Relation.AHEAD, "Amit", 62f, 40f),
+            "r" to com.ridecomm.app.group.RiderPosition(12.7160, 77.2870, System.currentTimeMillis(), 2_500.0, com.ridecomm.app.group.Relation.BEHIND, "Rahul", 55f, 35f),
+            "v" to com.ridecomm.app.group.RiderPosition(12.7372, 77.3035, System.currentTimeMillis(), 120.0, com.ridecomm.app.group.Relation.NEARBY, "Vikram", 58f, 38f),
+        ),
+        sharing = true,
+        enabled = true,
+        me = com.ridecomm.app.group.MyFix(12.7350, 77.3000, 38.0, 8f),
+        regroup = com.ridecomm.app.group.RegroupPoint("g1", 12.7745, 77.3345, "Petrol pump", "Amit", "a", 0, setOf("a")),
+        regroupDistanceM = 5_400.0,
+        regroupRelation = com.ridecomm.app.group.Relation.AHEAD,
+    )
+
+    /** Real OpenStreetMap tiles (test resources) standing in for the live map, with the markers on top. */
+    private fun mapStandIn(dark: Boolean): @Composable (List<com.ridecomm.app.ui.map.GroupOverlay.Place>) -> Unit = { places ->
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val tiles = androidx.compose.runtime.remember {
+            val (z, x0, y0) = javaClass.classLoader!!.getResource("maptiles/origin.txt")!!.readText().trim().split(" ").map { it.toInt() }
+            val bmp = android.graphics.Bitmap.createBitmap(3 * 256, 5 * 256, android.graphics.Bitmap.Config.ARGB_8888)
+            val c = android.graphics.Canvas(bmp)
+            for (dx in 0 until 3) for (dy in 0 until 5) {
+                val tile = android.graphics.BitmapFactory.decodeStream(javaClass.classLoader!!.getResourceAsStream("maptiles/t_${dx}_$dy.png"))
+                c.drawBitmap(tile, dx * 256f, dy * 256f, null)
+            }
+            Triple(bmp, z, x0 to y0)
+        }
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+            val (bmp, z, origin) = tiles
+            val native = drawContext.canvas.nativeCanvas
+            val scale = size.height / bmp.height
+            val offX = (size.width - bmp.width * scale) / 2
+            native.save()
+            native.translate(offX, 0f)
+            native.scale(scale, scale)
+            native.drawBitmap(bmp, 0f, 0f, android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG).apply {
+                if (dark) colorFilter = com.ridecomm.app.ui.map.MapSetup.darkFilter
+            })
+            native.restore()
+            val world = 256.0 * (1 shl z)
+            fun px(lat: Double, lon: Double): Pair<Float, Float> {
+                val x = (lon + 180) / 360 * world - origin.first * 256
+                val r = Math.toRadians(lat)
+                val y = (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * world - origin.second * 256
+                return (offX + x * scale).toFloat() to (y * scale).toFloat()
+            }
+            val mpp = (156543.03 * Math.cos(Math.toRadians(12.73)) / (1 shl z) / scale).toFloat()
+            val painter = com.ridecomm.app.ui.map.MarkerPainter(context)
+            painter.draw(native, places.map { p -> val (x, y) = px(p.lat, p.lon); p.make(x, y, mpp) })
+        }
+    }
+
+    @Test
+    fun groupMapDark() = captureRoboImage("screenshots/17_group_map_dark.png") {
+        RideCommTheme { com.ridecomm.app.ui.map.GroupMapScreen(sampleGroup, riders, emptyMap(), onClose = {}, mapContent = mapStandIn(dark = true)) }
+    }
+
+    @Test
+    fun groupMapLight() = captureRoboImage("screenshots/18_group_map_light.png") {
+        RideCommTheme {
+            com.ridecomm.app.ui.map.GroupMapScreen(sampleGroup.copy(regroup = null), riders, emptyMap(), onClose = {}, mapContent = mapStandIn(dark = false))
+        }
+    }
+
+    @Test
+    fun groupMapCard() = shot("19_group_map_card") {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            com.ridecomm.app.ui.map.GroupMapCard(sampleGroup, 4) {}
+            com.ridecomm.app.ui.map.GroupMapCard(sampleGroup.copy(regroup = null), 4) {}
         }
     }
 

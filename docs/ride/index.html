@@ -134,6 +134,7 @@
     </div>
     <div class="pill" id="status"><span class="dot" id="statusDot"></span><span id="statusText">Joining…</span></div>
     <div id="alerts"></div>
+    <div class="card hidden" id="regroup"></div>
     <div class="card hidden" id="mySos">
       <div class="rname">Your SOS was sent</div>
       <p id="mySosText">The group can see where you are.</p>
@@ -177,7 +178,7 @@
   const params = new URLSearchParams(location.search);
   const TOKEN_SERVER = params.get('ts') || 'ridecomm-xnnn94';
   const CODE_RE = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/;
-  const T = { vote: 'rc-vote', sos: 'rc-sos', rider: 'rc-rider', music: 'rc-music', avatar: 'rc-avatar' };
+  const T = { vote: 'rc-vote', sos: 'rc-sos', rider: 'rc-rider', music: 'rc-music', avatar: 'rc-avatar', loc: 'rc-loc' };
   const VOTE_TIMEOUT_MS = 45000, RESULT_SHOWN_MS = 6000, BYE_VALID_MS = 30000;
   const P = {
     mic: 'M395-435q-35-35-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35q-50 0-85-35Zm45 275v-83q-92-13-157.5-78T203-479q-2-17 9-29t28-12q17 0 28.5 11.5T284-480q14 70 69.5 115T480-320q72 0 127-45.5T676-480q4-17 15.5-28.5T720-520q17 0 28 12t9 29q-14 91-79 157t-158 79v83q0 17-11.5 28.5T480-120q-17 0-28.5-11.5T440-160Z',
@@ -187,6 +188,7 @@
     food: 'M280-600v-240q0-17 11.5-28.5T320-880q17 0 28.5 11.5T360-840v240h40v-240q0-17 11.5-28.5T440-880q17 0 28.5 11.5T480-840v240q0 56-34.5 98T360-446v326q0 17-11.5 28.5T320-80q-17 0-28.5-11.5T280-120v-326q-51-14-85.5-56T160-600v-240q0-17 11.5-28.5T200-880q17 0 28.5 11.5T240-840v240h40Zm400 200h-80q-17 0-28.5-11.5T560-440v-240q0-70 51.5-135T718-880q18 0 30 14t12 33v713q0 17-11.5 28.5T720-80q-17 0-28.5-11.5T680-120v-280Z',
     speed: 'M418-340q25 25 63 23.5t55-27.5l169-253q9-14-2.5-25.5T677-625L424-456q-26 18-28.5 54.5T418-340ZM204-160q-22 0-40.5-9.5T134-198q-26-47-40-97.5T80-400q0-83 31.5-156T197-683q54-54 127-85.5T480-800q82 0 154 31t126 84.5q54 53.5 86 125T879-406q1 55-12.5 107.5T825-198q-11 19-29.5 28.5T755-160H204Z',
     hand: 'M259-139q-99-99-99-241v-380q0-17 11.5-28.5T200-800q17 0 28.5 11.5T240-760v240h80v-320q0-17 11.5-28.5T360-880q17 0 28.5 11.5T400-840v320h80v-360q0-17 11.5-28.5T520-920q17 0 28.5 11.5T560-880v360h80v-280q0-17 11.5-28.5T680-840q17 0 28.5 11.5T720-800v230q-29 21-44.5 53T660-450v50h-50q-63 0-106.5 43.5T460-250v50q0 13 8.5 21.5T490-170q13 0 21.5-8.5T520-200v-50q0-38 26-64t64-26h70q17 0 28.5-11.5T720-380v-70q0-38 26-64t64-26q13 0 21.5 8.5T840-510v130q0 142-99 241T500-40q-142 0-241-99Z',
+    flag: 'M280-400v240q0 17-11.5 28.5T240-120q-17 0-28.5-11.5T200-160v-600q0-17 11.5-28.5T240-800h287q14 0 25 9t14 23l10 48h184q17 0 28.5 11.5T800-680v320q0 17-11.5 28.5T760-320H553q-14 0-25-9t-14-23l-10-48H280Z',
     pin: 'M452-112q-14-5-25-15-65-60-115-117t-83.5-110.5q-33.5-53.5-51-103T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 45-17.5 94.5t-51 103Q698-301 648-244T533-127q-11 10-25 15t-28 5q-14 0-28-5Zm84.5-391.5Q560-527 560-560t-23.5-56.5Q513-640 480-640t-56.5 23.5Q400-593 400-560t23.5 56.5Q447-480 480-480t56.5-23.5Z',
     note: 'M400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-382q0-17 11.5-28.5T520-840h160q17 0 28.5 11.5T720-800v80q0 17-11.5 28.5T680-680H560v400q0 66-47 113t-113 47Z',
   };
@@ -215,7 +217,7 @@
     startedByMe: new Set(),
     alerts: new Map(), mySos: null, mySosDelivered: false, countdown: null,
     photos: new Map(), batteries: new Map(), onCall: new Set(), byes: new Map(), dropped: new Set(), seen: new Set(),
-    music: null, wakeLock: null,
+    music: null, wakeLock: null, regroup: null,
   };
 
   // ---- Speech, sound, banner ----
@@ -439,6 +441,32 @@
     }, 2500);
   }
 
+  // ---- Regroup point (set from the app's group map) ----
+  function onLoc(o, from) {
+    if (o.t === 'regroup') {
+      const cur = S.regroup;
+      if (cur && cur.id === o.id) return;
+      if (cur && (o.at < cur.at || (o.at === cur.at && o.id < cur.id))) return;
+      S.regroup = { id: o.id, lat: o.lat, lon: o.lon, label: o.label, name: o.name, at: o.at };
+      speak(o.name + ' set a regroup point: ' + o.label);
+      vibrate([80, 60, 80]);
+      renderRegroup();
+    } else if (o.t === 'regroup-clear') {
+      if (!S.regroup || S.regroup.id !== o.id) return;
+      S.regroup = null; renderRegroup();
+      speak((o.name || 'A rider') + ' cleared the regroup point');
+    }
+  }
+  function renderRegroup() {
+    const card = $('regroup'), g = S.regroup;
+    card.classList.toggle('hidden', !g);
+    if (!g) return;
+    const url = 'https://www.google.com/maps/dir/?api=1&destination=' + g.lat + ',' + g.lon + '&travelmode=driving';
+    card.innerHTML = '<div class="row"><span style="color:var(--amber)">' + icon(P.flag) + '</span><div class="grow"><div class="rname">Regroup: ' +
+      esc(g.label) + '</div><div class="rsub">Set by ' + esc(g.name) + '</div></div></div>' +
+      '<a class="btn primary" style="margin-top:12px" target="_blank" rel="noopener" href="' + url + '">' + icon(P.pin) + 'Navigate</a>';
+  }
+
   // ---- Rendering ----
   function renderRiders() {
     const r = S.room; if (!r) return;
@@ -538,7 +566,7 @@
     const text = (topic, fn) => room.registerTextStreamHandler(topic, async (reader, info) => {
       try { fn(JSON.parse(await reader.readAll()), info.identity); } catch (e) { console.warn(topic, e); }
     });
-    text(T.vote, onVote); text(T.sos, onSos); text(T.rider, onRider);
+    text(T.vote, onVote); text(T.sos, onSos); text(T.rider, onRider); text(T.loc, onLoc);
     text(T.music, (o) => {
       if (o.t === 'now') { S.music = o; $('music').classList.remove('hidden'); $('music').innerHTML = icon(P.note) + esc(o.dj + ' is playing ' + o.title + ' (in the app)'); }
       else if (o.t === 'stop') { S.music = null; $('music').classList.add('hidden'); }
@@ -602,6 +630,7 @@
     const from = since - 5000;
     send(T.vote, { t: 'catchup', since: from });
     send(T.sos, { t: 'catchup', since: from });
+    send(T.loc, { t: 'sync' });
     if (S.mySos && !S.mySosDelivered) {
       send(T.sos, sosMsg(S.mySos.lat, S.mySos.lon)).then((ok) => {
         if (ok) { S.mySosDelivered = true; renderMySos(); speak('Back online. SOS sent to the group.'); }
@@ -660,7 +689,7 @@
       await Promise.race([send(T.rider, { t: 'bye' }), new Promise((ok) => setTimeout(ok, 600))]);
       r.disconnect();
     }
-    S.room = null; S.vote = null; S.result = null; S.alerts.clear(); S.mySos = null;
+    S.room = null; S.vote = null; S.result = null; S.alerts.clear(); S.mySos = null; S.regroup = null; renderRegroup();
     try { S.wakeLock && S.wakeLock.release(); } catch (e) {}
     $('ride').classList.add('hidden'); $('dock').classList.add('hidden'); $('join').classList.remove('hidden');
     $('audio').innerHTML = ''; renderAlerts(); renderMySos();
