@@ -77,7 +77,7 @@ private fun AlertCard(alert: SosAlert) {
             Ico(R.drawable.ms_sos, 34.dp, Color.White)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("${alert.name} needs help", style = MaterialTheme.typography.titleLarge)
+                Text(if (alert.crash) "${alert.name} may have crashed" else "${alert.name} needs help", style = MaterialTheme.typography.titleLarge)
                 Text(
                     alert.distanceM?.let { "${SosManager.formatDistance(it)} away" } ?: "Location not available yet",
                     style = MaterialTheme.typography.bodyMedium,
@@ -108,7 +108,7 @@ private fun AlertCard(alert: SosAlert) {
 
 /** Full-screen countdown inside the app; tapping anywhere cancels. */
 @Composable
-fun SosCountdown(seconds: Int) {
+fun SosCountdown(seconds: Int, crash: Boolean = false) {
     Box(
         Modifier
             .fillMaxSize()
@@ -121,7 +121,8 @@ fun SosCountdown(seconds: Int) {
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Ico(R.drawable.ms_sos, 72.dp, Color.White)
+            Ico(if (crash) R.drawable.ms_car_crash else R.drawable.ms_sos, 72.dp, Color.White)
+            if (crash) Text("Crash detected", style = MaterialTheme.typography.headlineMedium)
             Box(
                 Modifier
                     .size(200.dp)

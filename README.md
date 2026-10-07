@@ -41,10 +41,16 @@ other over mobile internet through their helmet headset.
   the ballots itself and announces the result. A vote ends early once either side has a majority of the riders,
   otherwise after everyone voted or 45 s (then decided by the votes cast). 🐢 Slow down and ✋ Wait for me are
   announced to everyone without a vote. Music turns down while announcements play.
-- **Group tracking:** each phone shares its GPS position with the ride every 15 s (can be turned off in
-  Settings). Rider cards show distance and whether they're ahead or behind; tap to open their spot in Maps.
+- **Group tracking (beta, off by default):** each phone shares its GPS position with the ride every 15 s. Rider cards show distance and whether they're ahead or behind; tap to open their spot in Maps.
   When a rider drifts more than 1 km away everyone hears "Rahul is 1.2 kilometers behind" (again at each further
   kilometre), and "Rahul is back with the group" once they're within 500 m.
+- **Crash detection:** during a ride the accelerometer watches for a hard impact (over 4 g) followed by the
+  phone lying still for 10 s; with GPS it also requires that the rider was moving and has stopped. It then starts
+  a 15-second SOS countdown ("Crash detected", tap anywhere to cancel); others hear "Rahul may have crashed".
+  A cancelled alarm mutes detection for a minute. Can be turned off in Settings.
+- **Profile:** name and photo are set once (first run, then Settings). Photos are shared with the ride and shown
+  on rider cards and, while another app is open, as small semi-transparent bubbles of whoever is talking at the
+  top-left corner (they ignore touches, so Maps underneath stays usable).
 - **SOS:** 🚨 SOS (ride screen or outer ring of the floating button) starts a 5-second countdown — tap anywhere
   to cancel. Then every rider gets a siren in the headset (music muted), a spoken "S O S. Rahul needs help.
   1.2 kilometers away.", a full-screen red alert over other apps and a high-priority notification, both with

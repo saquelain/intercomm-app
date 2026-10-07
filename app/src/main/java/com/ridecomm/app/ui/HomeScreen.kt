@@ -1,13 +1,16 @@
 package com.ridecomm.app.ui
 
 import android.Manifest
+import android.graphics.Bitmap
 import android.content.Intent
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -30,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,9 +47,13 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
 import com.ridecomm.app.CrashLog
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
+import com.ridecomm.app.crash.CrashDetector
+import com.ridecomm.app.profile.Profile
 import com.ridecomm.app.group.GroupTracker
 import com.ridecomm.app.ride.RideCode
 import com.ridecomm.app.ride.RideManager
@@ -54,6 +63,9 @@ import com.ridecomm.app.ride.RideState
 fun HomeScreen(state: RideState) {
     val context = LocalContext.current
     var name by rememberSaveable { mutableStateOf(Prefs.riderName(context)) }
+    // Name as saved; the name field only shows until one is saved.
+    var savedName by remember { mutableStateOf(Prefs.riderName(context)) }
+    val myPhoto by Profile.photo.collectAsStateWithLifecycle()
     var joinCode by rememberSaveable { mutableStateOf("") }
     var tokenServerId by remember { mutableStateOf(Prefs.tokenServerId(context)) }
     var showSettings by remember { mutableStateOf(false) }
@@ -126,13 +138,18 @@ fun HomeScreen(state: RideState) {
         }
 
         GlassCard(spacing = 18.dp) {
-            GlassTextField(
-                value = name,
-                onValueChange = { name = it.take(20) },
-                label = "Your name",
-                placeholder = "e.g. Rahul",
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
-            )
+            if (savedName.isBlank()) {
+                // First run only; afterwards the name lives in Settings.
+                GlassTextField(
+                    value = name,
+                    onValueChange = { name = it.take(20) },
+                    label = "Your name",
+                    placeholder = "e.g. Rahul",
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
+                )
+            } else {
+                ProfileRow(savedName, myPhoto) { showSettings = true }
+            }
             PrimaryButton(
                 "Start a new ride",
                 R.drawable.ms_two_wheeler,
@@ -171,7 +188,11 @@ fun HomeScreen(state: RideState) {
     if (showSettings) {
         SettingsDialog(
             onClose = { showSettings = false },
-            onSaved = { tokenServerId = Prefs.tokenServerId(context) },
+            onSaved = {
+                tokenServerId = Prefs.tokenServerId(context)
+                savedName = Prefs.riderName(context)
+                name = savedName
+            },
         )
     }
 }
@@ -214,9 +235,13 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var numbers by remember { mutableStateOf(Prefs.emergencyNumbers(context)) }
     var shareLocation by remember { mutableStateOf(Prefs.shareLocation(context)) }
     var keepMusic by remember { mutableStateOf(Prefs.keepOtherMusic(context)) }
+    var riderName by remember { mutableStateOf(Prefs.riderName(context)) }
+    var crashDetection by remember { mutableStateOf(Prefs.crashDetection(context)) }
+    var speakerOverlay by remember { mutableStateOf(Prefs.speakerOverlay(context)) }
 
     GlassDialog(onDismiss = onClose) {
         Text("Settings", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp))
+        ProfileEditor(riderName) { riderName = it }
         if (!inRide) {
             GlassTextField(
                 value = tokenId,
@@ -240,9 +265,20 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
         )
         Text("Used for SOS when there's no internet.", style = MaterialTheme.typography.bodyMedium)
         SettingSwitch("Floating ride button", "Controls over Maps and other apps", bubbleOn) { bubbleOn = it }
-        SettingSwitch("Share my location", "Distances and separation alerts for the group", shareLocation) {
-            shareLocation = it
+        SettingSwitch(
+            "Crash detection",
+            "After a hard impact and no movement, starts a 15-second SOS countdown you can cancel",
+            crashDetection,
+        ) { crashDetection = it }
+        SettingSwitch("Show who's talking", "Small photos at the top-left over Maps and other apps", speakerOverlay) {
+            speakerOverlay = it
         }
+        SettingSwitch(
+            "Share my location (beta)",
+            "Under construction: distances and separation alerts may not work correctly yet",
+            shareLocation,
+            warning = true,
+        ) { shareLocation = it }
         SettingSwitch(
             "Keep music apps playing",
             "Spotify, YouTube Music… get quieter when someone talks" + if (inRide) ". Applies from your next ride." else "",
@@ -256,6 +292,10 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setEmergencyNumbers(context, numbers)
                 Prefs.setShareLocation(context, shareLocation)
                 Prefs.setKeepOtherMusic(context, keepMusic)
+                if (riderName.isNotBlank()) Prefs.setRiderName(context, riderName.trim())
+                Prefs.setCrashDetection(context, crashDetection)
+                Prefs.setSpeakerOverlay(context, speakerOverlay)
+                CrashDetector.applySettings(context)
                 GroupTracker.applySettings()
                 onSaved()
                 onClose()
@@ -265,12 +305,25 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
 }
 
 @Composable
-private fun SettingSwitch(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+private fun SettingSwitch(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    warning: Boolean = false,
+    onChange: (Boolean) -> Unit,
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
-            Text(subtitle, style = MaterialTheme.typography.bodyMedium)
+            Row(verticalAlignment = Alignment.Top) {
+                if (warning) {
+                    Ico(R.drawable.ms_warning, 16.dp, Palette.Amber)
+                    Spacer(Modifier.width(6.dp))
+                }
+                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = if (warning) Palette.Amber else Palette.TextSecondary)
+            }
         }
+        Spacer(Modifier.width(10.dp))
         Switch(
             checked = checked,
             onCheckedChange = onChange,
@@ -308,4 +361,64 @@ private fun CrashReportCard() {
             }
         }
     }
+}
+
+/** "Riding as Saquelain" with my photo; tap to edit in Settings. */
+@Composable
+private fun ProfileRow(name: String, photo: Bitmap?, onEdit: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).clickable(onClick = onEdit),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Avatar(name, 56.dp, Palette.Brand, ring = null, photo = photo)
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            SectionLabel("Riding as")
+            Text(name, style = MaterialTheme.typography.titleLarge)
+        }
+        GlassIconButton(R.drawable.ms_edit, "Edit profile", size = 44.dp, iconSize = 20.dp, onClick = onEdit)
+    }
+}
+
+/** Photo and name at the top of Settings. Tap the photo to pick a new one. */
+@Composable
+private fun ProfileEditor(name: String, onNameChange: (String) -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val photo by Profile.photo.collectAsStateWithLifecycle()
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                if (!Profile.setPhoto(context, uri)) {
+                    Toast.makeText(context, "Couldn't use that image", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+    val pick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.clip(CircleShape).clickable(onClick = pick)) {
+            Avatar(name.ifBlank { "?" }, 76.dp, Palette.Brand, ring = null, photo = photo)
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            GlassButton(if (photo == null) "Add photo" else "Change photo", R.drawable.ms_photo_camera, height = 44.dp, onClick = pick)
+            if (photo != null) {
+                Text(
+                    "Remove photo",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Palette.Stop,
+                    modifier = Modifier.clickable { Profile.removePhoto(context) }.padding(start = 6.dp),
+                )
+            }
+        }
+    }
+    GlassTextField(
+        value = name,
+        onValueChange = { onNameChange(it.take(20)) },
+        label = "Your name",
+        placeholder = "e.g. Rahul",
+        textStyle = MaterialTheme.typography.bodyLarge,
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+    )
 }

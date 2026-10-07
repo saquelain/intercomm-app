@@ -2,8 +2,10 @@ package com.ridecomm.app.ride
 
 import android.content.Context
 import com.ridecomm.app.Prefs
+import com.ridecomm.app.crash.CrashDetector
 import com.ridecomm.app.group.GroupTracker
 import com.ridecomm.app.music.MusicManager
+import com.ridecomm.app.profile.ProfileSync
 import com.ridecomm.app.sos.SosManager
 import com.ridecomm.app.vote.VoteManager
 import io.livekit.android.AudioOptions
@@ -59,6 +61,7 @@ object RideManager {
         appContext = context.applicationContext
         _state.value = RideState(status = RideStatus.CONNECTING, code = code)
         RideService.start(appContext)
+        CrashDetector.start(appContext)
         rideJob = scope.launch { runRide(code) }
     }
 
@@ -69,6 +72,8 @@ object RideManager {
         VoteManager.release()
         SosManager.release()
         GroupTracker.release()
+        ProfileSync.release()
+        CrashDetector.stop()
         _state.value = RideState()
     }
 
@@ -151,6 +156,7 @@ object RideManager {
         VoteManager.attach(appContext, r)
         SosManager.attach(r)
         GroupTracker.attach(appContext, r)
+        ProfileSync.attach(appContext, r)
         val ended = CompletableDeferred<DisconnectReason>()
         val events = launch(start = CoroutineStart.UNDISPATCHED) {
             r.events.collect { event ->
@@ -160,6 +166,7 @@ object RideManager {
                     is RoomEvent.Disconnected -> ended.complete(event.reason)
                     is RoomEvent.ActiveSpeakersChanged -> MusicManager.onSpeakersChanged(event.speakers)
                     is RoomEvent.ParticipantDisconnected -> event.participant.identity?.let { GroupTracker.forget(it.value) }
+                    is RoomEvent.ParticipantConnected -> event.participant.identity?.let { ProfileSync.onRiderJoined(it) }
                     else -> Unit
                 }
                 refreshRiders()
@@ -171,6 +178,7 @@ object RideManager {
             onConnected()
             MusicManager.onConnected()
             GroupTracker.onConnected()
+            ProfileSync.onConnected()
             _state.update { it.copy(status = RideStatus.CONNECTED) }
             refreshRiders()
             ended.await()
@@ -180,6 +188,7 @@ object RideManager {
             VoteManager.detach()
             SosManager.detach()
             GroupTracker.detach()
+            ProfileSync.detach()
             room = null
             r.disconnect()
             r.release()
@@ -192,6 +201,8 @@ object RideManager {
         VoteManager.release()
         SosManager.release()
         GroupTracker.release()
+        ProfileSync.release()
+        CrashDetector.stop()
         _state.value = RideState(error = message)
     }
 

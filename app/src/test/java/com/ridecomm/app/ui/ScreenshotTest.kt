@@ -55,6 +55,44 @@ class ScreenshotTest {
     @Test
     fun home() = shot("1_home") { HomeScreen(RideState()) }
 
+    /** Returning rider: name already saved, so no name field. */
+    @Test
+    fun homeWithProfile() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        com.ridecomm.app.Prefs.setRiderName(context, "Saquelain")
+        com.ridecomm.app.Prefs.setTokenServerId(context, "ridecomm-test")
+        shot("1b_home_profile") { HomeScreen(RideState()) }
+    }
+
+    @Test
+    fun crashCountdown() = shot("5b_crash_countdown") { SosCountdown(12, crash = true) }
+
+    @Test
+    fun speakersStrip() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val view = com.ridecomm.app.overlay.SpeakerOverlay.SpeakersView(context)
+        view.speakers = listOf(
+            com.ridecomm.app.overlay.Speaker("a", "Amit Kumar", null),
+            com.ridecomm.app.overlay.Speaker("r", "Rahul", null),
+        )
+        val spec = android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.UNSPECIFIED)
+        view.measure(spec, spec)
+        view.layout(0, 0, view.measuredWidth, view.measuredHeight)
+        val w = 1200
+        val h = 600
+        val bitmap = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bitmap)
+        canvas.drawColor(android.graphics.Color.rgb(0xDD, 0xE6, 0xD8)) // stand-in for Maps
+        canvas.save()
+        canvas.translate(36f, 120f)
+        // Same transparency as the real window.
+        canvas.saveLayerAlpha(0f, 0f, view.measuredWidth.toFloat(), view.measuredHeight.toFloat(), (0.78f * 255).toInt())
+        view.draw(canvas)
+        canvas.restore()
+        canvas.restore()
+        bitmap.captureRoboImage("screenshots/10_speakers_strip.png")
+    }
+
     @Test
     fun ride() = shot("2_ride") {
         RideContent(

@@ -13,7 +13,10 @@ object Prefs {
     private const val KEY_BUBBLE_Y = "bubble_y"
     private const val KEY_BUBBLE_LEFT = "bubble_left"
     private const val KEY_EMERGENCY_NUMBERS = "emergency_numbers"
-    private const val KEY_SHARE_LOCATION = "share_location"
+    // New key so the feature starts switched off for everyone while it's still being built.
+    private const val KEY_SHARE_LOCATION = "share_location_beta"
+    private const val KEY_CRASH_DETECTION = "crash_detection"
+    private const val KEY_SPEAKER_OVERLAY = "speaker_overlay"
     private const val KEY_KEEP_OTHER_MUSIC = "keep_other_music"
 
     private fun prefs(context: Context) =
@@ -59,7 +62,7 @@ object Prefs {
         prefs(context).edit().putString(KEY_EMERGENCY_NUMBERS, numbers.trim()).apply()
 
     /** Share my GPS position with the group during rides (distance and separation alerts). */
-    fun shareLocation(context: Context): Boolean = prefs(context).getBoolean(KEY_SHARE_LOCATION, true)
+    fun shareLocation(context: Context): Boolean = prefs(context).getBoolean(KEY_SHARE_LOCATION, false)
 
     fun setShareLocation(context: Context, share: Boolean) =
         prefs(context).edit().putBoolean(KEY_SHARE_LOCATION, share).apply()
@@ -72,6 +75,18 @@ object Prefs {
 
     fun setKeepOtherMusic(context: Context, keep: Boolean) =
         prefs(context).edit().putBoolean(KEY_KEEP_OTHER_MUSIC, keep).apply()
+
+    /** Start the SOS countdown automatically after a hard impact followed by no movement. */
+    fun crashDetection(context: Context): Boolean = prefs(context).getBoolean(KEY_CRASH_DETECTION, true)
+
+    fun setCrashDetection(context: Context, on: Boolean) =
+        prefs(context).edit().putBoolean(KEY_CRASH_DETECTION, on).apply()
+
+    /** Show who is talking at the top-left corner while another app (e.g. Maps) is open. */
+    fun speakerOverlay(context: Context): Boolean = prefs(context).getBoolean(KEY_SPEAKER_OVERLAY, true)
+
+    fun setSpeakerOverlay(context: Context, on: Boolean) =
+        prefs(context).edit().putBoolean(KEY_SPEAKER_OVERLAY, on).apply()
 
     fun setBubblePosition(context: Context, y: Int, onLeft: Boolean) =
         prefs(context).edit().putInt(KEY_BUBBLE_Y, y).putBoolean(KEY_BUBBLE_LEFT, onLeft).apply()

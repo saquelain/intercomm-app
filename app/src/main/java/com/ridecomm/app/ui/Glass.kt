@@ -4,7 +4,9 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -45,6 +47,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -335,7 +339,7 @@ fun GlassDialog(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Un
 
 /** Round avatar with the rider's initial on a gradient. */
 @Composable
-fun Avatar(name: String, size: Dp, brush: Brush, ring: Color?) {
+fun Avatar(name: String, size: Dp, brush: Brush, ring: Color?, photo: Bitmap? = null) {
     Box(
         Modifier
             .size(size)
@@ -344,11 +348,16 @@ fun Avatar(name: String, size: Dp, brush: Brush, ring: Color?) {
             .background(brush),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            name.firstOrNull()?.uppercase() ?: "?",
-            style = MaterialTheme.typography.titleLarge,
-            color = Color.White,
-        )
+        if (photo != null) {
+            val image = remember(photo) { photo.asImageBitmap() }
+            Image(image, name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        } else {
+            Text(
+                name.firstOrNull()?.uppercase() ?: "?",
+                style = MaterialTheme.typography.titleLarge,
+                color = Color.White,
+            )
+        }
     }
 }
 

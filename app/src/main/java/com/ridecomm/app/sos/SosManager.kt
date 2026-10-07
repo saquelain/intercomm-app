@@ -12,6 +12,7 @@ import androidx.core.app.NotificationManagerCompat
 import com.ridecomm.app.Announcer
 import com.ridecomm.app.MainActivity
 import com.ridecomm.app.Prefs
+import com.ridecomm.app.crash.CrashDetector
 import com.ridecomm.app.R
 import com.ridecomm.app.overlay.Haptics
 import com.ridecomm.app.ride.RideManager
@@ -39,11 +40,15 @@ data class SosAlert(
     /** Metres from me, if both locations are known. */
     val distanceM: Float?,
     val atMs: Long,
+    /** Sent automatically by crash detection rather than by the rider. */
+    val crash: Boolean = false,
 )
 
 data class SosState(
     /** Seconds left before my SOS goes out, or null when no countdown is running. */
     val countdown: Int? = null,
+    /** The running countdown was started by crash detection. */
+    val countdownFromCrash: Boolean = false,
     /** My SOS has been sent and I haven't said I'm OK yet. */
     val mySosActive: Boolean = false,
     /** How my SOS went out, e.g. "Sent to the group" or "Sent by SMS to 2 numbers". */
@@ -110,19 +115,29 @@ object SosManager {
     // ---- Sending ----
 
     /** Starts the countdown; [cancelCountdown] (tap anywhere) stops it. */
-    fun startCountdown() {
+    /**
+     * Starts the countdown; [cancelCountdown] (tap anywhere) stops it. Crash detection uses a
+     * longer countdown and announces why it started.
+     */
+    fun startCountdown(seconds: Int = COUNTDOWN_SECONDS, crash: Boolean = false) {
         if (countdownJob != null || _state.value.mySosActive) return
         val haptics = Haptics(appContext)
         countdownJob = scope.launch {
-            for (left in COUNTDOWN_SECONDS downTo 1) {
-                _state.update { it.copy(countdown = left) }
-                haptics.longPress()
-                Announcer.speak(appContext, if (left == COUNTDOWN_SECONDS) "SOS in $left seconds. Tap to cancel." else "$left")
+            for (left in seconds downTo 1) {
+                _state.update { it.copy(countdown = left, countdownFromCrash = crash) }
+                if (crash) haptics.sos() else haptics.longPress()
+                val words = when {
+                    left == seconds && crash -> "Crash detected. Sending S O S in $left seconds. Tap anywhere to cancel."
+                    left == seconds -> "SOS in $left seconds. Tap to cancel."
+                    left <= 5 || left % 5 == 0 -> "$left"
+                    else -> null
+                }
+                words?.let { Announcer.speak(appContext, it) }
                 delay(1_000)
             }
-            _state.update { it.copy(countdown = null) }
+            _state.update { it.copy(countdown = null, countdownFromCrash = false) }
             countdownJob = null
-            send()
+            send(crash)
         }
     }
 
@@ -130,11 +145,13 @@ object SosManager {
         if (countdownJob == null) return
         countdownJob?.cancel()
         countdownJob = null
-        _state.update { it.copy(countdown = null) }
+        val fromCrash = _state.value.countdownFromCrash
+        _state.update { it.copy(countdown = null, countdownFromCrash = false) }
+        if (fromCrash) CrashDetector.falseAlarm()
         Announcer.speak(appContext, "SOS cancelled")
     }
 
-    private fun send() {
+    private fun send(crash: Boolean = false) {
         val name = Prefs.riderName(appContext).ifBlank { "Rider" }
         val quick = LocationHelper.lastKnown(appContext)
         // Both the first message and the GPS follow-up carry this time, so other phones treat
@@ -143,11 +160,11 @@ object SosManager {
         val online = room != null && RideManager.state.value.status == RideStatus.CONNECTED
         _state.update { it.copy(mySosActive = true, mySosStatus = "Sending…") }
         scope.launch {
-            val sentOnline = online && broadcast(sosMessage(name, quick, startedAt))
+            val sentOnline = online && broadcast(sosMessage(name, quick, startedAt, crash))
             var status = if (sentOnline) "Sent to the group" else null
             if (!sentOnline) {
                 val numbers = SmsSender.parseNumbers(Prefs.emergencyNumbers(appContext))
-                val opened = SmsSender.compose(appContext, numbers, smsText(name, quick))
+                val opened = SmsSender.compose(appContext, numbers, smsText(name, quick, crash))
                 status = when {
                     opened -> "No internet: SOS text is ready in Messages, tap Send"
                     numbers.isEmpty() -> "No internet and no emergency numbers set"
@@ -160,7 +177,7 @@ object SosManager {
             // Follow up with a fresh GPS fix so the group gets an accurate position.
             val precise = LocationHelper.fresh(appContext) ?: return@launch
             if (!_state.value.mySosActive) return@launch
-            if (sentOnline) broadcast(sosMessage(name, precise, startedAt))
+            if (sentOnline) broadcast(sosMessage(name, precise, startedAt, crash))
         }
     }
 
@@ -173,10 +190,11 @@ object SosManager {
         Announcer.speak(appContext, "Told the group you're OK")
     }
 
-    private fun sosMessage(name: String, location: Location?, startedAt: Long) = JSONObject()
+    private fun sosMessage(name: String, location: Location?, startedAt: Long, crash: Boolean) = JSONObject()
         .put("t", "sos")
         .put("name", name)
         .put("at", startedAt)
+        .put("crash", crash)
         .apply {
             if (location != null) {
                 put("lat", location.latitude)
@@ -184,8 +202,8 @@ object SosManager {
             }
         }
 
-    private fun smsText(name: String, location: Location?) = buildString {
-        append("SOS from $name (RideComm). Needs help.")
+    private fun smsText(name: String, location: Location?, crash: Boolean) = buildString {
+        append(if (crash) "SOS from $name (RideComm): possible crash detected." else "SOS from $name (RideComm). Needs help.")
         if (location != null) append(" Location: ${LocationHelper.mapsLink(location.latitude, location.longitude)}")
     }
 
@@ -208,6 +226,7 @@ object SosManager {
                     lon = lon,
                     distanceM = distanceTo(lat, lon),
                     atMs = o.getLong("at"),
+                    crash = o.optBoolean("crash", false),
                 )
                 val isNew = _state.value.alerts.none { it.identity == from }
                 _state.update { s -> s.copy(alerts = s.alerts.filterNot { it.identity == from } + alert) }
@@ -260,7 +279,7 @@ object SosManager {
     }
 
     private fun spokenAlert(alert: SosAlert) = buildString {
-        append("S O S. ${alert.name} needs help.")
+        append(if (alert.crash) "S O S. ${alert.name} may have crashed." else "S O S. ${alert.name} needs help.")
         alert.distanceM?.let { append(" ${formatDistance(it)} away.") }
     }
 
@@ -279,7 +298,7 @@ object SosManager {
         )
         val builder = NotificationCompat.Builder(appContext, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("SOS: ${alert.name} needs help")
+            .setContentTitle(if (alert.crash) "SOS: ${alert.name} may have crashed" else "SOS: ${alert.name} needs help")
             .setContentText(alert.distanceM?.let { "${formatDistance(it)} away" } ?: "Location not available yet")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)

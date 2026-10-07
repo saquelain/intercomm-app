@@ -37,7 +37,7 @@ class SosOverlay(private val context: Context) {
         val countdown = state.countdown
         val alert = state.alerts.lastOrNull()?.takeIf { key(it) !in seen }
         when {
-            countdown != null -> show("countdown") { countdownView(countdown) }
+            countdown != null -> show("countdown") { countdownView(countdown, state.countdownFromCrash) }
             alert != null -> show(key(alert)) { alertView(alert) }
             else -> hide()
         }
@@ -71,8 +71,9 @@ class SosOverlay(private val context: Context) {
     }
 
     @SuppressLint("SetTextI18n")
-    private fun countdownView(seconds: Int): View = column().apply {
-        addView(icon(R.drawable.ms_sos, 72))
+    private fun countdownView(seconds: Int, crash: Boolean): View = column().apply {
+        addView(icon(if (crash) R.drawable.ms_car_crash else R.drawable.ms_sos, 72))
+        if (crash) addView(text("Crash detected", 30f, bold = true))
         val number = text(seconds.toString(), 96f, bold = true)
         tag = number
         addView(
@@ -94,7 +95,7 @@ class SosOverlay(private val context: Context) {
     @SuppressLint("SetTextI18n")
     private fun alertView(alert: SosAlert): View = column().apply {
         addView(icon(R.drawable.ms_sos, 80))
-        addView(text("${alert.name} needs help", 30f, bold = true).apply { setPadding(0, dp(12), 0, 0) })
+        addView(text(if (alert.crash) "${alert.name} may have crashed" else "${alert.name} needs help", 30f, bold = true).apply { setPadding(0, dp(12), 0, 0) })
         addView(
             text(
                 alert.distanceM?.let { "${SosManager.formatDistance(it)} away" } ?: "Location not available yet",

@@ -1,6 +1,7 @@
 package com.ridecomm.app.ui
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -53,6 +54,8 @@ import com.ridecomm.app.group.Relation
 import com.ridecomm.app.group.RiderPosition
 import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.music.MusicState
+import com.ridecomm.app.profile.Profile
+import com.ridecomm.app.profile.ProfileSync
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideState
 import com.ridecomm.app.ride.RideStatus
@@ -72,7 +75,9 @@ fun RideScreen(state: RideState) {
     val sos by SosManager.state.collectAsStateWithLifecycle()
     val group by GroupTracker.state.collectAsStateWithLifecycle()
     val sent by VoteManager.sent.collectAsStateWithLifecycle()
-    RideContent(state, music, vote, sos, group, sent)
+    val photos by ProfileSync.photos.collectAsStateWithLifecycle()
+    val myPhoto by Profile.photo.collectAsStateWithLifecycle()
+    RideContent(state, music, vote, sos, group, sent, photos, myPhoto)
 }
 
 /** The ride screen for given states (split out so screenshots can render any situation). */
@@ -84,6 +89,8 @@ fun RideContent(
     sos: SosState,
     group: GroupState = GroupState(),
     sent: VoteManager.Sent? = null,
+    photos: Map<String, Bitmap> = emptyMap(),
+    myPhoto: Bitmap? = null,
 ) {
     val context = LocalContext.current
     var confirmLeave by remember { mutableStateOf(false) }
@@ -124,7 +131,7 @@ fun RideContent(
 
                 StatusLine(state)
                 SosCards(sos)
-                RidersCard(state.riders, group)
+                RidersCard(state.riders, group) { rider -> if (rider.isMe) myPhoto else photos[rider.id] }
                 VoteCard(vote)
                 MusicCard(music)
                 OverlayPermissionCard()
@@ -151,7 +158,7 @@ fun RideContent(
         }
 
         // Drawn last so it covers the whole ride screen.
-        sos.countdown?.let { SosCountdown(it) }
+        sos.countdown?.let { SosCountdown(it, sos.countdownFromCrash) }
     }
 
     if (showSettings) SettingsDialog(onClose = { showSettings = false }, inRide = true)
@@ -184,22 +191,22 @@ private fun StatusLine(state: RideState) {
 }
 
 @Composable
-private fun RidersCard(riders: List<Rider>, group: GroupState) {
+private fun RidersCard(riders: List<Rider>, group: GroupState, photoOf: (Rider) -> Bitmap?) {
     GlassCard(spacing = 14.dp) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             SectionLabel("Riders", Modifier.weight(1f))
-            if (group.sharing) StatusPill("Sharing location", Palette.Cyan)
+            if (group.sharing) StatusPill("Location (beta)", Palette.Cyan)
         }
-        riders.forEach { RiderRow(it, if (it.isMe) null else group.positions[it.id]) }
+        riders.forEach { RiderRow(it, if (it.isMe) null else group.positions[it.id], photoOf(it)) }
     }
 }
 
 @Composable
-private fun RiderRow(rider: Rider, position: RiderPosition?) {
+private fun RiderRow(rider: Rider, position: RiderPosition?, photo: Bitmap?) {
     val context = LocalContext.current
     val ring by animateColorAsState(if (rider.isSpeaking) Palette.Go else Color.Transparent, label = "ring")
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Avatar(rider.name, 54.dp, if (rider.isMe) Palette.Brand else OthersGradient, ring)
+        Avatar(rider.name, 54.dp, if (rider.isMe) Palette.Brand else OthersGradient, ring, photo)
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(if (rider.isMe) "${rider.name} (you)" else rider.name, style = MaterialTheme.typography.titleMedium)

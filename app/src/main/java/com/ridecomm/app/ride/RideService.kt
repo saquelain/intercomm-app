@@ -20,6 +20,9 @@ import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
 import com.ridecomm.app.overlay.AppVisibility
 import com.ridecomm.app.overlay.BubbleOverlay
+import com.ridecomm.app.overlay.Speaker
+import com.ridecomm.app.overlay.SpeakerOverlay
+import com.ridecomm.app.profile.ProfileSync
 import com.ridecomm.app.sos.LocationHelper
 import com.ridecomm.app.sos.SosManager
 import com.ridecomm.app.sos.SosOverlay
@@ -42,6 +45,7 @@ class RideService : Service() {
     private var lastStartId = 0
     private lateinit var bubble: BubbleOverlay
     private lateinit var sosOverlay: SosOverlay
+    private lateinit var speakerOverlay: SpeakerOverlay
 
     override fun onCreate() {
         super.onCreate()
@@ -57,6 +61,17 @@ class RideService : Service() {
 
         bubble = BubbleOverlay(this)
         sosOverlay = SosOverlay(this)
+        speakerOverlay = SpeakerOverlay(this)
+        scope.launch {
+            // Who's talking, in the corner, while another app is on screen. My own voice isn't shown.
+            combine(RideManager.state, AppVisibility.inForeground, ProfileSync.photos) { ride, appVisible, photos ->
+                val speakers = ride.riders
+                    .filter { it.isSpeaking && !it.isMe }
+                    .map { Speaker(it.id, it.name, photos[it.id]) }
+                val allowed = ride.status != RideStatus.IDLE && !appVisible && Prefs.speakerOverlay(this@RideService)
+                speakers to allowed
+            }.collect { (speakers, allowed) -> speakerOverlay.update(speakers, allowed) }
+        }
         scope.launch {
             combine(SosManager.state, AppVisibility.inForeground) { sos, appVisible -> sos to appVisible }
                 .collect { (sos, appVisible) -> sosOverlay.update(sos, appVisible) }
@@ -102,6 +117,7 @@ class RideService : Service() {
         scope.cancel()
         bubble.hide()
         sosOverlay.hide()
+        speakerOverlay.hide()
         Announcer.shutdown()
         wakeLock?.takeIf { it.isHeld }?.release()
         super.onDestroy()
