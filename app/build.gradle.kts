@@ -95,6 +95,12 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+        // Robolectric downloads Android itself while the tests run; Maven Central sometimes refuses
+        // CI (build #42 failed that way), so fetch it from Google's copy of Maven Central instead.
+        unitTests.all {
+            it.systemProperty("robolectric.dependency.repo.url", "https://maven-central.storage-download.googleapis.com/maven2/")
+            it.systemProperty("robolectric.dependency.repo.id", "google-maven-central")
+        }
     }
 }
 
