@@ -19,6 +19,8 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- Puts emergency info back on the lock screen after a restart (only if switched on). -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Added by the LiveKit SDK for video/screen share; RideComm is voice only. -->
     <uses-permission
@@ -64,6 +66,15 @@
             android:name=".ride.RideService"
             android:exported="false"
             android:foregroundServiceType="microphone|location" />
+
+        <receiver
+            android:name=".sos.LockScreenInfo$Restore"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <service
             android:name="io.livekit.android.room.track.screencapture.ScreenCaptureService"

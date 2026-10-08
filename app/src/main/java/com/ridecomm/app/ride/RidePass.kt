@@ -21,11 +21,11 @@ class RidePassError(message: String) : Exception(message)
 object RidePass {
     private const val TIMEOUT_MS = 15_000
 
-    suspend fun fetch(context: Context, code: String): TokenSourceResponse {
+    /** [identity] is normally this phone's id; a quick "home safe" check-in uses a second one. */
+    suspend fun fetch(context: Context, code: String, identity: String = Prefs.deviceId(context)): TokenSourceResponse {
         val room = "ride-$code"
         val name = Prefs.riderName(context).ifBlank { "Rider" }
-        val identity = Prefs.deviceId(context)
-        val server = Prefs.rideServerUrl(context)
+        val server = Prefs.activeRideServer(context)
         if (server.isNotBlank()) return fromPrivateServer(server, Prefs.groupKey(context), room, name, identity)
 
         val tokenServerId = Prefs.tokenServerId(context)

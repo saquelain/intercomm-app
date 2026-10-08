@@ -34,4 +34,16 @@ class InviteLinkTest {
     fun shareTextPointsToInvitePage() {
         assertEquals("https://saquelain.github.io/intercomm-app/join/?code=CQNQNE", InviteLink.url("CQNQNE"))
     }
+
+    @Test
+    fun groupKeyTravelsAfterTheHash() {
+        assertEquals(
+            "https://saquelain.github.io/intercomm-app/join/?code=CQNQNE#k=our%20gang%2B1",
+            InviteLink.url("CQNQNE", "our gang+1"),
+        )
+        assertEquals("our gang+1", InviteLink.keyFrom(Uri.parse("ridecomm://join/CQNQNE?k=our%20gang%2B1")))
+        assertNull(InviteLink.keyFrom(Uri.parse("ridecomm://join/CQNQNE")))
+        // The code still comes through with a key attached.
+        assertEquals("CQNQNE", open("ridecomm://join/CQNQNE?k=secret"))
+    }
 }

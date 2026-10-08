@@ -4,6 +4,15 @@ import kotlin.math.roundToInt
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Slider
 import com.ridecomm.app.trip.UpdateEvery
+import com.ridecomm.app.trip.BreakEvery
+import com.ridecomm.app.trip.BreakReminder
+import com.ridecomm.app.group.RideDestination
+import com.ridecomm.app.home.HomeSafe
+import com.ridecomm.app.home.HomeLogic
+import com.ridecomm.app.sos.LocationHelper
+import com.ridecomm.app.sos.LockScreenInfo
+import androidx.core.content.ContextCompat
+import android.content.pm.PackageManager
 import com.ridecomm.app.trip.TripTracker
 import android.Manifest
 import android.graphics.Bitmap
@@ -94,6 +103,10 @@ fun HomeScreen(state: RideState) {
     // A ride that ended without me leaving (app closed, phone restarted): offer it back in one tap.
     var unfinished by remember { mutableStateOf(RecentRides.rejoin(Prefs.unfinishedRide(context), now)) }
     val recent = remember { RecentRides.shown(Prefs.recentRides(context), now, except = unfinished?.code) }
+    // Left a ride without saying I got home: offer it here.
+    var checkIn by remember {
+        mutableStateOf(Prefs.pendingHomeCheckIn(context)?.takeIf { Prefs.homeSafe(context) && now - it.atMs in 0..HomeLogic.CHECK_IN_WINDOW_MS })
+    }
 
     val permissions = remember {
         buildList {
@@ -177,11 +190,18 @@ fun HomeScreen(state: RideState) {
             ) { startRide(ride.code) }
         }
 
+        checkIn?.takeIf { serverReady }?.let { ride ->
+            HomeCheckInCard(ride, savedName.ifBlank { name }) {
+                Prefs.setPendingHomeCheckIn(context, null)
+                checkIn = null
+            }
+        }
+
         if (!serverReady) {
             GlassCard(tint = Palette.Amber, fillAlpha = 0.14f) {
                 Text("Finish setup", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    if (Prefs.rideServerUrl(context).isNotBlank()) {
+                    if (Prefs.activeRideServer(context).isNotBlank()) {
                         "Enter your group key in Settings to join your group's rides."
                     } else {
                         "Add your ride server details once to start riding."
@@ -250,6 +270,62 @@ fun HomeScreen(state: RideState) {
                 name = savedName
             },
         )
+    }
+}
+
+/**
+ * "Home safe?" after leaving a ride: tells the riders still in it (joining for a moment, no mic),
+ * or shares a message with the group's chat when nobody is left in the ride.
+ */
+@Composable
+internal fun HomeCheckInCard(ride: RecentRide, myName: String, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var sending by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf<String?>(null) }
+    val share = {
+        val text = "Reached home safe \uD83C\uDFE0 ${myName.ifBlank { "" }}".trim() + " (RideComm ride ${ride.code})"
+        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), "Tell your group"))
+    }
+    GlassCard(tint = Palette.Go, fillAlpha = 0.12f) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Ico(R.drawable.ms_home, 26.dp, Palette.Go)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Home safe?", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    result ?: "Tell the riders still in ride ${ride.code} that you got home.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            GlassIconButton(R.drawable.ms_close, "Dismiss", size = 40.dp, iconSize = 18.dp, onClick = onDismiss)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (result == null) {
+                PrimaryButton(
+                    if (sending) "Telling them…" else "I'm home safe",
+                    R.drawable.ms_home,
+                    Modifier.weight(1.3f),
+                    brush = Palette.GoGradient,
+                    contentColor = Color(0xFF052E1F),
+                    height = 52.dp,
+                    enabled = !sending,
+                ) {
+                    sending = true
+                    scope.launch {
+                        val heard = HomeSafe.checkInLater(context, ride.code)
+                        sending = false
+                        result = when (heard) {
+                            null -> "Couldn't reach the ride. Share it with your group instead."
+                            0 -> "Nobody is in the ride any more. Share it with your group instead."
+                            1 -> "Told the 1 rider still in the ride."
+                            else -> "Told the $heard riders still in the ride."
+                        }
+                    }
+                }
+            }
+            GlassButton("Share", R.drawable.ms_share, Modifier.weight(0.8f), height = 52.dp, onClick = share)
+        }
     }
 }
 
@@ -336,7 +412,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var tokenId by remember { mutableStateOf(Prefs.tokenServerId(context)) }
     var serverUrl by remember { mutableStateOf(Prefs.rideServerUrl(context)) }
     var groupKey by remember { mutableStateOf(Prefs.groupKey(context)) }
-    var showAdvanced by remember { mutableStateOf(serverUrl.isNotBlank()) }
+    var privateServer by remember { mutableStateOf(Prefs.privateServer(context)) }
     var bubbleOn by remember { mutableStateOf(Prefs.bubbleEnabled(context)) }
     var numbers by remember { mutableStateOf(Prefs.emergencyNumbers(context)) }
     var shareLocation by remember { mutableStateOf(Prefs.shareLocation(context)) }
@@ -357,6 +433,16 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var roleAlerts by remember { mutableStateOf(Prefs.roleAlerts(context)) }
     var emergencyInfo by remember { mutableStateOf(Prefs.emergencyInfo(context)) }
     var shareInfo by remember { mutableStateOf(Prefs.shareEmergencyInfo(context)) }
+    var lockScreenInfo by remember { mutableStateOf(Prefs.lockScreenInfo(context)) }
+    var talkToOne by remember { mutableStateOf(Prefs.talkToOne(context)) }
+    var destination by remember { mutableStateOf(Prefs.sharedDestination(context)) }
+    var homeSafe by remember { mutableStateOf(Prefs.homeSafe(context)) }
+    var homeSpot by remember { mutableStateOf(Prefs.homeSpot(context)) }
+    var breakEvery by remember { mutableStateOf(Prefs.breakEvery(context)) }
+    // Android 13+: the lock screen note is a notification, which needs permission.
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (!granted) Toast.makeText(context, "Allow notifications for RideComm to show it on the lock screen", Toast.LENGTH_LONG).show()
+    }
     // The test can change the filter live during a ride; closing without saving puts it back.
     val cancel = {
         MicGate.setSettings(Prefs.windGate(context))
@@ -380,14 +466,13 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 "LiveKit Cloud → Settings → Development token server. Everyone in the group uses the same one.",
                 style = MaterialTheme.typography.bodyMedium,
             )
-            // The private ride server isn't set up yet; keep its fields out of the way.
-            Text(
-                if (showAdvanced) "Hide advanced" else "Advanced: private ride server",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Palette.Cyan,
-                modifier = Modifier.clickable { showAdvanced = !showAdvanced },
-            )
-            if (showAdvanced) {
+            SettingSwitch(
+                "Lock rides to my group",
+                "Only riders with your group key can join. Needs your group's private ride server; invite links " +
+                    "then carry the key, so new riders get in with one tap.",
+                privateServer,
+            ) { privateServer = it }
+            if (privateServer) {
                 GlassTextField(
                     value = serverUrl,
                     onValueChange = { serverUrl = it },
@@ -404,7 +489,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                     textStyle = MaterialTheme.typography.bodyLarge,
                 )
                 Text(
-                    "When a private server is set, only riders with the group key can join, and the token server ID above isn't used.",
+                    "While this is on, the token server ID above isn't used.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
@@ -419,6 +504,19 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
         )
         Text("Used for SOS when there's no internet.", style = MaterialTheme.typography.bodyMedium)
         EmergencyInfoSetting(emergencyInfo, shareInfo, onInfo = { emergencyInfo = it }, onShare = { shareInfo = it })
+        SettingSwitch(
+            "Emergency info on lock screen",
+            "A quiet notification anyone can read without unlocking your phone: blood group, allergies and who to call. " +
+                "Off unless you switch it on. Also check your phone shows notifications on the lock screen.",
+            lockScreenInfo,
+        ) {
+            lockScreenInfo = it
+            if (it && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
         OptionChips(
             "Talk mode",
             when (talkMode) {
@@ -494,6 +592,31 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             roleAlerts,
         ) { roleAlerts = it }
         SettingSwitch(
+            "Talk to one rider",
+            "Hold a rider's name to talk only to them (lead to sweep, say). The others don't hear you while you hold. " +
+                "Private between RideComm phones, not encrypted.",
+            talkToOne,
+        ) { talkToOne = it }
+        SettingSwitch(
+            "Shared destination",
+            "Set where the group is heading: everyone hears it, sees how far it is, and gets one Navigate button. " +
+                "Search uses OpenStreetMap. Your own location isn't shared.",
+            destination,
+        ) { destination = it }
+        HomeSafeSetting(homeSafe, homeSpot, onChange = { homeSafe = it }, onHome = { homeSpot = it })
+        OptionChips(
+            "Break reminder",
+            if (breakEvery == BreakEvery.OFF) {
+                "No reminders."
+            } else {
+                "After ${breakEvery.label} of riding: \"Time for a break?\" One tap asks the group with a Break vote. " +
+                    "A passed Break vote or a 10-minute stop starts the count again."
+            },
+            BreakEvery.entries,
+            breakEvery,
+            { it.label },
+        ) { breakEvery = it }
+        SettingSwitch(
             "Keep music apps playing",
             "Spotify, YouTube Music… get quieter when someone talks" + if (inRide) ". Applies from your next ride." else "",
             keepMusic,
@@ -503,6 +626,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             PrimaryButton("Save", modifier = Modifier.weight(1f), height = 56.dp) {
                 Prefs.setTokenServerId(context, tokenId)
                 Prefs.setRideServerUrl(context, serverUrl)
+                Prefs.setPrivateServer(context, privateServer)
                 Prefs.setGroupKey(context, groupKey)
                 Prefs.setBubbleEnabled(context, bubbleOn)
                 Prefs.setEmergencyNumbers(context, numbers)
@@ -527,6 +651,16 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setRoleAlerts(context, roleAlerts)
                 Prefs.setEmergencyInfo(context, emergencyInfo)
                 Prefs.setShareEmergencyInfo(context, shareInfo)
+                Prefs.setLockScreenInfo(context, lockScreenInfo)
+                LockScreenInfo.refresh(context)
+                Prefs.setTalkToOne(context, talkToOne)
+                Prefs.setSharedDestination(context, destination)
+                RideDestination.applySettings()
+                Prefs.setHomeSafe(context, homeSafe)
+                Prefs.setHomeSpot(context, homeSpot)
+                HomeSafe.applySettings()
+                Prefs.setBreakEvery(context, breakEvery)
+                BreakReminder.applySettings(context)
                 DataSaver.applySettings(context)
                 if (voiceAvailable) Prefs.setVoiceCommands(context, voiceCommands)
                 VoiceCommands.applySettings(context)
@@ -690,6 +824,60 @@ internal fun EmergencyInfoSetting(info: EmergencyInfo, share: Boolean, onInfo: (
             )
         }
         SettingSwitch("Send with my SOS", "Off: it only shows on your own screen", share, onChange = onShare)
+    }
+}
+
+/**
+ * Home safe on/off, and where home is (for the automatic check-in). Home's position stays on the
+ * phone: only "home safe" is ever sent.
+ */
+@Composable
+internal fun HomeSafeSetting(on: Boolean, home: Pair<Double, Double>?, onChange: (Boolean) -> Unit, onHome: (Pair<Double, Double>?) -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var finding by remember { mutableStateOf(false) }
+    val findHome = {
+        finding = true
+        scope.launch {
+            val fix = LocationHelper.fresh(context)
+            finding = false
+            if (fix == null) {
+                Toast.makeText(context, "Couldn't find your location. Turn on GPS and try again.", Toast.LENGTH_LONG).show()
+            } else {
+                onHome(fix.latitude to fix.longitude)
+                Toast.makeText(context, "Home saved (it stays on this phone)", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    val locationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) findHome() else Toast.makeText(context, "Allow location to save home", Toast.LENGTH_LONG).show()
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SettingSwitch(
+            "Home safe check-in",
+            "At the end of the ride tap \"I'm home safe\" and the riders still on the road hear it. With home saved, " +
+                "it happens by itself when you get there.",
+            on,
+            onChange = onChange,
+        )
+        if (on) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                GlassButton(
+                    when {
+                        finding -> "Finding you…"
+                        home == null -> "I'm home: save this spot"
+                        else -> "Home saved · update"
+                    },
+                    R.drawable.ms_home,
+                    Modifier.weight(1f),
+                    height = 48.dp,
+                    enabled = !finding,
+                ) {
+                    if (LocationHelper.hasPermission(context)) findHome() else locationPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                }
+                if (home != null) GlassButton("Forget", modifier = Modifier.weight(0.5f), height = 48.dp) { onHome(null) }
+            }
+        }
     }
 }
 

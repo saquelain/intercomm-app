@@ -96,6 +96,15 @@ import com.ridecomm.app.sos.SosManager
 import com.ridecomm.app.sos.SosState
 import com.ridecomm.app.vote.VoteManager
 import com.ridecomm.app.vote.VoteState
+import com.ridecomm.app.Prefs
+import com.ridecomm.app.whisper.Whisper
+import com.ridecomm.app.whisper.WhisperState
+import com.ridecomm.app.group.DestinationState
+import com.ridecomm.app.group.RideDestination
+import com.ridecomm.app.home.HomeSafe
+import com.ridecomm.app.home.HomeSafeState
+import com.ridecomm.app.trip.BreakDue
+import com.ridecomm.app.trip.BreakReminder
 
 private val OthersGradient = Brush.linearGradient(listOf(Palette.Violet, Palette.Cyan))
 
@@ -114,6 +123,10 @@ fun RideScreen(state: RideState) {
     val roles by RideRoles.state.collectAsStateWithLifecycle()
     val hazards by Hazards.state.collectAsStateWithLifecycle()
     val volumes by RiderVolumes.volumes.collectAsStateWithLifecycle()
+    val whisper by Whisper.state.collectAsStateWithLifecycle()
+    val destination by RideDestination.state.collectAsStateWithLifecycle()
+    val homeSafe by HomeSafe.state.collectAsStateWithLifecycle()
+    val breakDue by BreakReminder.due.collectAsStateWithLifecycle()
     val filterStatus by remember { MicGate.live.map { it?.status }.distinctUntilChanged() }.collectAsStateWithLifecycle(null)
     val dataUsed by produceState(DataUsage.usedBytes()) {
         while (true) {
@@ -121,7 +134,7 @@ fun RideScreen(state: RideState) {
             value = DataUsage.usedBytes()
         }
     }
-    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed, batteries, filterStatus, trip, onCall, roles, hazards, volumes)
+    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed, batteries, filterStatus, trip, onCall, roles, hazards, volumes, whisper, destination, homeSafe, breakDue)
 }
 
 /** The ride screen for given states (split out so screenshots can render any situation). */
@@ -143,14 +156,21 @@ fun RideContent(
     roles: RideRolesState = RideRolesState(),
     hazards: HazardsState = HazardsState(),
     volumes: Map<String, RiderVolume> = emptyMap(),
+    whisper: WhisperState = WhisperState(),
+    destination: DestinationState = DestinationState(),
+    homeSafe: HomeSafeState = HomeSafeState(),
+    breakDue: BreakDue? = null,
 ) {
     val context = LocalContext.current
+    // Read on every recomposition, so switching it in Settings mid-ride applies at once.
+    val talkToOne = Prefs.talkToOne(context)
     var pickHazard by remember { mutableStateOf(false) }
     var sheetFor by remember { mutableStateOf<String?>(null) }
     val photoOf = { rider: Rider -> if (rider.isMe) myPhoto else photos[rider.id] }
     var confirmLeave by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showMap by remember { mutableStateOf(false) }
+    var pickDestination by remember { mutableStateOf(false) }
 
     // An invite tapped while already riding: same ride → nothing to do; another ride → say how.
     val invite by InviteLink.pending.collectAsStateWithLifecycle()
@@ -165,7 +185,7 @@ fun RideContent(
     val shareCode = {
         val share = Intent(Intent.ACTION_SEND)
             .setType("text/plain")
-            .putExtra(Intent.EXTRA_TEXT, InviteLink.shareText(state.code))
+            .putExtra(Intent.EXTRA_TEXT, InviteLink.shareText(context, state.code))
         context.startActivity(Intent.createChooser(share, "Share ride code"))
     }
 
@@ -197,15 +217,39 @@ fun RideContent(
 
                 StatusLine(state, dataUsed)
                 if (trip != null) TripRow(trip)
-                if (group.enabled) GroupMapCard(group, state.riders.size) { showMap = true }
                 SosCards(sos)
+                breakDue?.let { BreakCard(it, onAsk = BreakReminder::askGroup, onNotNow = BreakReminder::notNow) }
+                if (destination.enabled) DestinationCard(destination, onPick = { pickDestination = true }, onClear = RideDestination::clear)
+                if (group.enabled) GroupMapCard(group, state.riders.size) { showMap = true }
                 if (hazards.enabled) {
                     HazardCard(hazards.hazards, System.currentTimeMillis(), onMark = { pickHazard = true }, onRemove = Hazards::remove)
                 }
-                RidersCard(state.riders, group, batteries, onCall, roles, volumes, photoOf) { sheetFor = it.id }
+                RidersCard(
+                    state.riders, group, batteries, onCall, roles, volumes, photoOf,
+                    whisper = whisper,
+                    onHold = if (talkToOne) { rider -> Whisper.start(rider.id, rider.name) } else null,
+                ) { sheetFor = it.id }
                 VoteCard(vote)
                 MusicCard(music)
+                if (homeSafe.enabled) HomeSafeCard(homeSafe, state.riders, onImHome = HomeSafe::imHome, onLeave = { confirmLeave = true })
                 OverlayPermissionCard()
+            }
+
+            // Private talk sits just above the dock: never over the SOS button, and "Hold to reply" is near the thumb.
+            AnimatedVisibility(
+                visible = whisper.talkingTo != null || whisper.fromMe != null,
+                enter = slideInVertically { it } + fadeIn(),
+                exit = slideOutVertically { it } + fadeOut(),
+                modifier = Modifier.padding(horizontal = 16.dp),
+            ) {
+                var shown by remember { mutableStateOf(whisper) }
+                if (whisper.talkingTo != null || whisper.fromMe != null) shown = whisper
+                WhisperBanner(
+                    shown,
+                    canReply = talkToOne,
+                    onReplyStart = { shown.fromMe?.let { Whisper.start(it.fromId, it.fromName) } },
+                    onReplyStop = Whisper::stop,
+                )
             }
 
             Dock(
@@ -220,29 +264,47 @@ fun RideContent(
             )
         }
 
-        AnimatedVisibility(
-            visible = sent != null,
-            enter = slideInVertically { -it } + fadeIn(),
-            exit = slideOutVertically { -it } + fadeOut(),
-            modifier = Modifier.align(Alignment.TopCenter).padding(horizontal = 16.dp, vertical = 8.dp),
+        Column(
+            Modifier.align(Alignment.TopCenter).padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // Keep showing the last message while the banner slides out.
-            var shown by remember { mutableStateOf(sent) }
-            if (sent != null) shown = sent
-            shown?.let { SentBanner(it) }
+            AnimatedVisibility(
+                visible = sent != null,
+                enter = slideInVertically { -it } + fadeIn(),
+                exit = slideOutVertically { -it } + fadeOut(),
+            ) {
+                // Keep showing the last message while the banner slides out.
+                var shown by remember { mutableStateOf(sent) }
+                if (sent != null) shown = sent
+                shown?.let { SentBanner(it) }
+            }
         }
 
         // Drawn last so it covers the whole ride screen.
         if (showMap && group.enabled) {
             val myId = state.riders.firstOrNull { it.isMe }?.id
             val allPhotos = if (myId != null && myPhoto != null) photos + (myId to myPhoto) else photos
-            GroupMapScreen(group, state.riders, allPhotos, onClose = { showMap = false }, hazards = hazards.hazards, roles = roles)
+            GroupMapScreen(
+                group, state.riders, allPhotos, onClose = { showMap = false }, hazards = hazards.hazards, roles = roles,
+                destination = destination.destination,
+                onSetDestination = if (destination.enabled) RideDestination::set else null,
+            )
         }
 
         sos.countdown?.let { SosCountdown(it, sos.countdownFromCrash) }
     }
 
     if (showSettings) SettingsDialog(onClose = { showSettings = false }, inRide = true)
+
+    if (pickDestination) {
+        DestinationDialog(
+            onCancel = { pickDestination = false },
+            onPick = {
+                RideDestination.set(it.lat, it.lon, it.name)
+                pickDestination = false
+            },
+        )
+    }
 
     if (pickHazard) {
         HazardPicker(onPick = { Hazards.mark(it); pickHazard = false }, onCancel = { pickHazard = false })
@@ -262,6 +324,9 @@ fun RideContent(
                 onLead = { RideRoles.setLead(if (it) id else null, rider.name) },
                 onSweep = { RideRoles.setSweep(if (it) id else null, rider.name) },
                 onClose = { sheetFor = null },
+                whispering = whisper.talkingTo == id,
+                onWhisperStart = if (talkToOne && !rider.isMe) { { Whisper.start(id, rider.name) } } else null,
+                onWhisperStop = Whisper::stop,
             )
         }
     }
@@ -270,6 +335,13 @@ fun RideContent(
         GlassDialog(onDismiss = { confirmLeave = false }) {
             Text("Leave the ride?", style = MaterialTheme.typography.titleLarge)
             Text("You'll stop hearing the group. You can rejoin with the same code.", style = MaterialTheme.typography.bodyMedium)
+            if (homeSafe.enabled && !homeSafe.meHome) {
+                PrimaryButton("I'm home safe · leave", R.drawable.ms_home, Modifier.fillMaxWidth(), brush = Palette.GoGradient, contentColor = Color(0xFF052E1F), height = 56.dp) {
+                    confirmLeave = false
+                    HomeSafe.imHome()
+                    RideManager.leave()
+                }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 GlassButton("Stay", modifier = Modifier.weight(1f)) { confirmLeave = false }
                 PrimaryButton("Leave", R.drawable.ms_logout, Modifier.weight(1f), brush = Palette.StopGradient, height = 56.dp) {
@@ -309,6 +381,8 @@ private fun RidersCard(
     roles: RideRolesState,
     volumes: Map<String, RiderVolume>,
     photoOf: (Rider) -> Bitmap?,
+    whisper: WhisperState = WhisperState(),
+    onHold: ((Rider) -> Unit)? = null,
     onOpen: (Rider) -> Unit,
 ) {
     GlassCard(spacing = 14.dp) {
@@ -325,9 +399,15 @@ private fun RidersCard(
                 it.id in onCall,
                 roleLabel(roles, it.id),
                 volumes[it.id],
+                privateTo = if (it.isMe) whisper.talkingTo?.let { _ -> whisper.talkingToName } else whisper.others[it.id],
+                onHold = onHold?.takeIf { _ -> !it.isMe }?.let { hold -> { hold(it) } },
             ) { onOpen(it) }
         }
-        Text("Tap a rider for volume and lead / sweep", style = MaterialTheme.typography.labelSmall, color = Palette.TextTertiary)
+        Text(
+            if (onHold != null) "Tap a rider for volume and lead / sweep · hold to talk only to them" else "Tap a rider for volume and lead / sweep",
+            style = MaterialTheme.typography.labelSmall,
+            color = Palette.TextTertiary,
+        )
     }
 }
 
@@ -340,11 +420,39 @@ private fun RiderRow(
     onPhoneCall: Boolean,
     role: String?,
     volume: RiderVolume?,
+    privateTo: String? = null,
+    onHold: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
     val context = LocalContext.current
-    val ring by animateColorAsState(if (rider.isSpeaking) Palette.Go else Color.Transparent, label = "ring")
-    Row(Modifier.clip(RoundedCornerShape(18.dp)).clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
+    val haptics = LocalHapticFeedback.current
+    val ring by animateColorAsState(
+        when {
+            privateTo != null -> WhisperColor
+            rider.isSpeaking -> Palette.Go
+            else -> Color.Transparent
+        },
+        label = "ring",
+    )
+    // Tap: the rider's sheet. Hold: talk only to them until you let go.
+    val gestures = if (onHold == null) {
+        Modifier.clickable(onClick = onClick)
+    } else {
+        Modifier.pointerInput(onHold) {
+            detectTapGestures(
+                onTap = { onClick() },
+                onLongPress = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onHold()
+                },
+                onPress = {
+                    tryAwaitRelease()
+                    Whisper.stop()
+                },
+            )
+        }
+    }
+    Row(Modifier.clip(RoundedCornerShape(18.dp)).then(gestures), verticalAlignment = Alignment.CenterVertically) {
         Avatar(rider.name, 54.dp, if (rider.isMe) Palette.Brand else OthersGradient, ring, photo)
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
@@ -368,6 +476,7 @@ private fun RiderRow(
             }
             Text(
                 when {
+                    privateTo != null -> "Talking only to $privateTo"
                     onPhoneCall -> "On a phone call"
                     rider.isMuted -> "Mic off"
                     rider.isSpeaking -> "Talking"
@@ -375,6 +484,7 @@ private fun RiderRow(
                 } + heard,
                 style = MaterialTheme.typography.bodyMedium,
                 color = when {
+                    privateTo != null -> WhisperColor
                     onPhoneCall -> Palette.Amber
                     rider.isSpeaking -> Palette.Go
                     else -> Palette.TextSecondary

@@ -45,7 +45,8 @@ sealed interface MapMarker {
         val photo: Bitmap? = null,
     ) : MapMarker
 
-    data class Regroup(override val x: Float, override val y: Float, val label: String, val detail: String) : MapMarker
+    /** The regroup point (amber flag), or with [destination] where the group is heading (green finish flag). */
+    data class Regroup(override val x: Float, override val y: Float, val label: String, val detail: String, val destination: Boolean = false) : MapMarker
 
     data class Hazard(override val x: Float, override val y: Float, val icon: Int, val label: String) : MapMarker
 }
@@ -69,6 +70,7 @@ class MarkerPainter(private val context: Context) {
     private val rect = RectF()
     private val path = Path()
     private val flag = ContextCompat.getDrawable(context, R.drawable.ms_flag)!!.mutate()
+    private val finish = ContextCompat.getDrawable(context, R.drawable.ms_sports_score)!!.mutate()
 
     fun draw(canvas: Canvas, markers: List<MapMarker>) {
         // Regroup flag at the back, me on top of everyone else.
@@ -213,20 +215,22 @@ class MarkerPainter(private val context: Context) {
         // A pin: circle on a short stem, with the point at the exact spot.
         val r = 20 * d
         val cy = m.y - 30 * d
+        val color = if (m.destination) GREEN else AMBER
         stroke.strokeWidth = 3 * d
-        stroke.color = AMBER
+        stroke.color = color
         canvas.drawLine(m.x, cy + r, m.x, m.y, stroke)
         fill.shader = null
-        fill.color = AMBER
+        fill.color = color
         canvas.drawCircle(m.x, m.y, 4 * d, fill)
         canvas.drawCircle(m.x, cy + 2 * d, r + 3 * d, shadow)
         canvas.drawCircle(m.x, cy, r, fill)
         stroke.color = Color.WHITE
         canvas.drawCircle(m.x, cy, r, stroke)
         val s = (12 * d).toInt()
-        flag.setBounds((m.x - s).toInt(), (cy - s).toInt(), (m.x + s).toInt(), (cy + s).toInt())
-        flag.setTint(Color.rgb(0x2A, 0x1E, 0x05))
-        flag.draw(canvas)
+        val icon = if (m.destination) finish else flag
+        icon.setBounds((m.x - s).toInt(), (cy - s).toInt(), (m.x + s).toInt(), (cy + s).toInt())
+        icon.setTint(if (m.destination) Color.rgb(0x04, 0x2A, 0x1B) else Color.rgb(0x2A, 0x1E, 0x05))
+        icon.draw(canvas)
         nameTag(canvas, m.x, cy - r - 30 * d, m.label, m.detail, 255)
     }
 

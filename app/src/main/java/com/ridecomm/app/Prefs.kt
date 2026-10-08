@@ -9,6 +9,7 @@ import com.ridecomm.app.night.NightModeSetting
 import com.ridecomm.app.ride.RiderVolume
 import com.ridecomm.app.ride.TalkMode
 import com.ridecomm.app.sos.EmergencyInfo
+import com.ridecomm.app.trip.BreakEvery
 import com.ridecomm.app.trip.UpdateEvery
 import java.util.UUID
 
@@ -50,6 +51,14 @@ object Prefs {
     private const val KEY_RIDER_VOLUMES = "rider_volumes"
     private const val KEY_EMERGENCY_INFO = "emergency_info"
     private const val KEY_SHARE_EMERGENCY_INFO = "share_emergency_info"
+    private const val KEY_PRIVATE_SERVER = "private_server"
+    private const val KEY_TALK_TO_ONE = "talk_to_one"
+    private const val KEY_DESTINATION = "shared_destination"
+    private const val KEY_HOME_SAFE = "home_safe"
+    private const val KEY_HOME_SPOT = "home_spot"
+    private const val KEY_HOME_CHECK_IN = "home_check_in"
+    private const val KEY_BREAK_EVERY = "break_every"
+    private const val KEY_LOCK_SCREEN_INFO = "lock_screen_info"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -133,9 +142,21 @@ object Prefs {
     fun setGroupKey(context: Context, key: String) =
         prefs(context).edit().putString(KEY_GROUP_KEY, key.trim()).apply()
 
+    /**
+     * Lock rides to my group: passes come from the private ride server (which checks the group key)
+     * instead of the open development token server. On by default when the APK has a server built in.
+     */
+    fun privateServer(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_PRIVATE_SERVER, BuildConfig.DEFAULT_RIDE_SERVER_URL.isNotBlank())
+
+    fun setPrivateServer(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_PRIVATE_SERVER, on).apply()
+
+    /** The private ride server in use, or blank when rides use the development token server. */
+    fun activeRideServer(context: Context): String = if (privateServer(context)) rideServerUrl(context) else ""
+
     /** Ready to ride: either the private server with a group key, or the development token server. */
     fun serverConfigured(context: Context): Boolean =
-        if (rideServerUrl(context).isNotBlank()) groupKey(context).isNotBlank() else tokenServerId(context).isNotBlank()
+        if (activeRideServer(context).isNotBlank()) groupKey(context).isNotBlank() else tokenServerId(context).isNotBlank()
 
     /** The helmet headset's play/pause button controls the ride (mute, music, SOS). */
     fun headsetButtons(context: Context): Boolean = prefs(context).getBoolean(KEY_HEADSET_BUTTONS, true)
@@ -276,4 +297,49 @@ object Prefs {
 
     fun setShareEmergencyInfo(context: Context, on: Boolean) =
         prefs(context).edit().putBoolean(KEY_SHARE_EMERGENCY_INFO, on).apply()
+
+    /** Hold a rider to talk only to them. (Others' private talk is always respected.) */
+    fun talkToOne(context: Context): Boolean = prefs(context).getBoolean(KEY_TALK_TO_ONE, true)
+
+    fun setTalkToOne(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_TALK_TO_ONE, on).apply()
+
+    /** Where the group is heading: set it for everyone, see it, navigate to it. */
+    fun sharedDestination(context: Context): Boolean = prefs(context).getBoolean(KEY_DESTINATION, true)
+
+    fun setSharedDestination(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_DESTINATION, on).apply()
+
+    /** "Home safe" check-in after the ride, and hearing who else got home. */
+    fun homeSafe(context: Context): Boolean = prefs(context).getBoolean(KEY_HOME_SAFE, true)
+
+    fun setHomeSafe(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_HOME_SAFE, on).apply()
+
+    /** Where home is (stays on this phone; only "home safe" is ever sent). Null until set. */
+    fun homeSpot(context: Context): Pair<Double, Double>? {
+        val parts = (prefs(context).getString(KEY_HOME_SPOT, "") ?: "").split(",")
+        if (parts.size != 2) return null
+        val lat = parts[0].toDoubleOrNull() ?: return null
+        val lon = parts[1].toDoubleOrNull() ?: return null
+        return lat to lon
+    }
+
+    fun setHomeSpot(context: Context, spot: Pair<Double, Double>?) =
+        prefs(context).edit().putString(KEY_HOME_SPOT, spot?.let { "${it.first},${it.second}" } ?: "").apply()
+
+    /** The ride I left without saying I got home, so the home screen can offer it ("CODE,leftAtMs"). */
+    fun pendingHomeCheckIn(context: Context): RecentRide? =
+        RecentRides.parse(prefs(context).getString(KEY_HOME_CHECK_IN, "") ?: "").firstOrNull()
+
+    fun setPendingHomeCheckIn(context: Context, ride: RecentRide?) =
+        prefs(context).edit().putString(KEY_HOME_CHECK_IN, ride?.let { RecentRides.format(listOf(it)) } ?: "").apply()
+
+    /** Remind me to take a break after this much riding. */
+    fun breakEvery(context: Context): BreakEvery =
+        BreakEvery.entries.firstOrNull { it.name == prefs(context).getString(KEY_BREAK_EVERY, null) } ?: BreakEvery.H2
+
+    fun setBreakEvery(context: Context, every: BreakEvery) = prefs(context).edit().putString(KEY_BREAK_EVERY, every.name).apply()
+
+    /** Emergency info as a notification on the lock screen, for whoever picks up my phone. Off by default. */
+    fun lockScreenInfo(context: Context): Boolean = prefs(context).getBoolean(KEY_LOCK_SCREEN_INFO, false)
+
+    fun setLockScreenInfo(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_LOCK_SCREEN_INFO, on).apply()
 }

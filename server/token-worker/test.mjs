@@ -29,6 +29,12 @@ const claims = JSON.parse(Buffer.from(payload, 'base64url').toString());
 assert.equal(claims.sub, 'device-1');
 assert.equal(claims.video.room, 'ride-CQNQNE');
 assert.equal(claims.video.roomList, undefined, 'must not allow listing rooms');
+assert.equal(res.headers.get('Access-Control-Allow-Origin'), '*', 'the web page can read the answer');
+// The browser's CORS check before the web page's request.
+const pre = await worker.fetch(new Request('https://w.dev/', { method: 'OPTIONS' }), env);
+assert.equal(pre.status, 204);
+assert.match(pre.headers.get('Access-Control-Allow-Headers'), /X-RideComm-Key/);
+assert.equal((await call('wrong', ok)).headers.get('Access-Control-Allow-Origin'), '*', 'so the page can say "wrong key"');
 // Print a token for the cross-check with LiveKit's own verifier.
 console.log(await accessToken(env, { room: 'ride-CQNQNE', identity: 'device-1', name: 'Saquelain' }));
 console.error('worker tests passed');

@@ -51,6 +51,7 @@ import com.ridecomm.app.group.GroupMath
 import com.ridecomm.app.group.GroupState
 import com.ridecomm.app.group.GroupTracker
 import com.ridecomm.app.group.RegroupLogic
+import com.ridecomm.app.group.Destination
 import com.ridecomm.app.group.RegroupPoint
 import com.ridecomm.app.group.Relation
 import com.ridecomm.app.Prefs
@@ -93,6 +94,9 @@ internal fun GroupMapScreen(
     onClose: () -> Unit,
     hazards: List<HazardView> = emptyList(),
     roles: RideRolesState = RideRolesState(),
+    destination: Destination? = null,
+    /** Set when the Shared destination setting is on: long-press can set it too. */
+    onSetDestination: ((lat: Double, lon: Double, label: String) -> Unit)? = null,
     mapContent: (@Composable (places: List<GroupOverlay.Place>) -> Unit)? = null,
 ) {
     BackHandler(onBack = onClose)
@@ -110,6 +114,9 @@ internal fun GroupMapScreen(
         hazards.forEach { v ->
             val h = v.hazard
             add(GroupOverlay.Place(h.lat, h.lon) { x, y, _ -> MapMarker.Hazard(x, y, h.kind.icon, h.kind.label) })
+        }
+        destination?.let { d ->
+            add(GroupOverlay.Place(d.lat, d.lon) { x, y, _ -> MapMarker.Regroup(x, y, d.label, "Destination", destination = true) })
         }
         group.regroup?.let { p ->
             val detail = "${p.arrived.size} of ${riders.size.coerceAtLeast(1)} here"
@@ -252,6 +259,12 @@ internal fun GroupMapScreen(
             onSet = { label ->
                 GroupTracker.setRegroup(at.latitude, at.longitude, label)
                 pinAt = null
+            },
+            onDestination = onSetDestination?.let { set ->
+                { label: String ->
+                    set(at.latitude, at.longitude, label)
+                    pinAt = null
+                }
             },
         )
     }
@@ -402,7 +415,7 @@ internal fun RegroupInfo(point: RegroupPoint, distanceM: Double?, relation: Rela
 /** Pick a name for the regroup point, then everyone gets it. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun RegroupDialog(onCancel: () -> Unit, onSet: (String) -> Unit) {
+internal fun RegroupDialog(onCancel: () -> Unit, onSet: (String) -> Unit, onDestination: ((String) -> Unit)? = null) {
     var label by remember { mutableStateOf(RegroupLogic.LABELS.first()) }
     GlassDialog(onDismiss = onCancel) {
         Text("Regroup point", style = MaterialTheme.typography.headlineMedium)
@@ -436,6 +449,11 @@ internal fun RegroupDialog(onCancel: () -> Unit, onSet: (String) -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             GlassButton("Cancel", modifier = Modifier.weight(1f), onClick = onCancel)
             PrimaryButton("Set for everyone", R.drawable.ms_flag, Modifier.weight(1.4f), height = 56.dp) { onSet(label) }
+        }
+        if (onDestination != null) {
+            GlassButton("Make it the destination instead", R.drawable.ms_sports_score, Modifier.fillMaxWidth(), height = 52.dp) {
+                onDestination(if (label in RegroupLogic.LABELS) "Destination" else label)
+            }
         }
     }
 }

@@ -7,16 +7,21 @@ import com.ridecomm.app.Announcer
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.alerts.RiderAlerts
 import com.ridecomm.app.audio.MicGate
+import com.ridecomm.app.trip.BreakReminder
 import com.ridecomm.app.trip.TripTracker
 import com.ridecomm.app.voice.VoiceCommands
 import com.ridecomm.app.crash.CrashDetector
 import com.ridecomm.app.group.GroupTracker
+import com.ridecomm.app.group.RideDestination
 import com.ridecomm.app.group.RideRoles
 import com.ridecomm.app.hazard.Hazards
+import com.ridecomm.app.home.HomeLogic
+import com.ridecomm.app.home.HomeSafe
 import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.profile.ProfileSync
 import com.ridecomm.app.sos.SosManager
 import com.ridecomm.app.vote.VoteManager
+import com.ridecomm.app.whisper.Whisper
 import io.livekit.android.AudioOptions
 import io.livekit.android.LiveKit
 import io.livekit.android.LiveKitOverrides
@@ -94,6 +99,8 @@ object RideManager {
         MicGate.resetTotals()
         RiderAlerts.start(appContext)
         TripTracker.start(appContext)
+        BreakReminder.start(appContext)
+        HomeSafe.start(appContext)
         RideService.start(appContext)
         CrashDetector.start(appContext)
         watchPhoneCalls()
@@ -134,7 +141,10 @@ object RideManager {
     }
 
     fun leave() {
-        if (::appContext.isInitialized) Prefs.clearUnfinishedRide(appContext)
+        if (::appContext.isInitialized) {
+            Prefs.clearUnfinishedRide(appContext)
+            HomeSafe.onLeaving(appContext, _state.value.code)
+        }
         val job = rideJob
         val r = room
         rideJob = null
@@ -151,14 +161,20 @@ object RideManager {
         SosManager.release()
         GroupTracker.release()
         RideRoles.release()
+        RideDestination.release()
         Hazards.release()
         ProfileSync.release()
         RiderAlerts.release()
+        Whisper.release()
+        HomeSafe.release()
+        whisperMic = WhisperMic.NONE
+        unmutedForWhisper = false
         VoiceCommands.stop()
         stopTalkTimer()
         talkButton.stop()
         MicGate.closed = false
         TripTracker.stop()
+        BreakReminder.stop()
         stopWatchingPhoneCalls()
         CrashDetector.stop()
         _state.value = RideState()
@@ -214,10 +230,43 @@ object RideManager {
         val talking = talkButton.talking
         // Talking needs the mic itself on.
         if (talking && _state.value.micMuted) toggleMute()
-        MicGate.closed = !talking
+        updateMicGate()
         _state.update { it.copy(talking = talking, talkLatched = talkButton.latched) }
         if (talkButton.latched) startTalkTimer() else stopTalkTimer()
         refreshRiders()
+    }
+
+    // ---- Talk to one rider ----
+
+    enum class WhisperMic { NONE, WARMING, LIVE }
+
+    private var whisperMic = WhisperMic.NONE
+    /** I unmuted to talk privately, so mute again afterwards. */
+    private var unmutedForWhisper = false
+
+    /**
+     * Talking only to one rider: the mic stays closed for a moment (while the others silence me),
+     * then opens whatever the talk mode; afterwards it goes back to normal.
+     */
+    fun setWhisperMic(mic: WhisperMic) {
+        if (mic == whisperMic) return
+        whisperMic = mic
+        if (mic != WhisperMic.NONE && _state.value.micMuted) {
+            unmutedForWhisper = true
+            toggleMute()
+        } else if (mic == WhisperMic.NONE && unmutedForWhisper) {
+            unmutedForWhisper = false
+            if (!_state.value.micMuted && !talkButton.talking) toggleMute()
+        }
+        updateMicGate()
+    }
+
+    private fun updateMicGate() {
+        MicGate.closed = when (whisperMic) {
+            WhisperMic.WARMING -> true
+            WhisperMic.LIVE -> false
+            WhisperMic.NONE -> _state.value.pushToTalk && !talkButton.talking
+        }
     }
 
     /** Closes a forgotten hands-free mic. */
@@ -248,8 +297,8 @@ object RideManager {
         if (ptt == _state.value.pushToTalk) return
         talkButton.stop()
         stopTalkTimer()
-        MicGate.closed = ptt
         _state.update { it.copy(pushToTalk = ptt, talking = false, talkLatched = false) }
+        updateMicGate()
     }
 
     /**
@@ -317,9 +366,12 @@ object RideManager {
         SosManager.attach(r)
         GroupTracker.attach(appContext, r)
         RideRoles.attach(appContext, r)
+        RideDestination.attach(appContext, r)
         Hazards.attach(appContext, r)
         ProfileSync.attach(appContext, r)
         RiderAlerts.attach(r)
+        Whisper.attach(appContext, r)
+        HomeSafe.attach(r)
         val ended = CompletableDeferred<DisconnectReason>()
         val events = launch(start = CoroutineStart.UNDISPATCHED) {
             r.events.collect { event ->
@@ -338,18 +390,23 @@ object RideManager {
                     is RoomEvent.ActiveSpeakersChanged -> MusicManager.onSpeakersChanged(event.speakers)
                     // Per-rider volume and "mute for me" apply to each voice as it arrives.
                     is RoomEvent.TrackPublished, is RoomEvent.TrackSubscribed -> RiderVolumes.apply(r)
-                    is RoomEvent.ParticipantDisconnected -> {
+                    // A rider who already left, checking in "home safe" for a moment: not a rider joining.
+                    is RoomEvent.ParticipantDisconnected -> if (!isCheckIn(event.participant)) {
+                        HomeSafe.onRiderLeft(event.participant)
                         event.participant.identity?.let {
                             GroupTracker.forget(it.value)
                             RideRoles.forget(it.value)
+                            Whisper.forget(it.value)
                         }
                         RiderAlerts.onRiderLeft(event.participant)
                     }
-                    is RoomEvent.ParticipantConnected -> {
+                    is RoomEvent.ParticipantConnected -> if (!isCheckIn(event.participant)) {
+                        HomeSafe.onRiderJoined(event.participant)
                         event.participant.identity?.let {
                             ProfileSync.onRiderJoined(it)
                             GroupTracker.onRiderJoined(it)
                             RideRoles.onRiderJoined(it)
+                            RideDestination.onRiderJoined(it)
                             Hazards.onRiderJoined(it)
                         }
                         RiderAlerts.onRiderJoined(event.participant)
@@ -369,10 +426,12 @@ object RideManager {
             MusicManager.onConnected()
             GroupTracker.onConnected()
             RideRoles.requestSync()
+            RideDestination.requestSync()
             Hazards.requestSync()
             RiderVolumes.apply(r)
             ProfileSync.onConnected()
             RiderAlerts.onConnected()
+            HomeSafe.onConnected()
             _state.update { it.copy(status = RideStatus.CONNECTED) }
             refreshRiders()
             catchUp()
@@ -398,9 +457,12 @@ object RideManager {
             SosManager.detach()
             GroupTracker.detach()
             RideRoles.detach()
+            RideDestination.detach()
             Hazards.detach()
             ProfileSync.detach()
             RiderAlerts.detach()
+            Whisper.detach()
+            HomeSafe.detach()
             if (room === r) room = null
             r.disconnect()
             r.release()
@@ -417,6 +479,7 @@ object RideManager {
         SosManager.onBackOnline(from)
         GroupTracker.requestSync()
         RideRoles.requestSync()
+        RideDestination.requestSync()
         Hazards.requestSync()
         if (System.currentTimeMillis() - since > BACK_ONLINE_ANNOUNCE_MS) Announcer.speak(appContext, "Back online")
     }
@@ -452,14 +515,20 @@ object RideManager {
         SosManager.release()
         GroupTracker.release()
         RideRoles.release()
+        RideDestination.release()
         Hazards.release()
         ProfileSync.release()
         RiderAlerts.release()
+        Whisper.release()
+        HomeSafe.release()
+        whisperMic = WhisperMic.NONE
+        unmutedForWhisper = false
         VoiceCommands.stop()
         stopTalkTimer()
         talkButton.stop()
         MicGate.closed = false
         TripTracker.stop()
+        BreakReminder.stop()
         stopWatchingPhoneCalls()
         CrashDetector.stop()
         _state.value = RideState(error = message)
@@ -469,10 +538,13 @@ object RideManager {
         val r = room ?: return
         val me = r.localParticipant.toRider(isMe = true, muted = _state.value.micMuted)
         val others = r.remoteParticipants.values
+            .filter { !isCheckIn(it) }
             .map { it.toRider(isMe = false, muted = !it.isMicrophoneEnabled) }
             .sortedBy { it.name.lowercase() }
         _state.update { it.copy(riders = listOf(me) + others) }
     }
+
+    private fun isCheckIn(p: Participant) = p.identity?.value?.let { HomeLogic.isCheckIn(it) } == true
 
     private fun Participant.toRider(isMe: Boolean, muted: Boolean) = Rider(
         id = identity?.value ?: sid.value,

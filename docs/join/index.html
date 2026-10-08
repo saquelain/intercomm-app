@@ -60,7 +60,10 @@
 <script>
   // The ride code comes from ?code=XXXXXX (or #XXXXXX). Same alphabet the app uses.
   const params = new URLSearchParams(location.search);
-  const raw = (params.get('code') || location.hash.slice(1) || '').toUpperCase();
+  // The group key (rides locked to the group) comes after "#k=", so it never reaches the web server.
+  const hash = new URLSearchParams(location.hash.slice(1));
+  const key = hash.get('k') || '';
+  const raw = (params.get('code') || (location.hash.indexOf('=') < 0 ? location.hash.slice(1) : '') || '').toUpperCase();
   const code = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/.test(raw) ? raw : null;
   const apk = document.getElementById('get').href;
   if (!code) {
@@ -69,7 +72,7 @@
   } else {
     document.getElementById('code').textContent = code;
     const web = document.getElementById('web');
-    web.href = '../ride/?code=' + code;
+    web.href = '../ride/?code=' + code + (key ? '#k=' + encodeURIComponent(key) : '');
     // iPhone and iPad can't install the APK: the browser version is the way in.
     if (/iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
       document.getElementById('open').style.display = 'none';
@@ -79,7 +82,7 @@
       document.getElementById('hint').textContent = 'Opens RideComm in Safari: talk, listen, votes and SOS. No app needed.';
     }
     // Android intent: opens the app if installed, otherwise falls back to the APK download.
-    const intent = 'intent://join/' + code + '#Intent;scheme=ridecomm;package=com.ridecomm.app;' +
+    const intent = 'intent://join/' + code + (key ? '?k=' + encodeURIComponent(key) : '') + '#Intent;scheme=ridecomm;package=com.ridecomm.app;' +
       'S.browser_fallback_url=' + encodeURIComponent(apk) + ';end';
     const open = document.getElementById('open');
     open.href = intent;

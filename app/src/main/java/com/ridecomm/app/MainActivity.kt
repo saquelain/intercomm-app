@@ -31,7 +31,7 @@ private const val NIGHT_BRIGHTNESS = 0.18f
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        InviteLink.handle(intent)
+        InviteLink.handle(intent, this)
         enableEdgeToEdge()
         setContent {
             RideCommTheme {
@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        InviteLink.handle(intent)
+        InviteLink.handle(intent, this)
     }
 
     override fun onStart() {

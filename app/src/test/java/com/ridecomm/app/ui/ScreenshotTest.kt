@@ -83,6 +83,77 @@ class ScreenshotTest {
         RiderSheet(riders[1], null, com.ridecomm.app.ride.RiderVolume(1.5f), roles, {}, {}, {}, {})
     }
 
+    // ---- Talk to one rider, destination, home safe, break reminder ----
+
+    private val dest = com.ridecomm.app.group.DestinationState(
+        enabled = true,
+        destination = com.ridecomm.app.group.Destination("d", 18.7546, 73.4062, "Lonavala", "Amit", "a", 1),
+        distanceM = 42_300.0,
+    )
+
+    @Test
+    fun rideNewFeatures() = shot("28_ride_whisper_destination_break") {
+        RideContent(
+            ride, MusicState(), VoteState(), SosState(), roles = roles,
+            whisper = com.ridecomm.app.whisper.WhisperState(
+                fromMe = com.ridecomm.app.whisper.WhisperView("a", "Amit", "me", "Saquelain"),
+                fromMeNow = true,
+            ),
+            destination = dest,
+            breakDue = com.ridecomm.app.trip.BreakDue(2 * 60 * 60_000L + 5 * 60_000L),
+        )
+    }
+
+    @Test
+    fun rideTalkingToOne() = shot("29_ride_talking_to_one") {
+        RideContent(
+            ride, MusicState(), VoteState(), SosState(), roles = roles,
+            whisper = com.ridecomm.app.whisper.WhisperState(talkingTo = "r", talkingToName = "Rahul", live = true, others = mapOf("v" to "Amit")),
+            destination = com.ridecomm.app.group.DestinationState(enabled = true),
+            homeSafe = com.ridecomm.app.home.HomeSafeState(enabled = true),
+        )
+    }
+
+    @Test
+    fun newCards() = shot("30_new_cards") {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            HomeSafeCard(
+                com.ridecomm.app.home.HomeSafeState(enabled = true, home = mapOf("a" to "Amit"), leftNotHome = mapOf("x" to "Imran")),
+                riders, {}, {},
+            )
+            HomeSafeCard(com.ridecomm.app.home.HomeSafeState(enabled = true, meHome = true, home = mapOf("a" to "Amit")), riders.take(1), {}, {})
+            DestinationCard(dest.copy(distanceM = 120.0, arrived = true), {}, {})
+            HomeCheckInCard(com.ridecomm.app.ride.RecentRide("XCQGCW", now - 3_600_000L), "Saquelain") {}
+        }
+    }
+
+    @Test
+    fun riderSheetTalkToOne() = shot("31_rider_sheet_talk_to_one") {
+        RiderSheet(riders[1], null, com.ridecomm.app.ride.RiderVolume(), roles, {}, {}, {}, {}, onWhisperStart = {})
+    }
+
+    @Test
+    fun destinationDialog() = shot("32_destination_dialog") { DestinationDialog({}, {}) }
+
+    @Test
+    fun newSettings2() = shot("33_settings_home_break") {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            HomeSafeSetting(true, 18.5 to 73.8, {}, {})
+            OptionChips("Break reminder", "After 2 h of riding: \"Time for a break?\"", com.ridecomm.app.trip.BreakEvery.entries, com.ridecomm.app.trip.BreakEvery.H2, { it.label }) {}
+        }
+    }
+
+    @Test
+    fun groupMapDestination() = captureRoboImage("screenshots/34_map_destination.png") {
+        RideCommTheme {
+            com.ridecomm.app.ui.map.GroupMapScreen(
+                sampleGroup, riders, emptyMap(), onClose = {},
+                destination = com.ridecomm.app.group.Destination("d", 12.7600, 77.3300, "Lonavala", "Amit", "a", 1),
+                mapContent = mapStandIn(dark = true),
+            )
+        }
+    }
+
     @Test
     fun hazardPicker() = shot("22_hazard_picker") { HazardPicker({}, {}) }
 

@@ -12,8 +12,18 @@
 const ROOM = /^ride-[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/;
 const TOKEN_TTL_S = 6 * 60 * 60;
 
+// The web ride page (iPhone) asks from the browser, so answer the browser's CORS check. Safe for any
+// site: a pass still needs the group key, and no cookies are involved.
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, X-RideComm-Key',
+  'Access-Control-Max-Age': '86400',
+};
+
 export default {
   async fetch(request, env) {
+    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     if (request.method !== 'POST') return json({ error: 'POST only' }, 405);
     for (const name of ['LIVEKIT_URL', 'LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET', 'GROUP_SECRET']) {
       if (!env[name]) return json({ error: `server not configured: ${name} missing` }, 500);
@@ -79,5 +89,5 @@ function b64url(input) {
 }
 
 function json(data, status = 200) {
-  return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
 }

@@ -52,6 +52,15 @@ object RiderVolumes {
 
     fun of(id: String): RiderVolume = _volumes.value[id] ?: RiderVolume()
 
+    /** Riders talking only to someone else right now: silent on my phone until they're done. */
+    private var hushed: Set<String> = emptySet()
+
+    fun setHushed(ids: Set<String>, room: Room?) {
+        if (ids == hushed) return
+        hushed = ids
+        room?.let { apply(it) }
+    }
+
     fun set(context: Context, id: String, value: RiderVolume, room: Room?) {
         _volumes.value = (_volumes.value + (id to value)).filterValues { !it.isDefault }
         Prefs.setRiderVolumes(context, _volumes.value)
@@ -65,7 +74,8 @@ object RiderVolumes {
             val v = of(id)
             val pub = p.getTrackPublication(Track.Source.MICROPHONE) as? RemoteTrackPublication ?: return@forEach
             if (pub.subscribed == v.mutedForMe) runCatching { pub.setSubscribed(!v.mutedForMe) }
-            (pub.track as? RemoteAudioTrack)?.let { runCatching { it.setVolume(v.volume.toDouble()) } }
+            val volume = if (id in hushed) 0.0 else v.volume.toDouble()
+            (pub.track as? RemoteAudioTrack)?.let { runCatching { it.setVolume(volume) } }
         }
     }
 }

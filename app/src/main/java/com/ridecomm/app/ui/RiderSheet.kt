@@ -58,6 +58,9 @@ fun RiderSheet(
     onLead: (Boolean) -> Unit,
     onSweep: (Boolean) -> Unit,
     onClose: () -> Unit,
+    whispering: Boolean = false,
+    onWhisperStart: (() -> Unit)? = null,
+    onWhisperStop: () -> Unit = {},
 ) {
     val isLead = roles.leadId == rider.id
     val isSweep = roles.sweepId == rider.id
@@ -69,6 +72,19 @@ fun RiderSheet(
                 Text(if (rider.isMe) "${rider.name} (you)" else rider.name, style = MaterialTheme.typography.titleLarge)
                 if (isLead) RoleTag("Lead")
                 if (isSweep) RoleTag("Sweep")
+            }
+        }
+
+        if (onWhisperStart != null) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                HoldToTalkButton(
+                    if (whispering) "Only ${rider.name} hears you" else "Hold to talk only to ${rider.name}",
+                    active = whispering,
+                    modifier = Modifier.fillMaxWidth(),
+                    onStart = onWhisperStart,
+                    onStop = onWhisperStop,
+                )
+                Text("The others don't hear you while you hold.", style = MaterialTheme.typography.bodyMedium)
             }
         }
 
