@@ -2,6 +2,7 @@ package com.ridecomm.app.trip
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Looper
@@ -54,7 +55,12 @@ object TripTracker {
     private var ticker: Job? = null
     private var listening = false
 
+    private val _location = MutableStateFlow<Location?>(null)
+    /** My latest GPS fix during the ride (stays on my phone; hazard alerts use it). */
+    val location: StateFlow<Location?> = _location.asStateFlow()
+
     private val listener = LocationListener { location ->
+        _location.value = location
         lastFixElapsed = SystemClock.elapsedRealtime()
         meter.add(
             Fix(
@@ -97,6 +103,7 @@ object TripTracker {
             appContext.getSystemService(LocationManager::class.java).removeUpdates(listener)
         }
         listening = false
+        _location.value = null
         _state.value = _state.value.copy(active = false, speedKmh = null)
     }
 

@@ -36,6 +36,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.ridecomm.app.night.NightMode
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -321,10 +324,12 @@ fun GlassTextField(
 /** Dialog panel in the same glass style (darker, since the dialog floats over a scrim). */
 @Composable
 fun GlassDialog(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+    val night by NightMode.active.collectAsState()
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(
             Modifier
                 .padding(20.dp)
+                .nightFilter(night)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .clip(CardShape)

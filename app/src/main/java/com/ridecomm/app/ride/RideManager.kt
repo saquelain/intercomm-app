@@ -11,6 +11,8 @@ import com.ridecomm.app.trip.TripTracker
 import com.ridecomm.app.voice.VoiceCommands
 import com.ridecomm.app.crash.CrashDetector
 import com.ridecomm.app.group.GroupTracker
+import com.ridecomm.app.group.RideRoles
+import com.ridecomm.app.hazard.Hazards
 import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.profile.ProfileSync
 import com.ridecomm.app.sos.SosManager
@@ -80,7 +82,11 @@ object RideManager {
         if (rideJob != null) return
         leavingRide?.cancel()
         appContext = context.applicationContext
-        _state.value = RideState(status = RideStatus.CONNECTING, code = code)
+        val ptt = Prefs.talkMode(appContext) == TalkMode.PUSH_TO_TALK
+        _state.value = RideState(status = RideStatus.CONNECTING, code = code, pushToTalk = ptt)
+        talkButton.stop()
+        MicGate.closed = ptt
+        RiderVolumes.load(appContext)
         DataUsage.start()
         DataSaver.reset(appContext)
         offlineSinceMs = null
@@ -144,9 +150,14 @@ object RideManager {
         VoteManager.release()
         SosManager.release()
         GroupTracker.release()
+        RideRoles.release()
+        Hazards.release()
         ProfileSync.release()
         RiderAlerts.release()
         VoiceCommands.stop()
+        stopTalkTimer()
+        talkButton.stop()
+        MicGate.closed = false
         TripTracker.stop()
         stopWatchingPhoneCalls()
         CrashDetector.stop()
@@ -154,6 +165,9 @@ object RideManager {
     }
 
     fun clearError() = _state.update { it.copy(error = null) }
+
+    /** The live ride connection, for settings that apply straight away (e.g. a rider's volume). */
+    fun currentRoom(): Room? = room
 
     fun toggleMute() {
         val muted = !_state.value.micMuted
@@ -168,6 +182,74 @@ object RideManager {
             }
             refreshRiders()
         }
+    }
+
+    // ---- Push to talk ----
+
+    private val talkButton = TalkButton()
+    private var talkTimer: Job? = null
+
+    /** The talk button went down (push-to-talk mode). */
+    fun talkPress() {
+        if (!_state.value.pushToTalk) return
+        talkButton.press(SystemClock.elapsedRealtime())
+        applyTalk()
+    }
+
+    fun talkRelease() {
+        if (!_state.value.pushToTalk) return
+        talkButton.release(SystemClock.elapsedRealtime())
+        applyTalk()
+    }
+
+    /** Headset button or floating button: start or stop talking, with a spoken cue (eyes on the road). */
+    fun talkToggle() {
+        if (!_state.value.pushToTalk) return
+        talkButton.toggle(SystemClock.elapsedRealtime())
+        applyTalk()
+        Announcer.speak(appContext, if (talkButton.talking) "Talk" else "Over")
+    }
+
+    private fun applyTalk() {
+        val talking = talkButton.talking
+        // Talking needs the mic itself on.
+        if (talking && _state.value.micMuted) toggleMute()
+        MicGate.closed = !talking
+        _state.update { it.copy(talking = talking, talkLatched = talkButton.latched) }
+        if (talkButton.latched) startTalkTimer() else stopTalkTimer()
+        refreshRiders()
+    }
+
+    /** Closes a forgotten hands-free mic. */
+    private fun startTalkTimer() {
+        if (talkTimer != null) return
+        talkTimer = scope.launch {
+            while (true) {
+                delay(5_000)
+                if (talkButton.timedOut(SystemClock.elapsedRealtime())) {
+                    talkTimer = null
+                    applyTalk()
+                    Announcer.speak(appContext, "Mic closed")
+                    return@launch
+                }
+            }
+        }
+    }
+
+    private fun stopTalkTimer() {
+        talkTimer?.cancel()
+        talkTimer = null
+    }
+
+    /** Talk mode changed in Settings mid-ride. */
+    fun applyTalkMode(context: Context) {
+        if (_state.value.status == RideStatus.IDLE) return
+        val ptt = Prefs.talkMode(context) == TalkMode.PUSH_TO_TALK
+        if (ptt == _state.value.pushToTalk) return
+        talkButton.stop()
+        stopTalkTimer()
+        MicGate.closed = ptt
+        _state.update { it.copy(pushToTalk = ptt, talking = false, talkLatched = false) }
     }
 
     /**
@@ -234,6 +316,8 @@ object RideManager {
         VoteManager.attach(appContext, r)
         SosManager.attach(r)
         GroupTracker.attach(appContext, r)
+        RideRoles.attach(appContext, r)
+        Hazards.attach(appContext, r)
         ProfileSync.attach(appContext, r)
         RiderAlerts.attach(r)
         val ended = CompletableDeferred<DisconnectReason>()
@@ -252,14 +336,21 @@ object RideManager {
                     is RoomEvent.ConnectionQualityChanged -> if (event.participant === r.localParticipant) checkNetwork(r)
                     is RoomEvent.Disconnected -> ended.complete(event.reason)
                     is RoomEvent.ActiveSpeakersChanged -> MusicManager.onSpeakersChanged(event.speakers)
+                    // Per-rider volume and "mute for me" apply to each voice as it arrives.
+                    is RoomEvent.TrackPublished, is RoomEvent.TrackSubscribed -> RiderVolumes.apply(r)
                     is RoomEvent.ParticipantDisconnected -> {
-                        event.participant.identity?.let { GroupTracker.forget(it.value) }
+                        event.participant.identity?.let {
+                            GroupTracker.forget(it.value)
+                            RideRoles.forget(it.value)
+                        }
                         RiderAlerts.onRiderLeft(event.participant)
                     }
                     is RoomEvent.ParticipantConnected -> {
                         event.participant.identity?.let {
                             ProfileSync.onRiderJoined(it)
                             GroupTracker.onRiderJoined(it)
+                            RideRoles.onRiderJoined(it)
+                            Hazards.onRiderJoined(it)
                         }
                         RiderAlerts.onRiderJoined(event.participant)
                     }
@@ -277,6 +368,9 @@ object RideManager {
             onConnected()
             MusicManager.onConnected()
             GroupTracker.onConnected()
+            RideRoles.requestSync()
+            Hazards.requestSync()
+            RiderVolumes.apply(r)
             ProfileSync.onConnected()
             RiderAlerts.onConnected()
             _state.update { it.copy(status = RideStatus.CONNECTED) }
@@ -303,6 +397,8 @@ object RideManager {
             VoteManager.detach()
             SosManager.detach()
             GroupTracker.detach()
+            RideRoles.detach()
+            Hazards.detach()
             ProfileSync.detach()
             RiderAlerts.detach()
             if (room === r) room = null
@@ -320,6 +416,8 @@ object RideManager {
         VoteManager.requestCatchUp(from)
         SosManager.onBackOnline(from)
         GroupTracker.requestSync()
+        RideRoles.requestSync()
+        Hazards.requestSync()
         if (System.currentTimeMillis() - since > BACK_ONLINE_ANNOUNCE_MS) Announcer.speak(appContext, "Back online")
     }
 
@@ -353,9 +451,14 @@ object RideManager {
         VoteManager.release()
         SosManager.release()
         GroupTracker.release()
+        RideRoles.release()
+        Hazards.release()
         ProfileSync.release()
         RiderAlerts.release()
         VoiceCommands.stop()
+        stopTalkTimer()
+        talkButton.stop()
+        MicGate.closed = false
         TripTracker.stop()
         stopWatchingPhoneCalls()
         CrashDetector.stop()

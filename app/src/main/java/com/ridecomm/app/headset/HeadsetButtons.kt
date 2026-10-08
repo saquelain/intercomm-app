@@ -19,7 +19,7 @@ import com.ridecomm.app.sos.SosManager
  * The play/pause button on a Bluetooth helmet headset controls the ride, so riders never have to
  * touch the phone:
  *
- * - 1 press: mute / unmute
+ * - 1 press: mute / unmute (in push-to-talk mode: start / stop talking)
  * - 2 presses: next song (as DJ) or music off/on for me
  * - 3 presses: start the SOS countdown (cancel on screen, as always)
  *
@@ -99,6 +99,10 @@ object HeadsetButtons {
     }
 
     private fun toggleMute() {
+        if (RideManager.state.value.pushToTalk) {
+            RideManager.talkToggle()
+            return
+        }
         val muted = !RideManager.state.value.micMuted
         RideManager.toggleMute()
         say(if (muted) "Mic off" else "Mic on")

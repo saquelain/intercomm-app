@@ -44,6 +44,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.ridecomm.app.R
+import com.ridecomm.app.group.RideRolesState
+import com.ridecomm.app.hazard.HazardView
+import com.ridecomm.app.ui.icon
 import com.ridecomm.app.group.GroupMath
 import com.ridecomm.app.group.GroupState
 import com.ridecomm.app.group.GroupTracker
@@ -75,12 +78,21 @@ internal data class Spot(val lat: Double, val lon: Double)
  *
  * [mapContent] is the real map by default; screenshot tests pass a stand-in.
  */
+/** "Lead" / "Sweep" / null for a rider. */
+internal fun roleLabel(roles: RideRolesState, id: String): String? = when (id) {
+    roles.leadId -> "Lead"
+    roles.sweepId -> "Sweep"
+    else -> null
+}
+
 @Composable
 internal fun GroupMapScreen(
     group: GroupState,
     riders: List<Rider>,
     photos: Map<String, Bitmap>,
     onClose: () -> Unit,
+    hazards: List<HazardView> = emptyList(),
+    roles: RideRolesState = RideRolesState(),
     mapContent: (@Composable (places: List<GroupOverlay.Place>) -> Unit)? = null,
 ) {
     BackHandler(onBack = onClose)
@@ -95,6 +107,10 @@ internal fun GroupMapScreen(
     val now = System.currentTimeMillis()
 
     val places = buildList {
+        hazards.forEach { v ->
+            val h = v.hazard
+            add(GroupOverlay.Place(h.lat, h.lon) { x, y, _ -> MapMarker.Hazard(x, y, h.kind.icon, h.kind.label) })
+        }
         group.regroup?.let { p ->
             val detail = "${p.arrived.size} of ${riders.size.coerceAtLeast(1)} here"
             add(GroupOverlay.Place(p.lat, p.lon) { x, y, _ -> MapMarker.Regroup(x, y, p.label, detail) })
@@ -110,6 +126,7 @@ internal fun GroupMapScreen(
                         talking = id in talking,
                         headingDeg = pos.headingDeg?.takeIf { moving },
                         stale = now - pos.atMs > STALE_MS,
+                        role = roleLabel(roles, id),
                     )
                 },
             )

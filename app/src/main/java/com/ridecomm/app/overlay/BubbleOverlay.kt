@@ -243,9 +243,17 @@ class BubbleOverlay(private val context: Context) {
             add(SlideOption(R.drawable.ms_thumb_up, "Yes", GREEN, "Voted yes") { VoteManager.cast(yes = true) })
             add(SlideOption(R.drawable.ms_thumb_down, "No", RED, "Voted no") { VoteManager.cast(yes = false) })
         }
-        val muted = RideManager.state.value.micMuted
+        val ride = RideManager.state.value
+        val muted = ride.micMuted
         add(
-            if (muted) {
+            if (ride.pushToTalk) {
+                // Push to talk: one tap opens the mic hands-free, another closes it.
+                if (ride.talking) {
+                    SlideOption(R.drawable.ms_mic_off, "Stop talking", RED, "") { RideManager.talkToggle() }
+                } else {
+                    SlideOption(R.drawable.ms_mic, "Talk", GREEN, "") { RideManager.talkToggle() }
+                }
+            } else if (muted) {
                 SlideOption(R.drawable.ms_mic, "Unmute", GREEN, "Mic on") { RideManager.toggleMute() }
             } else {
                 SlideOption(R.drawable.ms_mic_off, "Mute", RED, "Mic off") { RideManager.toggleMute() }

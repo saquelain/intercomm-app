@@ -1,6 +1,9 @@
 package com.ridecomm.app.ui
 
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import com.ridecomm.app.Prefs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -65,9 +68,60 @@ fun SosCards(sos: SosState) {
             }
             PrimaryButton("I'm OK", R.drawable.ms_check_circle, Modifier.fillMaxWidth(), brush = Palette.GoGradient, height = 64.dp, onClick = SosManager::imOk)
         }
+        HelperCard()
     }
     sos.alerts.forEach { AlertCard(it) }
 }
+
+/**
+ * While my SOS is on: my details in big text for a passer-by or medic holding my phone, with
+ * buttons to call my emergency contact and the emergency number.
+ */
+@Composable
+private fun HelperCard() {
+    val context = LocalContext.current
+    val info = remember { Prefs.emergencyInfo(context) }
+    val name = remember { Prefs.riderName(context) }
+    GlassCard(tint = Color.White, fillAlpha = 0.10f, spacing = 10.dp) {
+        SectionLabel("For anyone helping")
+        Text(name.ifBlank { "Rider" }, style = MaterialTheme.typography.headlineMedium)
+        if (info.bloodGroup.isNotBlank()) InfoLine("Blood group", info.bloodGroup, big = true)
+        if (info.medical.isNotBlank()) InfoLine("Medical", info.medical)
+        if (info.isEmpty) {
+            Text("Add blood group, allergies and an emergency contact in Settings.", style = MaterialTheme.typography.bodyMedium)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (info.contactPhone.isNotBlank()) {
+                PrimaryButton(
+                    "Call ${info.contactName.ifBlank { "contact" }}",
+                    R.drawable.ms_call,
+                    Modifier.weight(1f),
+                    brush = Palette.GoGradient,
+                    height = 58.dp,
+                ) { dial(context, info.contactPhone) }
+            }
+            GlassButton("Call $EMERGENCY_NUMBER", R.drawable.ms_call, Modifier.weight(1f), height = 58.dp) {
+                dial(context, EMERGENCY_NUMBER)
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoLine(label: String, value: String, big: Boolean = false) {
+    Column {
+        Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
+        Text(value, style = if (big) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleMedium, color = Color.White)
+    }
+}
+
+/** Opens the dialer with the number filled in (no permission needed; the rider taps Call). */
+private fun dial(context: Context, number: String) {
+    runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + number.filter { it.isDigit() || it == '+' }))) }
+}
+
+/** India's (and Europe's) single emergency number. */
+private const val EMERGENCY_NUMBER = "112"
 
 @Composable
 private fun AlertCard(alert: SosAlert) {
@@ -83,6 +137,20 @@ private fun AlertCard(alert: SosAlert) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White,
                 )
+            }
+        }
+        alert.info?.let { info ->
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                if (info.bloodGroup.isNotBlank()) InfoLine("Blood", info.bloodGroup)
+                if (info.medical.isNotBlank()) Box(Modifier.weight(1f)) { InfoLine("Medical", info.medical) }
+            }
+            if (info.contactPhone.isNotBlank()) {
+                GlassButton(
+                    "Call ${info.contactName.ifBlank { "their contact" }} · ${info.contactPhone}",
+                    R.drawable.ms_call,
+                    Modifier.fillMaxWidth(),
+                    height = 52.dp,
+                ) { dial(context, info.contactPhone) }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

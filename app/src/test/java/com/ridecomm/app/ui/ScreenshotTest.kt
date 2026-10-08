@@ -49,10 +49,71 @@ class ScreenshotTest {
     )
     private val ride = RideState(status = RideStatus.CONNECTED, code = "XCQGCW", riders = riders)
 
-    private fun shot(name: String, content: @Composable () -> Unit) = captureRoboImage("screenshots/$name.png") {
+    private fun shot(name: String, night: Boolean = false, content: @Composable () -> Unit) = captureRoboImage("screenshots/$name.png") {
         RideCommTheme {
-            GlassBackground { Box(Modifier.fillMaxSize().padding(top = 24.dp)) { content() } }
+            GlassBackground(Modifier.nightFilter(night)) { Box(Modifier.fillMaxSize().padding(top = 24.dp)) { content() } }
         }
+    }
+
+    private val now = System.currentTimeMillis()
+    private val roles = com.ridecomm.app.group.RideRolesState(leadId = "a", sweepId = "r", atMs = 1, byId = "me")
+    private fun hz(id: String, kind: com.ridecomm.app.hazard.HazardKind, lat: Double, lon: Double, by: String, minAgo: Int, d: Double?, ahead: Boolean?) =
+        com.ridecomm.app.hazard.HazardView(com.ridecomm.app.hazard.Hazard(id, kind, lat, lon, by, by, now - minAgo * 60_000L), d, ahead)
+    private val hazards = com.ridecomm.app.hazard.HazardsState(
+        enabled = true,
+        hazards = listOf(
+            hz("h1", com.ridecomm.app.hazard.HazardKind.POTHOLE, 12.7480, 77.3330, "Amit", 3, 1_800.0, true),
+            hz("h2", com.ridecomm.app.hazard.HazardKind.POLICE, 12.7700, 77.3060, "Amit", 9, 4_200.0, true),
+        ),
+    )
+    private val volumes = mapOf("v" to com.ridecomm.app.ride.RiderVolume(1f, mutedForMe = true), "a" to com.ridecomm.app.ride.RiderVolume(1.5f))
+
+    @Test
+    fun ridePushToTalkRolesHazards() = shot("20_ride_ptt_roles_hazards") {
+        RideContent(ride.copy(pushToTalk = true), MusicState(), VoteState(), SosState(), roles = roles, hazards = hazards, volumes = volumes)
+    }
+
+    @Test
+    fun rideTalking() = shot("20b_ride_talking") {
+        RideContent(ride.copy(pushToTalk = true, talking = true, talkLatched = true), MusicState(), VoteState(), SosState(), roles = roles, hazards = hazards.copy(hazards = emptyList()))
+    }
+
+    @Test
+    fun riderSheet() = shot("21_rider_sheet") {
+        RiderSheet(riders[1], null, com.ridecomm.app.ride.RiderVolume(1.5f), roles, {}, {}, {}, {})
+    }
+
+    @Test
+    fun hazardPicker() = shot("22_hazard_picker") { HazardPicker({}, {}) }
+
+    @Test
+    fun newSettings() = shot("23_new_settings") {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            OptionChips("Talk mode", "Silent until you hold the mic button.", com.ridecomm.app.ride.TalkMode.entries, com.ridecomm.app.ride.TalkMode.PUSH_TO_TALK, { it.label }) {}
+            OptionChips("Night mode", "Dim red screen and quieter alerts from sunset to sunrise.", com.ridecomm.app.night.NightModeSetting.entries, com.ridecomm.app.night.NightModeSetting.AUTO, { it.label }) {}
+            EmergencyInfoSetting(com.ridecomm.app.sos.EmergencyInfo("O+", "Allergic to penicillin", "Ammi", "+91 98450 12345"), true, {}, {})
+        }
+    }
+
+    @Test
+    fun nightRide() = shot("24_night_ride", night = true) {
+        RideContent(ride, MusicState(), VoteState(), SosState(), roles = roles, hazards = hazards)
+    }
+
+    @Test
+    fun mySosHelperCard() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        com.ridecomm.app.Prefs.setRiderName(context, "Saquelain")
+        com.ridecomm.app.Prefs.setEmergencyInfo(context, com.ridecomm.app.sos.EmergencyInfo("O+", "Allergic to penicillin. Asthma inhaler in jacket.", "Ammi", "+91 98450 12345"))
+        shot("25_my_sos_helper") {
+            RideContent(ride, MusicState(), VoteState(), SosState(mySosActive = true, mySosStatus = "Sent to the group"))
+        }
+    }
+
+    @Test
+    fun sosAlertWithInfo() = shot("26_sos_alert_info") {
+        val alert = SosAlert("r", "Rahul", 12.97, 77.59, distanceM = 1240f, atMs = 0, crash = true, info = com.ridecomm.app.sos.EmergencyInfo("B+", "Diabetic", "Priya", "+91 99000 11111"))
+        RideContent(ride, MusicState(), VoteState(), SosState(alerts = listOf(alert)))
     }
 
     @Test
@@ -311,6 +372,13 @@ class ScreenshotTest {
     @Test
     fun groupMapDark() = captureRoboImage("screenshots/17_group_map_dark.png") {
         RideCommTheme { com.ridecomm.app.ui.map.GroupMapScreen(sampleGroup, riders, emptyMap(), onClose = {}, mapContent = mapStandIn(dark = true)) }
+    }
+
+    @Test
+    fun groupMapHazardsRoles() = captureRoboImage("screenshots/27_map_hazards_roles.png") {
+        RideCommTheme {
+            com.ridecomm.app.ui.map.GroupMapScreen(sampleGroup, riders, emptyMap(), onClose = {}, hazards = hazards.hazards, roles = roles, mapContent = mapStandIn(dark = true))
+        }
     }
 
     @Test

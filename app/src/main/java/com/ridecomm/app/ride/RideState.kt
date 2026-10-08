@@ -18,6 +18,11 @@ data class RideState(
     val code: String = "",
     val riders: List<Rider> = emptyList(),
     val micMuted: Boolean = false,
+    /** Push to talk is on: my voice goes out only while [talking]. */
+    val pushToTalk: Boolean = false,
+    val talking: Boolean = false,
+    /** Talking hands-free after a tap (tap again to stop). */
+    val talkLatched: Boolean = false,
     /** Set when a ride fails to start or drops; shown once on the home screen. */
     val error: String? = null,
 )

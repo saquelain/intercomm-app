@@ -57,6 +57,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import com.ridecomm.app.CrashLog
 import com.ridecomm.app.Prefs
+import com.ridecomm.app.hazard.Hazards
+import com.ridecomm.app.night.NightMode
+import com.ridecomm.app.night.NightModeSetting
+import com.ridecomm.app.ride.TalkMode
+import com.ridecomm.app.sos.EmergencyInfo
 import com.ridecomm.app.R
 import com.ridecomm.app.audio.MicGate
 import com.ridecomm.app.audio.GateSettings
@@ -346,6 +351,12 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var speedLimit by remember { mutableStateOf(Prefs.speedLimit(context)) }
     var rideUpdates by remember { mutableStateOf(Prefs.rideUpdates(context)) }
     var dataSaver by remember { mutableStateOf(Prefs.dataSaver(context)) }
+    var talkMode by remember { mutableStateOf(Prefs.talkMode(context)) }
+    var nightMode by remember { mutableStateOf(Prefs.nightMode(context)) }
+    var hazardAlerts by remember { mutableStateOf(Prefs.hazardAlerts(context)) }
+    var roleAlerts by remember { mutableStateOf(Prefs.roleAlerts(context)) }
+    var emergencyInfo by remember { mutableStateOf(Prefs.emergencyInfo(context)) }
+    var shareInfo by remember { mutableStateOf(Prefs.shareEmergencyInfo(context)) }
     // The test can change the filter live during a ride; closing without saving puts it back.
     val cancel = {
         MicGate.setSettings(Prefs.windGate(context))
@@ -407,7 +418,30 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
         )
         Text("Used for SOS when there's no internet.", style = MaterialTheme.typography.bodyMedium)
+        EmergencyInfoSetting(emergencyInfo, shareInfo, onInfo = { emergencyInfo = it }, onShare = { shareInfo = it })
+        OptionChips(
+            "Talk mode",
+            when (talkMode) {
+                TalkMode.OPEN_MIC -> "Just talk: the wind filter sends your voice and holds back wind."
+                TalkMode.PUSH_TO_TALK -> "Silent until you hold the mic button. Tap it once to talk hands-free, tap again to stop. " +
+                    "The headset button and floating button start and stop talking too."
+            },
+            TalkMode.entries,
+            talkMode,
+            { it.label },
+        ) { talkMode = it }
         WindGateSetting(windGate, onTest = { testingFilter = true }) { windGate = it }
+        OptionChips(
+            "Night mode",
+            when (nightMode) {
+                NightModeSetting.OFF -> "Normal colours, day and night."
+                NightModeSetting.AUTO -> "Dim red screen and quieter alerts from sunset to sunrise where you are."
+                NightModeSetting.ON -> "Dim red screen and quieter alerts, all the time. Red light keeps your eyes used to the dark road."
+            },
+            NightModeSetting.entries,
+            nightMode,
+            { it.label },
+        ) { nightMode = it }
         SettingSwitch("Floating ride button", "Controls over Maps and other apps", bubbleOn) { bubbleOn = it }
         SettingSwitch(
             "Crash detection",
@@ -423,7 +457,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             "Voice commands",
             if (voiceAvailable) {
                 "Say \"RideComm\" then: break, fuel, food, yes, no, slow down, wait for me, mute, next song, " +
-                    "music off, who's here, battery, speed, where is everyone, regroup here, SOS, cancel. Works while your mic is on."
+                    "music off, who's here, battery, speed, where is everyone, regroup here, pothole, police, SOS, cancel. Works while your mic is on."
             } else {
                 "Needs Android 13 or newer with Google speech recognition"
             },
@@ -447,6 +481,18 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 "falls behind, and regroup points. Uses GPS; turned off unless you switch it on.",
             shareLocation,
         ) { shareLocation = it }
+        SettingSwitch(
+            "Hazard alerts",
+            "Mark potholes, speed breakers, police, accidents… for the riders behind, and hear \"Pothole in 300 meters\" " +
+                "for the ones ahead. Only the hazard's spot is shared.",
+            hazardAlerts,
+        ) { hazardAlerts = it }
+        SettingSwitch(
+            "Lead & sweep alerts",
+            "Tap a rider to make them lead or sweep. The lead hears when someone gets ahead, the sweep when someone " +
+                "drops behind. Needs Group map on.",
+            roleAlerts,
+        ) { roleAlerts = it }
         SettingSwitch(
             "Keep music apps playing",
             "Spotify, YouTube Music… get quieter when someone talks" + if (inRide) ". Applies from your next ride." else "",
@@ -472,6 +518,15 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setRideUpdates(context, rideUpdates)
                 TripTracker.applySettings(context)
                 Prefs.setDataSaver(context, dataSaver)
+                Prefs.setTalkMode(context, talkMode)
+                RideManager.applyTalkMode(context)
+                Prefs.setNightMode(context, nightMode)
+                NightMode.refresh(context)
+                Prefs.setHazardAlerts(context, hazardAlerts)
+                Hazards.applySettings()
+                Prefs.setRoleAlerts(context, roleAlerts)
+                Prefs.setEmergencyInfo(context, emergencyInfo)
+                Prefs.setShareEmergencyInfo(context, shareInfo)
                 DataSaver.applySettings(context)
                 if (voiceAvailable) Prefs.setVoiceCommands(context, voiceCommands)
                 VoiceCommands.applySettings(context)
@@ -543,6 +598,100 @@ internal fun SpeedAlertSetting(limitKmh: Int, onChange: (Int) -> Unit) {
 }
 
 private const val DEFAULT_SPEED_LIMIT = 90
+
+/** A setting with a few choices shown as a row of chips. */
+@Composable
+internal fun <T> OptionChips(title: String, description: String, options: List<T>, value: T, label: (T) -> String, onChange: (T) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        Text(description, style = MaterialTheme.typography.bodyMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            options.forEach { option ->
+                val selected = option == value
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .height(44.dp)
+                        .glass(
+                            RoundedCornerShape(14.dp),
+                            tint = if (selected) Palette.Orange else Color.White,
+                            fillAlpha = if (selected) 0.32f else 0.06f,
+                        )
+                        .clickable { onChange(option) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        label(option),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (selected) Color.White else Palette.TextSecondary,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Blood group, allergies and an emergency contact. Kept on the phone; sent only with my SOS, so
+ * the group (or a stranger holding my phone) knows what to tell the ambulance.
+ */
+@Composable
+internal fun EmergencyInfoSetting(info: EmergencyInfo, share: Boolean, onInfo: (EmergencyInfo) -> Unit, onShare: (Boolean) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("Emergency info", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Shown on your screen when your SOS is on, for anyone helping you, and sent to the group with your SOS.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text("Blood group", style = MaterialTheme.typography.labelLarge, color = Palette.TextSecondary)
+        EmergencyInfo.BLOOD_GROUPS.chunked(4).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                row.forEach { group ->
+                    val selected = info.bloodGroup == group
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .height(42.dp)
+                            .glass(RoundedCornerShape(14.dp), tint = if (selected) Palette.Stop else Color.White, fillAlpha = if (selected) 0.34f else 0.06f)
+                            .clickable { onInfo(info.copy(bloodGroup = if (selected) "" else group)) },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(group, style = MaterialTheme.typography.labelLarge, color = if (selected) Color.White else Palette.TextSecondary)
+                    }
+                }
+            }
+        }
+        GlassTextField(
+            value = info.medical,
+            onValueChange = { onInfo(info.copy(medical = it.take(EmergencyInfo.MAX_MEDICAL))) },
+            label = "Allergies, conditions, medicines",
+            placeholder = "e.g. Allergic to penicillin",
+            textStyle = MaterialTheme.typography.bodyLarge,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            GlassTextField(
+                value = info.contactName,
+                onValueChange = { onInfo(info.copy(contactName = it.take(EmergencyInfo.MAX_SHORT))) },
+                label = "Contact name",
+                placeholder = "e.g. Ammi",
+                textStyle = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+            )
+            GlassTextField(
+                value = info.contactPhone,
+                onValueChange = { onInfo(info.copy(contactPhone = it.take(EmergencyInfo.MAX_SHORT))) },
+                label = "Phone",
+                placeholder = "+91 98…",
+                textStyle = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            )
+        }
+        SettingSwitch("Send with my SOS", "Off: it only shows on your own screen", share, onChange = onShare)
+    }
+}
 
 /** Off / Auto / Always choice for saving mobile data. */
 @Composable

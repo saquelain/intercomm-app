@@ -15,6 +15,7 @@ import android.speech.SpeechRecognizer
 import android.util.Log
 import androidx.annotation.RequiresApi
 import com.ridecomm.app.Announcer
+import com.ridecomm.app.hazard.Hazards
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.alerts.RiderAlerts
 import com.ridecomm.app.audio.MicGate
@@ -317,6 +318,11 @@ object VoiceCommands {
                 !Prefs.shareLocation(appContext) -> say("Turn on Group map in Settings to set regroup points")
                 !GroupTracker.setRegroupHere() -> say("Waiting for your location. Try again in a moment.")
                 else -> Unit // GroupTracker confirms it.
+            }
+            is VoiceCommand.Hazard -> if (Prefs.hazardAlerts(appContext)) {
+                Hazards.mark(command.kind)
+            } else {
+                say("Turn on Hazard alerts in Settings to mark hazards")
             }
             VoiceCommand.Unknown -> say("Say RideComm, then a command, like break or slow down")
         }

@@ -43,6 +43,8 @@ data class SosAlert(
     val atMs: Long,
     /** Sent automatically by crash detection rather than by the rider. */
     val crash: Boolean = false,
+    /** Their blood group, allergies and contact, if they chose to share it. */
+    val info: EmergencyInfo? = null,
 )
 
 data class SosState(
@@ -221,6 +223,7 @@ object SosManager {
         .put("at", startedAt)
         .put("crash", crash)
         .apply {
+            myInfo()?.let { put("info", it.toJson()) }
             if (location != null) {
                 put("lat", location.latitude)
                 put("lon", location.longitude)
@@ -230,7 +233,12 @@ object SosManager {
     private fun smsText(name: String, location: Location?, crash: Boolean) = buildString {
         append(if (crash) "SOS from $name (RideComm): possible crash detected." else "SOS from $name (RideComm). Needs help.")
         if (location != null) append(" Location: ${LocationHelper.mapsLink(location.latitude, location.longitude)}")
+        myInfo()?.let { append(" ").append(it.smsText()) }
     }
+
+    /** My emergency info, when I've filled it in and allowed it to go out with my SOS. */
+    private fun myInfo(): EmergencyInfo? =
+        Prefs.emergencyInfo(appContext).takeIf { !it.isEmpty && Prefs.shareEmergencyInfo(appContext) }
 
     private suspend fun broadcast(o: JSONObject): Boolean {
         val r = room ?: return false
@@ -252,6 +260,7 @@ object SosManager {
                     distanceM = distanceTo(lat, lon),
                     atMs = o.getLong("at"),
                     crash = o.optBoolean("crash", false),
+                    info = EmergencyInfo.fromJson(o.optJSONObject("info")),
                 )
                 val isNew = _state.value.alerts.none { it.identity == from }
                 _state.update { s -> s.copy(alerts = s.alerts.filterNot { it.identity == from } + alert) }

@@ -8,7 +8,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import android.view.WindowManager
+import com.ridecomm.app.night.NightMode
+import com.ridecomm.app.ui.nightFilter
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ridecomm.app.overlay.AppVisibility
@@ -20,6 +25,9 @@ import com.ridecomm.app.ui.HomeScreen
 import com.ridecomm.app.ui.RideCommTheme
 import com.ridecomm.app.ui.RideScreen
 
+private const val NIGHT_CHECK_MS = 60_000L
+private const val NIGHT_BRIGHTNESS = 0.18f
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,13 +36,32 @@ class MainActivity : ComponentActivity() {
         setContent {
             RideCommTheme {
                 val state by RideManager.state.collectAsStateWithLifecycle()
-                GlassBackground {
+                val night by NightMode.active.collectAsStateWithLifecycle()
+                // "Auto" follows sunset, so check again every minute.
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        NightMode.refresh(this@MainActivity)
+                        delay(NIGHT_CHECK_MS)
+                    }
+                }
+                LaunchedEffect(night) {
+                    window.attributes = window.attributes.apply {
+                        screenBrightness = if (night) NIGHT_BRIGHTNESS else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                    }
+                }
+                GlassBackground(Modifier.nightFilter(night)) {
                     Box(Modifier.fillMaxSize().safeDrawingPadding()) {
                         if (state.status == RideStatus.IDLE) HomeScreen(state) else RideScreen(state)
                     }
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // A setting changed elsewhere, or time passed while away.
+        NightMode.refresh(this)
     }
 
     override fun onNewIntent(intent: Intent) {

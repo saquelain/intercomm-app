@@ -37,6 +37,12 @@ object MicGate {
      */
     @Volatile var tap: ((samples: FloatArray, count: Int, sampleRate: Int) -> Unit)? = null
 
+    /**
+     * Push to talk, not holding the button: the mic sends silence (instantly, without
+     * re-publishing). Voice commands still hear it.
+     */
+    @Volatile var closed = false
+
     /** null switches the gate off (the mic goes out as WebRTC captured it). */
     fun setSettings(value: GateSettings?) {
         settings = value
@@ -95,6 +101,14 @@ object MicGate {
             for (i in 0 until count) samples[i] = data.getFloat(i * 4)
         }
         if (listener != null && channelCount == 1) runCatching { listener(samples, count, sampleRate) }
+        if (closed) {
+            if (bytesPerSample == 2) {
+                for (i in 0 until count) data.putShort(i * 2, 0)
+            } else {
+                for (i in 0 until count) data.putFloat(i * 4, 0f)
+            }
+            return
+        }
         val rate = sampleRate * channelCount
         if (resetMeter || meterRate != rate) {
             resetMeter = false

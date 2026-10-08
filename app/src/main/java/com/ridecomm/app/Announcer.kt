@@ -2,8 +2,10 @@ package com.ridecomm.app
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import com.ridecomm.app.night.NightMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +25,7 @@ object Announcer {
     val speaking: StateFlow<Boolean> = _speaking.asStateFlow()
 
     fun speak(context: Context, text: String) {
+        night = NightMode.refresh(context)
         val engine = tts
         if (engine == null) {
             pending += text
@@ -52,9 +55,14 @@ object Announcer {
     }
 
     private fun say(text: String) {
+        // Quieter at night (night mode), so alerts don't startle in a silent helmet.
+        val params = Bundle()
+        if (night) params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, NightMode.NIGHT_VOICE_VOLUME)
         // Queue rather than cut off: a confirmation can be followed by a vote result.
-        tts?.speak(text, TextToSpeech.QUEUE_ADD, null, "ridecomm")
+        tts?.speak(text, TextToSpeech.QUEUE_ADD, params, "ridecomm")
     }
+
+    private var night = false
 
     fun shutdown() {
         tts?.shutdown()

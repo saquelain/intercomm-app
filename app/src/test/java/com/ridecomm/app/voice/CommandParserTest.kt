@@ -2,6 +2,7 @@ package com.ridecomm.app.voice
 
 import com.ridecomm.app.vote.QuickMessage
 import com.ridecomm.app.vote.VoteKind
+import com.ridecomm.app.hazard.HazardKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -59,6 +60,20 @@ class CommandParserTest {
         assertEquals(VoiceCommand.Cancel, p("RideComm I'm OK"))
         // "stop music" is about music, not a break stop.
         assertEquals(VoiceCommand.Music(false), p("RideComm stop the music"))
+    }
+
+    @Test
+    fun hazards() {
+        assertEquals(VoiceCommand.Hazard(HazardKind.POTHOLE), p("RideComm pothole ahead"))
+        assertEquals(VoiceCommand.Hazard(HazardKind.SPEED_BREAKER), p("ride com speed breaker"))
+        assertEquals(VoiceCommand.Hazard(HazardKind.POLICE), p("RideComm police checking ahead"))
+        // "Stop" alone is a break vote, but police at a stop is a hazard.
+        assertEquals(VoiceCommand.Hazard(HazardKind.POLICE), p("RideComm police stop"))
+        assertEquals(VoiceCommand.Hazard(HazardKind.ANIMAL), p("RideComm cows on the road"))
+        assertEquals(VoiceCommand.Hazard(HazardKind.SLIPPERY), p("RideComm sand on the road"))
+        assertEquals(VoiceCommand.Hazard(HazardKind.ACCIDENT), p("RideComm accident"))
+        // Asking for help is still SOS.
+        assertEquals(VoiceCommand.Sos, p("RideComm accident help"))
     }
 
     @Test

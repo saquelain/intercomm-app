@@ -2,6 +2,17 @@ package com.ridecomm.app.ui
 
 import com.ridecomm.app.ui.map.GroupMapCard
 import com.ridecomm.app.ui.map.GroupMapScreen
+import com.ridecomm.app.ui.map.roleLabel
+import com.ridecomm.app.group.RideRoles
+import com.ridecomm.app.group.RideRolesState
+import com.ridecomm.app.hazard.Hazards
+import com.ridecomm.app.hazard.HazardsState
+import com.ridecomm.app.ride.RiderVolume
+import com.ridecomm.app.ride.RiderVolumes
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import kotlin.math.roundToInt
 import java.util.Locale
 import com.ridecomm.app.trip.TripTracker
@@ -100,6 +111,9 @@ fun RideScreen(state: RideState) {
     val batteries by RiderAlerts.batteries.collectAsStateWithLifecycle()
     val trip by TripTracker.state.collectAsStateWithLifecycle()
     val onCall by RiderAlerts.onCall.collectAsStateWithLifecycle()
+    val roles by RideRoles.state.collectAsStateWithLifecycle()
+    val hazards by Hazards.state.collectAsStateWithLifecycle()
+    val volumes by RiderVolumes.volumes.collectAsStateWithLifecycle()
     val filterStatus by remember { MicGate.live.map { it?.status }.distinctUntilChanged() }.collectAsStateWithLifecycle(null)
     val dataUsed by produceState(DataUsage.usedBytes()) {
         while (true) {
@@ -107,7 +121,7 @@ fun RideScreen(state: RideState) {
             value = DataUsage.usedBytes()
         }
     }
-    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed, batteries, filterStatus, trip, onCall)
+    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed, batteries, filterStatus, trip, onCall, roles, hazards, volumes)
 }
 
 /** The ride screen for given states (split out so screenshots can render any situation). */
@@ -126,8 +140,14 @@ fun RideContent(
     filterStatus: GateStatus? = null,
     trip: TripState? = null,
     onCall: Set<String> = emptySet(),
+    roles: RideRolesState = RideRolesState(),
+    hazards: HazardsState = HazardsState(),
+    volumes: Map<String, RiderVolume> = emptyMap(),
 ) {
     val context = LocalContext.current
+    var pickHazard by remember { mutableStateOf(false) }
+    var sheetFor by remember { mutableStateOf<String?>(null) }
+    val photoOf = { rider: Rider -> if (rider.isMe) myPhoto else photos[rider.id] }
     var confirmLeave by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showMap by remember { mutableStateOf(false) }
@@ -179,13 +199,19 @@ fun RideContent(
                 if (trip != null) TripRow(trip)
                 if (group.enabled) GroupMapCard(group, state.riders.size) { showMap = true }
                 SosCards(sos)
-                RidersCard(state.riders, group, batteries, onCall) { rider -> if (rider.isMe) myPhoto else photos[rider.id] }
+                if (hazards.enabled) {
+                    HazardCard(hazards.hazards, System.currentTimeMillis(), onMark = { pickHazard = true }, onRemove = Hazards::remove)
+                }
+                RidersCard(state.riders, group, batteries, onCall, roles, volumes, photoOf) { sheetFor = it.id }
                 VoteCard(vote)
                 MusicCard(music)
                 OverlayPermissionCard()
             }
 
             Dock(
+                pushToTalk = state.pushToTalk,
+                talking = state.talking,
+                latched = state.talkLatched,
                 muted = state.micMuted,
                 speaking = state.riders.firstOrNull { it.isMe }?.isSpeaking == true,
                 filterStatus = filterStatus,
@@ -210,13 +236,35 @@ fun RideContent(
         if (showMap && group.enabled) {
             val myId = state.riders.firstOrNull { it.isMe }?.id
             val allPhotos = if (myId != null && myPhoto != null) photos + (myId to myPhoto) else photos
-            GroupMapScreen(group, state.riders, allPhotos, onClose = { showMap = false })
+            GroupMapScreen(group, state.riders, allPhotos, onClose = { showMap = false }, hazards = hazards.hazards, roles = roles)
         }
 
         sos.countdown?.let { SosCountdown(it, sos.countdownFromCrash) }
     }
 
     if (showSettings) SettingsDialog(onClose = { showSettings = false }, inRide = true)
+
+    if (pickHazard) {
+        HazardPicker(onPick = { Hazards.mark(it); pickHazard = false }, onCancel = { pickHazard = false })
+    }
+
+    sheetFor?.let { id ->
+        val rider = state.riders.firstOrNull { it.id == id }
+        if (rider == null) {
+            sheetFor = null
+        } else {
+            RiderSheet(
+                rider = rider,
+                photo = photoOf(rider),
+                volume = volumes[id] ?: RiderVolume(),
+                roles = roles,
+                onVolume = { RiderVolumes.set(context, id, it, RideManager.currentRoom()) },
+                onLead = { RideRoles.setLead(if (it) id else null, rider.name) },
+                onSweep = { RideRoles.setSweep(if (it) id else null, rider.name) },
+                onClose = { sheetFor = null },
+            )
+        }
+    }
 
     if (confirmLeave) {
         GlassDialog(onDismiss = { confirmLeave = false }) {
@@ -258,7 +306,10 @@ private fun RidersCard(
     group: GroupState,
     batteries: Map<String, BatteryInfo>,
     onCall: Set<String>,
+    roles: RideRolesState,
+    volumes: Map<String, RiderVolume>,
     photoOf: (Rider) -> Bitmap?,
+    onOpen: (Rider) -> Unit,
 ) {
     GlassCard(spacing = 14.dp) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -266,27 +317,62 @@ private fun RidersCard(
             if (group.enabled && group.sharing) StatusPill("On the map", Palette.Cyan)
         }
         riders.forEach {
-            RiderRow(it, if (it.isMe || !group.enabled) null else group.positions[it.id], photoOf(it), batteries[it.id], it.id in onCall)
+            RiderRow(
+                it,
+                if (it.isMe || !group.enabled) null else group.positions[it.id],
+                photoOf(it),
+                batteries[it.id],
+                it.id in onCall,
+                roleLabel(roles, it.id),
+                volumes[it.id],
+            ) { onOpen(it) }
         }
+        Text("Tap a rider for volume and lead / sweep", style = MaterialTheme.typography.labelSmall, color = Palette.TextTertiary)
     }
 }
 
 @Composable
-private fun RiderRow(rider: Rider, position: RiderPosition?, photo: Bitmap?, battery: BatteryInfo?, onPhoneCall: Boolean) {
+private fun RiderRow(
+    rider: Rider,
+    position: RiderPosition?,
+    photo: Bitmap?,
+    battery: BatteryInfo?,
+    onPhoneCall: Boolean,
+    role: String?,
+    volume: RiderVolume?,
+    onClick: () -> Unit,
+) {
     val context = LocalContext.current
     val ring by animateColorAsState(if (rider.isSpeaking) Palette.Go else Color.Transparent, label = "ring")
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.clip(RoundedCornerShape(18.dp)).clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
         Avatar(rider.name, 54.dp, if (rider.isMe) Palette.Brand else OthersGradient, ring, photo)
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            Text(if (rider.isMe) "${rider.name} (you)" else rider.name, style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    if (rider.isMe) "${rider.name} (you)" else rider.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (role != null) {
+                    Spacer(Modifier.width(8.dp))
+                    RoleTag(role)
+                }
+            }
+            val heard = when {
+                volume == null -> ""
+                volume.mutedForMe -> " · muted for you"
+                volume.volume != 1f -> " · ${(volume.volume * 100).roundToInt()}%"
+                else -> ""
+            }
             Text(
                 when {
                     onPhoneCall -> "On a phone call"
                     rider.isMuted -> "Mic off"
                     rider.isSpeaking -> "Talking"
                     else -> "Listening"
-                },
+                } + heard,
                 style = MaterialTheme.typography.bodyMedium,
                 color = when {
                     onPhoneCall -> Palette.Amber
@@ -413,7 +499,16 @@ private fun SignalIcon(signal: Signal) {
 
 /** Bottom bar: Leave, the big mic button, Share. */
 @Composable
-private fun Dock(muted: Boolean, speaking: Boolean, filterStatus: GateStatus?, onLeave: () -> Unit, onShare: () -> Unit) {
+private fun Dock(
+    pushToTalk: Boolean,
+    talking: Boolean,
+    latched: Boolean,
+    muted: Boolean,
+    speaking: Boolean,
+    filterStatus: GateStatus?,
+    onLeave: () -> Unit,
+    onShare: () -> Unit,
+) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -424,7 +519,7 @@ private fun Dock(muted: Boolean, speaking: Boolean, filterStatus: GateStatus?, o
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         DockSide(R.drawable.ms_logout, "Leave", Palette.Stop, onLeave)
-        MicButton(muted, speaking, filterStatus)
+        if (pushToTalk) TalkButton(talking, latched, muted) else MicButton(muted, speaking, filterStatus)
         DockSide(R.drawable.ms_share, "Share", Color.White, onShare)
     }
 }
@@ -462,6 +557,48 @@ private fun MicButton(muted: Boolean, speaking: Boolean, filterStatus: GateStatu
             filterStatus == GateStatus.NOISE -> "Mic on · wind blocked" to Palette.Amber
             filterStatus == GateStatus.VOICE -> "Mic on · sending" to Palette.Go
             else -> "Mic on" to Palette.Go
+        }
+        Text(label, style = MaterialTheme.typography.labelSmall, color = color)
+    }
+}
+
+/**
+ * Push to talk: hold to talk, or tap to talk hands-free and tap again to stop. Grey while
+ * silent, green while my voice goes out.
+ */
+@Composable
+private fun TalkButton(talking: Boolean, latched: Boolean, muted: Boolean) {
+    val haptics = LocalHapticFeedback.current
+    val grow by animateFloatAsState(if (talking) 1.08f else 1f, label = "grow")
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            Modifier
+                .scale(grow)
+                .size(96.dp)
+                .border(3.dp, Color.White.copy(alpha = if (talking) 0.8f else 0.25f), CircleShape)
+                .padding(6.dp)
+                .clip(CircleShape)
+                .background(if (talking) Palette.GoGradient else Brush.linearGradient(listOf(Color(0xFF3A3F5C), Color(0xFF23263B))))
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            RideManager.talkPress()
+                            tryAwaitRelease()
+                            RideManager.talkRelease()
+                        },
+                    )
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Ico(if (talking) R.drawable.ms_mic else R.drawable.ms_touch_app, 40.dp, Color.White, "Push to talk")
+        }
+        Spacer(Modifier.height(6.dp))
+        val (label, color) = when {
+            talking && latched -> "Talking · tap to stop" to Palette.Go
+            talking -> "Talking · let go to stop" to Palette.Go
+            muted -> "Hold to talk · mic off" to Palette.Stop
+            else -> "Hold to talk · tap to lock" to Palette.TextSecondary
         }
         Text(label, style = MaterialTheme.typography.labelSmall, color = color)
     }

@@ -5,6 +5,10 @@ import com.ridecomm.app.audio.GateSettings
 import com.ridecomm.app.ride.RecentRide
 import com.ridecomm.app.ride.DataSaverMode
 import com.ridecomm.app.ride.RecentRides
+import com.ridecomm.app.night.NightModeSetting
+import com.ridecomm.app.ride.RiderVolume
+import com.ridecomm.app.ride.TalkMode
+import com.ridecomm.app.sos.EmergencyInfo
 import com.ridecomm.app.trip.UpdateEvery
 import java.util.UUID
 
@@ -39,6 +43,13 @@ object Prefs {
     private const val KEY_RIDE_UPDATES = "ride_updates"
     private const val KEY_DATA_SAVER = "data_saver"
     private const val KEY_MAP_DARK = "map_dark"
+    private const val KEY_TALK_MODE = "talk_mode"
+    private const val KEY_NIGHT_MODE = "night_mode"
+    private const val KEY_HAZARD_ALERTS = "hazard_alerts"
+    private const val KEY_ROLE_ALERTS = "lead_sweep_alerts"
+    private const val KEY_RIDER_VOLUMES = "rider_volumes"
+    private const val KEY_EMERGENCY_INFO = "emergency_info"
+    private const val KEY_SHARE_EMERGENCY_INFO = "share_emergency_info"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -223,4 +234,46 @@ object Prefs {
     fun mapDark(context: Context): Boolean = prefs(context).getBoolean(KEY_MAP_DARK, true)
 
     fun setMapDark(context: Context, dark: Boolean) = prefs(context).edit().putBoolean(KEY_MAP_DARK, dark).apply()
+
+    /** Open mic (the wind filter decides when I'm talking) or push to talk. */
+    fun talkMode(context: Context): TalkMode =
+        TalkMode.entries.firstOrNull { it.name == prefs(context).getString(KEY_TALK_MODE, null) } ?: TalkMode.OPEN_MIC
+
+    fun setTalkMode(context: Context, mode: TalkMode) = prefs(context).edit().putString(KEY_TALK_MODE, mode.name).apply()
+
+    /** Dim red screen and a quieter voice for night rides. */
+    fun nightMode(context: Context): NightModeSetting =
+        NightModeSetting.entries.firstOrNull { it.name == prefs(context).getString(KEY_NIGHT_MODE, null) } ?: NightModeSetting.OFF
+
+    fun setNightMode(context: Context, mode: NightModeSetting) = prefs(context).edit().putString(KEY_NIGHT_MODE, mode.name).apply()
+
+    /** Mark potholes, police and so on for the riders behind, and hear the ones ahead. */
+    fun hazardAlerts(context: Context): Boolean = prefs(context).getBoolean(KEY_HAZARD_ALERTS, true)
+
+    fun setHazardAlerts(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_HAZARD_ALERTS, on).apply()
+
+    /** Speak when a rider gets ahead of the lead or drops behind the sweep (needs Group map). */
+    fun roleAlerts(context: Context): Boolean = prefs(context).getBoolean(KEY_ROLE_ALERTS, true)
+
+    fun setRoleAlerts(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_ROLE_ALERTS, on).apply()
+
+    /** How loud I hear each rider (by their device id), kept across rides. */
+    fun riderVolumes(context: Context): Map<String, RiderVolume> =
+        RiderVolume.parse(prefs(context).getString(KEY_RIDER_VOLUMES, "") ?: "")
+
+    fun setRiderVolumes(context: Context, volumes: Map<String, RiderVolume>) =
+        prefs(context).edit().putString(KEY_RIDER_VOLUMES, RiderVolume.format(volumes)).apply()
+
+    /** Blood group, allergies and who to call, for whoever helps me after an SOS. */
+    fun emergencyInfo(context: Context): EmergencyInfo =
+        EmergencyInfo.parse(prefs(context).getString(KEY_EMERGENCY_INFO, "") ?: "")
+
+    fun setEmergencyInfo(context: Context, info: EmergencyInfo) =
+        prefs(context).edit().putString(KEY_EMERGENCY_INFO, info.toJson().toString()).apply()
+
+    /** Send my emergency info with my SOS (it's never sent otherwise). */
+    fun shareEmergencyInfo(context: Context): Boolean = prefs(context).getBoolean(KEY_SHARE_EMERGENCY_INFO, true)
+
+    fun setShareEmergencyInfo(context: Context, on: Boolean) =
+        prefs(context).edit().putBoolean(KEY_SHARE_EMERGENCY_INFO, on).apply()
 }

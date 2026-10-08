@@ -1,5 +1,6 @@
 package com.ridecomm.app.voice
 
+import com.ridecomm.app.hazard.HazardKind
 import com.ridecomm.app.vote.QuickMessage
 import com.ridecomm.app.vote.VoteKind
 
@@ -18,6 +19,7 @@ sealed interface VoiceCommand {
     data object Trip : VoiceCommand
     data object WhereIsEveryone : VoiceCommand
     data object RegroupHere : VoiceCommand
+    data class Hazard(val kind: HazardKind) : VoiceCommand
     /** Said "RideComm" but nothing we know after it. */
     data object Unknown : VoiceCommand
 }
@@ -38,12 +40,20 @@ object CommandParser {
     val BIASING = listOf(
         "RideComm", "break", "fuel", "food", "yes", "no", "slow down", "wait for me", "mute", "unmute",
         "next song", "music off", "music on", "SOS", "cancel", "who's here", "battery", "speed", "how far", "where is everyone", "regroup here",
+        "pothole", "speed breaker", "slippery", "police", "accident", "animal",
     )
 
     /** Rules in priority order: the first whose phrase appears in the command wins. */
     private val RULES: List<Pair<List<String>, VoiceCommand>> = listOf(
         listOf("cancel", "stop sos", "i'm ok", "i am ok", "im ok", "false alarm") to VoiceCommand.Cancel,
         listOf("sos", "s o s", "emergency", "help") to VoiceCommand.Sos,
+        // Hazards before votes: "police stop ahead" is a hazard, not a break vote.
+        listOf("pothole", "pot hole", "potholes", "crater") to VoiceCommand.Hazard(HazardKind.POTHOLE),
+        listOf("speed breaker", "speed breakers", "speed bump", "bump", "breaker") to VoiceCommand.Hazard(HazardKind.SPEED_BREAKER),
+        listOf("slippery", "sand", "gravel", "wet road", "slippery road") to VoiceCommand.Hazard(HazardKind.SLIPPERY),
+        listOf("police", "cops", "cop", "police check", "checkpoint") to VoiceCommand.Hazard(HazardKind.POLICE),
+        listOf("accident", "crash ahead") to VoiceCommand.Hazard(HazardKind.ACCIDENT),
+        listOf("animal", "animals", "cow", "cows", "dog", "dogs", "cattle", "buffalo", "goat", "goats") to VoiceCommand.Hazard(HazardKind.ANIMAL),
         listOf("regroup", "re group", "meet here", "meeting point") to VoiceCommand.RegroupHere,
         listOf("where is everyone", "where's everyone", "wheres everyone", "where is everybody", "where's everybody", "where is the group", "where are", "where is", "where's", "wheres") to VoiceCommand.WhereIsEveryone,
         listOf("next song", "next", "skip") to VoiceCommand.NextSong,
