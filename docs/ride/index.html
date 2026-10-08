@@ -159,6 +159,8 @@
     background: rgba(16,14,36,.9); color: #fff; font: 600 13px Outfit, sans-serif; }
   .mk .arrow { position: absolute; left: 50%; top: 50%; width: 0; height: 0; margin: -36px 0 0 -6px; border: 6px solid transparent;
     border-bottom: 10px solid #fff; transform-origin: 6px 36px; }
+  .mk.me .face { background-image: linear-gradient(135deg, var(--orange), var(--pink)); border-color: #fff;
+    box-shadow: 0 0 0 4px var(--orange), 0 0 0 12px rgba(255,138,31,.22), 0 2px 6px rgba(0,0,0,.45); }
   .me-dot { width: 22px; height: 22px; border-radius: 50%; border: 3px solid #fff; background: linear-gradient(135deg, var(--orange), var(--pink));
     box-shadow: 0 0 0 8px rgba(255,138,31,.25); }
   .pin { position: relative; width: 46px; height: 76px; }
@@ -975,6 +977,11 @@
       ? icon('M480-280q-83 0-141.5-58.5T280-480q0-83 58.5-141.5T480-680q83 0 141.5 58.5T680-480q0 83-58.5 141.5T480-280ZM200-440H80q-17 0-28.5-11.5T40-480q0-17 11.5-28.5T80-520h120q17 0 28.5 11.5T240-480q0 17-11.5 28.5T200-440Zm680 0H760q-17 0-28.5-11.5T720-480q0-17 11.5-28.5T760-520h120q17 0 28.5 11.5T920-480q0 17-11.5 28.5T880-440ZM480-760q-17 0-28.5-11.5T440-800v-120q0-17 11.5-28.5T480-960q17 0 28.5 11.5T520-920v120q0 17-11.5 28.5T480-760Zm0 720q-17 0-28.5-11.5T440-80v-120q0-17 11.5-28.5T480-240q17 0 28.5 11.5T520-200v120q0 17-11.5 28.5T480-40Z')
       : icon('M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q14 0 27.5 1t26.5 3q-41 29-65.5 75.5T444-660q0 90 63 153t153 63q55 0 101-24.5t75-65.5q2 13 3 26.5t1 27.5q0 150-105 255T480-120Z');
   }
+  /** Me on the map: my photo (or initial) like the others, with an orange ring and a "You" tag. */
+  function meIcon() {
+    const face = '<div class="face"' + (myPhoto ? ' style="background-image:url(' + myPhoto + ')"' : '') + '>' + (myPhoto ? '' : esc((S.name || '•').charAt(0).toUpperCase())) + '</div>';
+    return L.divIcon({ html: '<div class="mk me">' + face + '<div class="tagname">You</div></div>', iconSize: [44, 44], iconAnchor: [22, 22], className: '' });
+  }
   function markerHtml(name, photo, talk, hdg, stale, role) {
     const face = '<div class="face"' + (photo ? ' style="background-image:url(' + photo + ')"' : '') + '>' + (photo ? '' : esc(name.charAt(0).toUpperCase())) + '</div>';
     const arrow = hdg != null ? '<div class="arrow" style="transform:rotate(' + hdg + 'deg)"></div>' : '';
@@ -1003,7 +1010,9 @@
     if (G.me) {
       const ll = [G.me.lat, G.me.lon];
       if (G.meMark) G.meMark.setLatLng(ll);
-      else G.meMark = L.marker(ll, { icon: L.divIcon({ html: '<div class="me-dot"></div>', iconSize: [22, 22], iconAnchor: [11, 11], className: '' }), zIndexOffset: 1000 }).addTo(G.map);
+      else G.meMark = L.marker(ll, { icon: meIcon(), zIndexOffset: 1000 }).addTo(G.map);
+      // My photo can change mid-ride; only rebuild the icon when it does.
+      if (G.meMark.__photo !== myPhoto) { G.meMark.setIcon(meIcon()); G.meMark.__photo = myPhoto; }
     } else if (G.meMark) { G.meMark.remove(); G.meMark = null; }
     const g = S.regroup;
     if (g) {

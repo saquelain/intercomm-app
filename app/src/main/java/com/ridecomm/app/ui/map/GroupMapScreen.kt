@@ -132,7 +132,12 @@ internal fun GroupMapScreen(
             )
         }
         group.me?.let { me ->
-            add(GroupOverlay.Place(me.lat, me.lon) { x, y, mpp -> MapMarker.Me(x, y, me.headingDeg?.toFloat(), me.accuracyM / mpp) })
+            val self = riders.firstOrNull { it.isMe }
+            add(
+                GroupOverlay.Place(me.lat, me.lon) { x, y, mpp ->
+                    MapMarker.Me(x, y, me.headingDeg?.toFloat(), me.accuracyM / mpp, self?.name.orEmpty(), self?.let { photos[it.id] })
+                },
+            )
         }
     }
 

@@ -36,7 +36,14 @@ sealed interface MapMarker {
         val role: String? = null,
     ) : MapMarker
 
-    data class Me(override val x: Float, override val y: Float, val headingDeg: Float?, val accuracyPx: Float) : MapMarker
+    data class Me(
+        override val x: Float,
+        override val y: Float,
+        val headingDeg: Float?,
+        val accuracyPx: Float,
+        val name: String = "",
+        val photo: Bitmap? = null,
+    ) : MapMarker
 
     data class Regroup(override val x: Float, override val y: Float, val label: String, val detail: String) : MapMarker
 
@@ -149,13 +156,14 @@ class MarkerPainter(private val context: Context) {
         nameTag(canvas, m.x, m.y + h + 4 * d, m.label, null, 235)
     }
 
+    /** Me: my photo (or initial) like the other riders, with an orange ring and a "You" tag. */
     private fun drawMe(canvas: Canvas, m: MapMarker.Me) {
         if (m.accuracyPx > 24 * d) {
             fill.shader = null
             fill.color = Color.argb(40, 0xFF, 0x8A, 0x1F)
             canvas.drawCircle(m.x, m.y, m.accuracyPx, fill)
         }
-        val r = 11 * d
+        val r = AVATAR_DP / 2 * d
         m.headingDeg?.let { h ->
             // A soft cone showing which way I'm going.
             val a = Math.toRadians(h.toDouble() - 90)
@@ -163,21 +171,42 @@ class MarkerPainter(private val context: Context) {
             path.moveTo(m.x, m.y)
             for (i in -30..30 step 10) {
                 val b = a + Math.toRadians(i.toDouble())
-                path.lineTo(m.x + cos(b).toFloat() * 34 * d, m.y + sin(b).toFloat() * 34 * d)
+                path.lineTo(m.x + cos(b).toFloat() * (r + 30 * d), m.y + sin(b).toFloat() * (r + 30 * d))
             }
             path.close()
             fill.shader = null
-            fill.color = Color.argb(80, 0xFF, 0x8A, 0x1F)
+            fill.color = Color.argb(90, 0xFF, 0x8A, 0x1F)
             canvas.drawPath(path, fill)
         }
-        canvas.drawCircle(m.x, m.y + 1.5f * d, r + 3 * d, shadow)
+        canvas.drawCircle(m.x, m.y + 2 * d, r + 5 * d, shadow)
+        // Orange-pink outer ring marks me apart from everyone else.
         fill.shader = LinearGradient(m.x - r, m.y - r, m.x + r, m.y + r, ORANGE, PINK, Shader.TileMode.CLAMP)
         fill.alpha = 255
+        canvas.drawCircle(m.x, m.y, r + 4 * d, fill)
+        val photo = m.photo
+        fill.shader = if (photo != null) {
+            BitmapShader(photo, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+                val scale = (r * 2) / minOf(photo.width, photo.height)
+                setLocalMatrix(Matrix().apply {
+                    setScale(scale, scale)
+                    postTranslate(m.x - photo.width * scale / 2, m.y - photo.height * scale / 2)
+                })
+            }
+        } else {
+            LinearGradient(m.x - r, m.y - r, m.x + r, m.y + r, ORANGE, PINK, Shader.TileMode.CLAMP)
+        }
         canvas.drawCircle(m.x, m.y, r, fill)
         fill.shader = null
-        stroke.strokeWidth = 3 * d
+        stroke.strokeWidth = 2.5f * d
         stroke.color = Color.WHITE
+        stroke.alpha = 255
         canvas.drawCircle(m.x, m.y, r, stroke)
+        if (photo == null) {
+            text.textSize = 17 * d
+            text.alpha = 255
+            canvas.drawText(m.name.take(1).uppercase().ifBlank { "•" }, m.x, m.y + 6 * d, text)
+        }
+        nameTag(canvas, m.x, m.y + r + 8 * d, "You", null, 255)
     }
 
     private fun drawRegroup(canvas: Canvas, m: MapMarker.Regroup) {

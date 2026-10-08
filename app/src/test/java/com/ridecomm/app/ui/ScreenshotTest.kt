@@ -377,7 +377,13 @@ class ScreenshotTest {
     @Test
     fun groupMapHazardsRoles() = captureRoboImage("screenshots/27_map_hazards_roles.png") {
         RideCommTheme {
-            com.ridecomm.app.ui.map.GroupMapScreen(sampleGroup, riders, emptyMap(), onClose = {}, hazards = hazards.hazards, roles = roles, mapContent = mapStandIn(dark = true))
+            // My own photo shows on my marker too.
+            val me = android.graphics.Bitmap.createBitmap(96, 96, android.graphics.Bitmap.Config.ARGB_8888).apply {
+                val c = android.graphics.Canvas(this)
+                c.drawColor(android.graphics.Color.rgb(0x2E, 0x7D, 0x32))
+                c.drawCircle(48f, 40f, 22f, android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.rgb(0xF5, 0xC6, 0x9A) })
+            }
+            com.ridecomm.app.ui.map.GroupMapScreen(sampleGroup, riders, mapOf("me" to me), onClose = {}, hazards = hazards.hazards, roles = roles, mapContent = mapStandIn(dark = true))
         }
     }
 
