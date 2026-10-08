@@ -11,6 +11,7 @@ import com.ridecomm.app.ride.TalkMode
 import com.ridecomm.app.sos.EmergencyInfo
 import com.ridecomm.app.trip.BreakEvery
 import com.ridecomm.app.trip.UpdateEvery
+import com.ridecomm.app.ui.UiLook
 import java.util.UUID
 
 /** Small on-device settings: rider name, a stable device id, and the LiveKit token server id. */
@@ -59,6 +60,7 @@ object Prefs {
     private const val KEY_HOME_CHECK_IN = "home_check_in"
     private const val KEY_BREAK_EVERY = "break_every"
     private const val KEY_LOCK_SCREEN_INFO = "lock_screen_info"
+    private const val KEY_LOOK = "ui_look"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -342,4 +344,10 @@ object Prefs {
     fun lockScreenInfo(context: Context): Boolean = prefs(context).getBoolean(KEY_LOCK_SCREEN_INFO, false)
 
     fun setLockScreenInfo(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_LOCK_SCREEN_INFO, on).apply()
+
+    /** Classic or Glass look (screens switch over as their Glass design is done). */
+    fun look(context: Context): UiLook =
+        UiLook.entries.firstOrNull { it.name == prefs(context).getString(KEY_LOOK, null) } ?: UiLook.CLASSIC
+
+    fun setLook(context: Context, look: UiLook) = prefs(context).edit().putString(KEY_LOOK, look.name).apply()
 }

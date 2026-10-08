@@ -198,6 +198,20 @@ fs.mkdirSync(OUT, { recursive: true });
   await d.evaluate(() => document.querySelector('#settings .sheet-in').scrollTo(0, 99999));
   await d.screenshot({ path: OUT + 'w37_settings_locked.png' });
 
+  // ---- Look: Glass on the join screen; the ride screen stays Classic until its design is done ----
+  const e = await mk('Esha', 'web-e', { code: 'TSTGKE', settings: JSON.stringify({ look: 'glass' }), noJoin: true });
+  check('Glass look on the join screen', await e.evaluate(() => document.documentElement.classList.contains('look-glass') && getComputedStyle(document.querySelector('.orbs')).display === 'block'));
+  await e.screenshot({ path: OUT + 'w38_join_glass.png' });
+  await e.click('#joinBtn');
+  await e.waitForSelector('#ride:not(.hidden)', { timeout: 10000 });
+  check('Ride screen keeps the Classic look for now', await e.evaluate(() => document.documentElement.classList.contains('in-ride') && getComputedStyle(document.querySelector('.orbs')).display === 'none'));
+  await e.click('#leaveBtn');
+  await e.click('#leaveGo');
+  check('Back on the join screen: Glass again', await e.evaluate(() => !document.documentElement.classList.contains('in-ride')));
+  await e.click('[data-open-settings]:visible');
+  await e.click('[data-choice="look"][data-value="classic"]');
+  check('Switching to Classic in Settings', await e.evaluate(() => !document.documentElement.classList.contains('look-glass')));
+
   console.log(errors.length ? 'PAGE ERRORS:\n' + errors.join('\n') : 'No page errors');
   await browser.close();
 })();

@@ -52,7 +52,8 @@ val Outfit = FontFamily(
 
 private val base = TextStyle(fontFamily = Outfit, color = Palette.TextPrimary)
 
-private val typography = Typography(
+/** Classic look type (Outfit). */
+internal val ClassicTypography = Typography(
     displayMedium = base.copy(fontSize = 40.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 6.sp),
     headlineMedium = base.copy(fontSize = 30.sp, fontWeight = FontWeight.Bold),
     titleLarge = base.copy(fontSize = 21.sp, fontWeight = FontWeight.SemiBold),
@@ -80,5 +81,5 @@ private val colors = darkColorScheme(
 
 @Composable
 fun RideCommTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = colors, typography = typography, content = content)
+    MaterialTheme(colorScheme = colors, typography = ClassicTypography, content = content)
 }

@@ -58,11 +58,15 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 val CardShape = RoundedCornerShape(28.dp)
 val PillShape = RoundedCornerShape(50)
+/** Cards in the Glass look are rounder. */
+val GlassCardShape = RoundedCornerShape(30.dp)
 
 /**
  * The scene behind the glass: a deep night gradient with soft colour glows. The glows are what
@@ -125,11 +129,18 @@ fun GlassCard(
     spacing: Dp = 12.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val glassLook = LocalLook.current == UiLook.GLASS
     Column(
         modifier
             .fillMaxWidth()
-            .glass(tint = tint, fillAlpha = fillAlpha)
-            .padding(padding),
+            .then(
+                if (glassLook) {
+                    Modifier.frost(GlassCardShape, tint = tint.takeIf { it != Color.White })
+                } else {
+                    Modifier.glass(tint = tint, fillAlpha = fillAlpha)
+                },
+            )
+            .padding(if (glassLook) maxOf(padding, 20.dp) else padding),
         verticalArrangement = Arrangement.spacedBy(spacing),
         content = content,
     )
@@ -152,21 +163,29 @@ fun PrimaryButton(
     height: Dp = 62.dp,
     onClick: () -> Unit,
 ) {
+    val glassLook = LocalLook.current == UiLook.GLASS
+    // Glass: the brand action turns into the warm orange-to-pink pill with a pink glow.
+    val brand = brush == Palette.Brand
     Row(
         modifier
             .alpha(if (enabled) 1f else 0.4f)
-            .height(height)
+            .height(if (glassLook && height == 62.dp) 65.dp else height)
+            .then(if (glassLook && enabled) Modifier.glow(if (brand) GlassTokens.ButtonGlow else Color.White.copy(alpha = 0.18f), 20.dp, PillShape) else Modifier)
             .clip(PillShape)
-            .background(brush)
-            .border(1.dp, Color.White.copy(alpha = 0.35f), PillShape)
+            .background(if (glassLook && brand) GlassTokens.Action else brush)
+            .border(
+                if (glassLook) 1.5.dp else 1.dp,
+                if (glassLook && brand) GlassTokens.ButtonRim else Color.White.copy(alpha = if (glassLook) 0.5f else 0.35f),
+                PillShape,
+            )
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
         if (icon != null) {
-            Ico(icon, 24.dp, contentColor)
-            Spacer(Modifier.width(10.dp))
+            Ico(icon, if (glassLook) 25.dp else 24.dp, contentColor)
+            Spacer(Modifier.width(if (glassLook) 12.dp else 10.dp))
         }
         Text(text, style = MaterialTheme.typography.labelLarge, color = contentColor, maxLines = 1, softWrap = false)
     }
@@ -184,11 +203,21 @@ fun GlassButton(
     height: Dp = 56.dp,
     onClick: () -> Unit,
 ) {
+    val glassLook = LocalLook.current == UiLook.GLASS
     Row(
         modifier
-            .alpha(if (enabled) 1f else 0.4f)
-            .height(height)
-            .glass(PillShape, tint = tint, fillAlpha = if (tint == Color.White) 0.10f else 0.22f)
+            .alpha(if (enabled) 1f else if (glassLook) 0.58f else 0.4f)
+            .height(if (glassLook && height == 56.dp) 58.dp else height)
+            .then(
+                when {
+                    !glassLook -> Modifier.glass(PillShape, tint = tint, fillAlpha = if (tint == Color.White) 0.10f else 0.22f)
+                    tint == Color.White -> Modifier
+                        .clip(PillShape)
+                        .background(GlassTokens.Secondary)
+                        .border(1.dp, Color.White.copy(alpha = 0.46f), PillShape)
+                    else -> Modifier.frost(PillShape, tint = tint, glow = false)
+                },
+            )
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -196,9 +225,15 @@ fun GlassButton(
     ) {
         if (icon != null) {
             Ico(icon, 22.dp, contentColor)
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(if (glassLook) 10.dp else 8.dp))
         }
-        Text(text, style = MaterialTheme.typography.labelLarge, color = contentColor, maxLines = 1, softWrap = false)
+        Text(
+            text,
+            style = if (glassLook) MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold) else MaterialTheme.typography.labelLarge,
+            color = contentColor,
+            maxLines = 1,
+            softWrap = false,
+        )
     }
 }
 
@@ -222,6 +257,8 @@ fun GlassIconButton(
             .then(
                 if (brush != null) {
                     Modifier.clip(CircleShape).background(brush).border(1.dp, Color.White.copy(alpha = 0.35f), CircleShape)
+                } else if (LocalLook.current == UiLook.GLASS && tint == Color.White) {
+                    Modifier.clip(CircleShape).background(GlassTokens.Round).border(1.dp, Color.White.copy(alpha = 0.44f), CircleShape)
                 } else {
                     Modifier.glass(CircleShape, tint = tint, fillAlpha = if (tint == Color.White) 0.10f else 0.25f)
                 },
@@ -257,7 +294,8 @@ fun GlassTile(
 
 @Composable
 fun SectionLabel(text: String, modifier: Modifier = Modifier) {
-    Text(text.uppercase(), style = MaterialTheme.typography.labelMedium, color = Palette.TextTertiary, modifier = modifier)
+    val glassLook = LocalLook.current == UiLook.GLASS
+    Text(text.uppercase(), style = MaterialTheme.typography.labelMedium, color = if (glassLook) GlassTokens.Lavender else Palette.TextTertiary, modifier = modifier)
 }
 
 /** Small status capsule with a coloured dot. */
@@ -288,7 +326,8 @@ fun GlassTextField(
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     center: Boolean = false,
 ) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val glassLook = LocalLook.current == UiLook.GLASS
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(if (glassLook) 12.dp else 8.dp)) {
         SectionLabel(label)
         val style = textStyle.copy(
             color = Palette.TextPrimary,
@@ -307,12 +346,21 @@ fun GlassTextField(
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .glass(RoundedCornerShape(18.dp), fillAlpha = 0.06f, rimAlpha = 0.25f)
-                        .padding(PaddingValues(horizontal = 18.dp, vertical = 16.dp)),
+                        .then(
+                            if (glassLook) {
+                                Modifier
+                                    .clip(RoundedCornerShape(23.dp))
+                                    .background(GlassTokens.Input)
+                                    .border(1.dp, Color.White.copy(alpha = 0.53f), RoundedCornerShape(23.dp))
+                            } else {
+                                Modifier.glass(RoundedCornerShape(18.dp), fillAlpha = 0.06f, rimAlpha = 0.25f)
+                            },
+                        )
+                        .padding(PaddingValues(horizontal = 18.dp, vertical = if (glassLook) 18.dp else 16.dp)),
                     contentAlignment = if (center) Alignment.Center else Alignment.CenterStart,
                 ) {
                     if (value.isEmpty() && placeholder.isNotEmpty()) {
-                        Text(placeholder, style = style.copy(color = Palette.TextTertiary))
+                        Text(placeholder, style = style.copy(color = if (glassLook) Color.White.copy(alpha = 0.63f) else Palette.TextTertiary))
                     }
                     inner()
                 }

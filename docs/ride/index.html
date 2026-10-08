@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --night: #070A14; --deep: #0E0B22; --text: rgba(255,255,255,.96); --muted: rgba(255,255,255,.7); --faint: rgba(255,255,255,.45);
@@ -216,6 +216,50 @@
   #nightGrey { -webkit-backdrop-filter: grayscale(1) brightness(.8); backdrop-filter: grayscale(1) brightness(.8); }
   #nightRed { background: #FF2A1A; mix-blend-mode: multiply; z-index: 2147483647; }
 
+
+  /* ---- Glass look (Settings → Look): the join screen so far; the ride screen stays Classic until its design is done ---- */
+  .orbs { display: none; }
+  html.look-glass:not(.in-ride) body {
+    font-family: Inter, system-ui, sans-serif;
+    background: radial-gradient(ellipse at 2% 13%, #5278ff 0%, transparent 37%), radial-gradient(ellipse at 95% 27%, #bb3cda 0%, transparent 36%),
+      radial-gradient(ellipse at 15% 84%, #9d27cb 0%, transparent 40%), radial-gradient(ellipse at 100% 88%, #1266e7 0%, transparent 40%),
+      linear-gradient(145deg, #2c257f, #20165f 55%, #151353);
+    background-attachment: fixed;
+  }
+  html.look-glass:not(.in-ride) .glow { display: none; }
+  html.look-glass:not(.in-ride) .orbs { display: block; }
+  .orbs i { position: fixed; z-index: 0; border-radius: 50%; pointer-events: none; }
+  .orbs .o1 { width: 390px; height: 390px; top: -220px; left: -130px; background: radial-gradient(circle at 65% 70%, #9b9eff, #6a61ff 58%, transparent 73%); box-shadow: 0 0 90px #a278ff88; }
+  .orbs .o2 { width: 340px; height: 340px; right: -230px; top: 270px; background: radial-gradient(circle at 30% 45%, #ff7ff0, #d936d7 65%, transparent 75%); box-shadow: 0 0 90px #ef61ee77; }
+  .orbs .o3 { width: 280px; height: 280px; left: -170px; bottom: 90px; background: radial-gradient(circle at 70% 35%, #f983e3, #a927c6 60%, transparent 73%); }
+  .orbs .o4 { width: 240px; height: 240px; right: -170px; bottom: 220px; background: radial-gradient(circle at 30% 40%, #7de9ff, #228aff 65%, transparent 76%); }
+  html.look-glass:not(.in-ride) #join input, html.look-glass:not(.in-ride) #join button { font-family: Inter, system-ui, sans-serif; }
+  html.look-glass:not(.in-ride) #join .joincard { background: none; border: 0; padding: 0; margin-top: 8px; backdrop-filter: none; -webkit-backdrop-filter: none; animation: none; }
+  html.look-glass:not(.in-ride) .joinhead { gap: 14px; margin: 8px 3px 25px; }
+  html.look-glass:not(.in-ride) .joinhead .logo { width: 68px; height: 68px; border-radius: 23px; border: 1.5px solid #ffd6f6b8;
+    background: linear-gradient(135deg, #ffbc3d, #ff5d5f 55%, #f22ebc); box-shadow: 0 8px 30px #ff43c655, inset 0 1px 2px #ffffff90; }
+  html.look-glass:not(.in-ride) .joinhead .logo svg { width: 39px !important; height: 39px !important; }
+  html.look-glass:not(.in-ride) .joinhead h1 { white-space: nowrap; font-size: clamp(22px, 7vw, 32px); letter-spacing: -1.4px; font-weight: 800; margin: 0 0 4px; }
+  html.look-glass:not(.in-ride) .joinhead p { font-size: 13px; color: #d2c9ff; font-weight: 600; margin: 0; }
+  html.look-glass:not(.in-ride) #join .iconbtn { width: 53px; height: 53px; border: 1px solid #ffffff70; background: linear-gradient(135deg, #ffffff40, #ffffff10);
+    box-shadow: inset 0 1px 2px #ffffff45, 0 5px 22px #26177e33; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+  html.look-glass:not(.in-ride) .joinbody, html.look-glass:not(.in-ride) #checkIn .card {
+    border: 1.4px solid #ffffff7b; border-radius: 30px; background: linear-gradient(125deg, #ffffff3e, #ffffff12 55%, #ffffff22);
+    box-shadow: inset 0 1px 2px #ffffff70, 0 13px 40px #130e5d3d, 0 0 20px #d761ff25;
+    backdrop-filter: blur(24px) saturate(135%); -webkit-backdrop-filter: blur(24px) saturate(135%); }
+  html.look-glass:not(.in-ride) .joinbody { padding: 22px 20px 20px; }
+  html.look-glass:not(.in-ride) .joinbody .field:first-child { margin-top: 0; }
+  html.look-glass:not(.in-ride) #join .label { font-size: 12px; font-weight: 700; letter-spacing: 1.6px; color: #d3c9fa; }
+  html.look-glass:not(.in-ride) #join input { height: 64px; border-radius: 23px; border: 1px solid #ffffff88; margin-top: 12px;
+    background: linear-gradient(110deg, #ffffff43, #ffffff15); box-shadow: inset 0 2px 5px #ffffff25; font-weight: 700; }
+  html.look-glass:not(.in-ride) #join input.code { height: 76px; font-size: clamp(20px, 6vw, 26px); font-weight: 800; letter-spacing: 5px; }
+  html.look-glass:not(.in-ride) #join input::placeholder { color: #ffffffa0; }
+  html.look-glass:not(.in-ride) #joinBtn { min-height: 65px; border: 1.5px solid #ffbdf0; font-size: 17px; font-weight: 800;
+    background: linear-gradient(105deg, #ffb72d, #ff665a 48%, #f326a9); box-shadow: 0 0 20px #ff64cb8a, inset 0 1px 2px #ffffff90; }
+  html.look-glass:not(.in-ride) #join .error { color: #ffb3c1; font-weight: 600; }
+  html.look-glass:not(.in-ride) #checkIn .card { border-color: rgba(52,232,158,.7); background: linear-gradient(125deg, #34e89e45, #ffffff12 55%, #34e89e22); }
+  html.look-glass:not(.in-ride) #join .note { color: #d8d0fbcc; margin: 18px 6px 0; }
+
   /* Talk to one rider (violet, never green like talking to everyone) */
   .wbar { position: fixed; left: 16px; right: 16px; z-index: 6; bottom: calc(150px + env(safe-area-inset-bottom)); max-width: 488px; margin: 0 auto;
     padding: 14px 16px; border-radius: 24px; background: linear-gradient(135deg, rgba(42,31,82,.96), rgba(22,18,48,.96)); border: 1px solid rgba(124,92,255,.7); }
@@ -246,20 +290,23 @@
 </head>
 <body>
 <div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>
+<div class="orbs" aria-hidden="true"><i class="o1"></i><i class="o2"></i><i class="o3"></i><i class="o4"></i></div>
 
 <main>
   <!-- Join -->
   <section id="join">
-    <div class="card">
-      <div class="row">
+    <div class="card joincard">
+      <div class="row joinhead">
         <div class="logo"><svg class="i" style="width:32px;height:32px;color:#fff" viewBox="0 -960 960 960"><path d="M160-200q-66 0-113-47T0-360q0-57 36.5-101t93.5-55l-28-24H30q-13 0-21.5-8.5T0-570q0-13 8.5-21.5T30-600h150l100 60 146-55q7-2 14-3.5t15-1.5h111l-62-80h-64q-17 0-28.5-11.5T400-720q0-17 11.5-28.5T440-760h63q19 0 35.5 8.5T566-729l60 77 105-53q10-5 19.5 1t9.5 17v67q0 8-6 14t-14 6h-72l70 92q15-6 30.5-9t31.5-3q66 0 113 47t47 113q0 66-47 113t-113 47q-66 0-113-47t-47-113q0-27 9.5-52.5T676-460l-20-24-124 186q-5 8-14 13t-19 5h-84q-8 0-14.5-2.5T389-290l-69-60q-5 63-51 106.5T160-200Zm0-80q33 0 56.5-23.5T240-360q0-33-23.5-56.5T160-440q-33 0-56.5 23.5T80-360q0 33 23.5 56.5T160-280Zm640 0q33 0 56.5-23.5T880-360q0-33-23.5-56.5T800-440q-33 0-56.5 23.5T720-360q0 33 23.5 56.5T800-280Z"/></svg></div>
         <div class="grow"><h1>RideComm Web</h1><p>Ride with your group from the browser. Works on iPhone.</p></div>
         <button class="iconbtn" data-open-settings aria-label="Settings"><svg class="i" viewBox="0 -960 960 960"><path d="M433-80q-27 0-46.5-18T363-142l-9-66q-13-5-24.5-12T307-235l-62 26q-25 11-50 2t-39-32l-47-82q-14-23-8-49t27-43l53-40q-1-7-1-13.5v-27q0-6.5 1-13.5l-53-40q-21-17-27-43t8-49l47-82q14-23 39-32t50 2l62 26q11-8 23-15t24-12l9-66q4-26 23.5-44t46.5-18h94q27 0 46.5 18t23.5 44l9 66q13 5 24.5 12t22.5 15l62-26q25-11 50-2t39 32l47 82q14 23 8 49t-27 43l-53 40q1 7 1 13.5v27q0 6.5-2 13.5l53 40q21 17 27 43t-8 49l-48 82q-14 23-39 32t-50-2l-60-26q-11 8-23 15t-24 12l-9 66q-4 26-23.5 44T527-80h-94Zm49-260q58 0 99-41t41-99q0-58-41-99t-99-41q-59 0-99.5 41T342-480q0 58 40.5 99t99.5 41Z"/></svg></button>
       </div>
+      <div class="joinbody">
       <div class="field"><div class="label">Ride code</div><input id="codeIn" class="code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="CODE"></div>
       <div class="field"><div class="label">Your name</div><input id="nameIn" maxlength="20" autocomplete="nickname" placeholder="e.g. Rahul"></div>
       <div class="field"><button class="btn primary" id="joinBtn">Join ride</button></div>
       <div class="error hidden" id="joinErr"></div>
+      </div>
       <div id="checkIn"></div>
       <p class="note">Use earphones or your helmet headset. Keep this page open while riding: on iPhone, locking the screen or switching apps can pause your mic. Shared music plays in the Android app only.</p>
     </div>
@@ -486,7 +533,7 @@
 
   // ---- Settings: every extra can be switched on or off at any time, also mid-ride ----
   const DEFAULTS = { map: false, voice: true, vibrate: true, awake: true, darkMap: true, hazards: true, roles: true, talk: 'open', night: 'off', shareInfo: true,
-    whisper: true, dest: true, home: true, breakEvery: '120', locked: !!RIDE_SERVER, server: RIDE_SERVER };
+    whisper: true, dest: true, home: true, breakEvery: '120', look: 'classic', locked: !!RIDE_SERVER, server: RIDE_SERVER };
   const SET = Object.assign({}, DEFAULTS, (() => { try { return JSON.parse(store.get('rc-web-settings') || '{}'); } catch (e) { return {}; } })());
   const saveSettings = () => store.set('rc-web-settings', JSON.stringify(SET));
   const TOGGLES = [
@@ -501,6 +548,9 @@
     ['home', 'Home safe check-in', 'At the end of the ride tap "I\'m home safe" and the riders still on the road hear it. With home saved, it happens by itself when you get there (keep this page open).'],
   ];
   const CHOICES = [
+    ['look', 'Look', [['classic', 'Classic'], ['glass', 'Glass']], {
+      classic: 'The original RideComm look.',
+      glass: 'Frosted glass over a violet glow. The join screen first; the ride screen and the rest follow.' }],
     ['talk', 'Talk mode', [['open', 'Open mic'], ['ptt', 'Push to talk']], {
       open: 'Just talk: your mic is always on.',
       ptt: 'Silent until you hold the mic button. Tap it once to talk hands-free, tap again to stop.' }],
@@ -530,6 +580,8 @@
       PT.talking = false; PT.latched = false; applyTalk(); renderSettings();
     } else if (key === 'night') {
       applyNight(); renderSettings();
+    } else if (key === 'look') {
+      applyLook(); renderSettings();
     } else if (key === 'shareInfo') saveSettings();
     else if (key === 'whisper') { if (!on) stopWhisper(); renderRiders(); }
     else if (key === 'dest') { if (on) send(T.dest, { t: 'sync' }); else { D.dest = null; if (!needLocation()) stopLocation(); } renderDest(); renderMapView(); }
@@ -1461,10 +1513,18 @@
     const d = new Date(), min = d.getHours() * 60 + d.getMinutes();
     return min >= 18 * 60 + 30 || min < 6 * 60;
   }
+  /** Classic or Glass (Settings → Look). Screens switch to Glass as their design is done: the join screen so far. */
+  function applyLook() {
+    const root = document.documentElement;
+    root.classList.toggle('look-glass', SET.look === 'glass');
+    root.classList.toggle('in-ride', !$('ride').classList.contains('hidden'));
+    if (!isNight()) document.querySelector('meta[name=theme-color]').setAttribute('content', SET.look === 'glass' && !root.classList.contains('in-ride') ? '#25126c' : '#070A14');
+  }
   function applyNight() {
     const on = isNight();
     document.documentElement.classList.toggle('night', on);
     document.querySelector('meta[name=theme-color]').setAttribute('content', on ? '#140000' : '#070A14');
+    applyLook();
   }
   setInterval(applyNight, 60000);
 
@@ -2047,6 +2107,7 @@
       await liveKitReady();
       await connect();
       $('join').classList.add('hidden'); $('ride').classList.remove('hidden'); $('dock').classList.remove('hidden');
+      applyLook();
       $('codeOut').textContent = code;
       history.replaceState(null, '', '?code=' + code + (params.get('ts') ? '&ts=' + params.get('ts') : ''));
       keepAwake();
@@ -2088,6 +2149,7 @@
     HS.home.clear(); HS.leftNot.clear(); renderHome(); BW.due = false; renderBreak(); renderCheckIn();
     try { S.wakeLock && S.wakeLock.release(); } catch (e) {}
     $('ride').classList.add('hidden'); $('dock').classList.add('hidden'); $('join').classList.remove('hidden');
+    applyLook();
     $('audio').innerHTML = ''; renderAlerts(); renderMySos();
   }
 
@@ -2257,7 +2319,7 @@
   // Closing the tab counts as leaving (not dropping out); a page kept for "back" doesn't.
   window.addEventListener('pagehide', (e) => { if (S.room && !e.persisted) send(T.rider, { t: 'bye' }); });
 
-  applyNight();
+  applyNight(); applyLook();
   // An invite to a locked ride carries the group key after "#k=".
   const hashParams = new URLSearchParams(location.hash.slice(1));
   if (hashParams.get('k')) {

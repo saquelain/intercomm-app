@@ -83,6 +83,23 @@ group map + regroup → web photo/map/settings → hazards, lead & sweep, PTT, v
 (app, then web) → own photo on the map → talk to one rider, shared destination, home safe, break
 reminder, lock-screen emergency info, lock rides to the group (app and web together).
 
+## Glass look (in progress)
+
+The owner asked for a second look: **Settings → Look: Classic / Glass** (app and web). They design each
+screen with ChatGPT (a mock-up image + one HTML file) and send it; Claude turns it into the Glass version of
+that screen in the app and the web page, keeping every feature. Order agreed: 1. home screen ✅ (build #39), 2. ride screen, 3. pop-ups (Settings, rider card, votes, SOS countdown, hazard picker, destination
+search), 4. group map, 5. floating button. Mock-ups are kept in `design/glass/`.
+
+How it's built:
+- App: `ui/Look.kt` has `UiLook`, `LookSetting` (saved choice), `LocalLook`, `LookScope` (Glass also switches
+  the type to Inter), `GlassTokens`, `GlassScene` (background) and `Modifier.frost` / `glow`. The shared
+  components in `Glass.kt` (GlassCard, PrimaryButton, GlassButton, GlassIconButton, GlassTextField,
+  SectionLabel) draw Glass when `LocalLook` is Glass. A screen opts in by being wrapped in
+  `LookScope(look)`; `MainActivity` does that for the home screen only, and the background follows. Settings
+  opened from home is forced Classic until its design arrives.
+- Web: `html.look-glass` (from `SET.look`) plus `html.in-ride` while riding; Glass CSS is scoped to
+  `html.look-glass:not(.in-ride)` so far. Lift that scope screen by screen.
+
 ## Ideas not built yet (from the last "what next" list)
 
 - **Ride summary card**: route on a map, distance, time, top/average speed, stops; share as an image.

@@ -179,6 +179,17 @@ between phones).
   unlocking the phone (blood group, allergies, who to call), put back after a restart. iPhone: use the Health
   app's Medical ID instead (web pages can't reach the lock screen).
 
+## Looks: Classic and Glass
+
+Settings → **Look** picks **Classic** (the original design, default) or **Glass** (frosted glass over a violet
+glow, Inter font), in the app and on the web page. Screens move to Glass one at a time as their design is
+done; the rest stay Classic until then. Done so far: the **home screen** (app) and the **join screen** (web).
+The design files live in `design/glass/`.
+
+In the app, Android can't blur what's behind a view, so a Glass card paints a softened copy of the
+background inside itself (the glowing spheres get blurred edges on Android 9+); it looks the same as a real
+backdrop blur because the background is fixed. The web page uses the browser's real `backdrop-filter`.
+
 ## iPhone and browser riders
 
 iPhones can't install the APK, so there's a browser version at
@@ -270,8 +281,9 @@ The ride screen shows how much mobile data RideComm has used since the ride star
 
 Glassmorphism on a dark night background: translucent "frosted" cards with a light sheen and thin
 bright rims over soft violet, pink, orange and cyan glows; big rounded, glove-friendly controls.
-Icons are [Material Symbols Rounded](https://fonts.google.com/icons) (Apache 2.0) and the typeface is
-[Outfit](https://fonts.google.com/specimen/Outfit) (SIL OFL 1.1).
+Icons are [Material Symbols Rounded](https://fonts.google.com/icons) (Apache 2.0) and the typefaces are
+[Outfit](https://fonts.google.com/specimen/Outfit) (Classic) and [Inter](https://rsms.me/inter/) (Glass, cut
+down to Latin characters), both SIL OFL 1.1.
 
 Screenshots of the main screens render on the JVM, no phone needed:
 

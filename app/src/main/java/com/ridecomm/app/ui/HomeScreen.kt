@@ -91,6 +91,7 @@ import com.ridecomm.app.ride.RideState
 @Composable
 fun HomeScreen(state: RideState) {
     val context = LocalContext.current
+    val glassLook = LocalLook.current == UiLook.GLASS
     var name by rememberSaveable { mutableStateOf(Prefs.riderName(context)) }
     // Name as saved; the name field only shows until one is saved.
     var savedName by remember { mutableStateOf(Prefs.riderName(context)) }
@@ -153,16 +154,35 @@ fun HomeScreen(state: RideState) {
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+        verticalArrangement = Arrangement.spacedBy(if (glassLook) 16.dp else 18.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Logo()
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = if (glassLook) Modifier.padding(top = 8.dp, bottom = 9.dp) else Modifier) {
+            Logo(glassLook)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text("RideComm", style = MaterialTheme.typography.headlineMedium)
-                Text("Group intercom for riders", style = MaterialTheme.typography.bodyMedium)
+                if (glassLook) {
+                    Text(
+                        "RideComm",
+                        style = MaterialTheme.typography.headlineMedium.copy(fontSize = 32.sp, letterSpacing = (-1.4).sp),
+                        maxLines = 1,
+                    )
+                    Text(
+                        "Group intercom for riders",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp),
+                        color = Color(0xFFD2C9FF),
+                        maxLines = 1,
+                    )
+                } else {
+                    Text("RideComm", style = MaterialTheme.typography.headlineMedium)
+                    Text("Group intercom for riders", style = MaterialTheme.typography.bodyMedium)
+                }
             }
-            GlassIconButton(R.drawable.ms_settings, "Settings", size = 48.dp, iconSize = 22.dp) { showSettings = true }
+            GlassIconButton(
+                R.drawable.ms_settings,
+                "Settings",
+                size = if (glassLook) 53.dp else 48.dp,
+                iconSize = if (glassLook) 24.dp else 22.dp,
+            ) { showSettings = true }
         }
 
         CrashReportCard()
@@ -223,10 +243,10 @@ fun HomeScreen(state: RideState) {
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
                 )
             } else {
-                ProfileRow(savedName, myPhoto) { showSettings = true }
+                ProfileRow(savedName, myPhoto, glassLook) { showSettings = true }
             }
             PrimaryButton(
-                "Start a new ride",
+                if (glassLook) "Start a new ride  ›" else "Start a new ride",
                 R.drawable.ms_two_wheeler,
                 Modifier.fillMaxWidth(),
                 enabled = name.isNotBlank(),
@@ -239,7 +259,11 @@ fun HomeScreen(state: RideState) {
                 onValueChange = { joinCode = RideCode.clean(it) },
                 label = "Join your group",
                 placeholder = "RIDE CODE",
-                textStyle = MaterialTheme.typography.displayMedium.copy(fontSize = 30.sp),
+                textStyle = if (glassLook) {
+                    MaterialTheme.typography.displayMedium.copy(fontSize = 22.sp)
+                } else {
+                    MaterialTheme.typography.displayMedium.copy(fontSize = 30.sp)
+                },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, imeAction = ImeAction.Go),
                 center = true,
             )
@@ -250,18 +274,21 @@ fun HomeScreen(state: RideState) {
                 enabled = name.isNotBlank() && joinCode.length == RideCode.LENGTH,
                 height = 60.dp,
             ) { startRide(joinCode) }
-            if (recent.isNotEmpty() && ready) RecentRidesRow(recent, now) { startRide(it) }
+            if (recent.isNotEmpty() && ready) {
+                if (glassLook) GlassRecentRides(recent, now) { startRide(it) } else RecentRidesRow(recent, now) { startRide(it) }
+            }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Feature(R.drawable.ms_headset_mic, "Talk", Modifier.weight(1f))
-            Feature(R.drawable.ms_library_music, "Music", Modifier.weight(1f))
-            Feature(R.drawable.ms_thumb_up, "Votes", Modifier.weight(1f))
-            Feature(R.drawable.ms_sos, "SOS", Modifier.weight(1f))
+            Feature(R.drawable.ms_headset_mic, "Talk", Modifier.weight(1f), glassLook)
+            Feature(R.drawable.ms_library_music, "Music", Modifier.weight(1f), glassLook)
+            Feature(R.drawable.ms_thumb_up, "Votes", Modifier.weight(1f), glassLook)
+            Feature(R.drawable.ms_sos, "SOS", Modifier.weight(1f), glassLook)
         }
     }
 
-    if (showSettings) {
+    // Settings keeps the Classic look until its Glass design is done.
+    if (showSettings) LookScope(UiLook.CLASSIC) {
         SettingsDialog(
             onClose = { showSettings = false },
             onSaved = {
@@ -376,8 +403,55 @@ internal fun RecentRidesRow(rides: List<RecentRide>, nowMs: Long, onJoin: (Strin
     }
 }
 
+/** Glass look: recent rides as full-width rows ("GMMCBR · 11 min ago ›"). */
 @Composable
-private fun Logo() {
+internal fun GlassRecentRides(rides: List<RecentRide>, nowMs: Long, onJoin: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 6.dp).height(1.dp).background(GlassTokens.Divider))
+        SectionLabel("Ride again")
+        rides.take(3).forEach { ride ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(GlassTokens.Recent)
+                    .border(1.dp, Color.White.copy(alpha = 0.42f), RoundedCornerShape(20.dp))
+                    .clickable { onJoin(ride.code) }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(ride.code, style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), maxLines = 1)
+                    Text(RecentRides.ago(ride.atMs, nowMs), style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp))
+                }
+                Box(
+                    Modifier
+                        .size(37.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.13f))
+                        .border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) { Ico(R.drawable.ms_arrow_forward, 18.dp, Color.White) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Logo(glassLook: Boolean = false) {
+    if (glassLook) {
+        val shape = RoundedCornerShape(23.dp)
+        Box(
+            Modifier
+                .size(68.dp)
+                .glow(GlassTokens.LogoGlow, 30.dp, shape, offsetY = 8.dp)
+                .clip(shape)
+                .background(GlassTokens.Logo)
+                .border(1.5.dp, Color(0xB8FFD6F6), shape),
+            contentAlignment = Alignment.Center,
+        ) { Ico(R.drawable.ms_two_wheeler, 39.dp, Color.White) }
+        return
+    }
     Box(
         Modifier
             .size(56.dp)
@@ -389,7 +463,25 @@ private fun Logo() {
 }
 
 @Composable
-private fun Feature(icon: Int, label: String, modifier: Modifier) {
+private fun Feature(icon: Int, label: String, modifier: Modifier, glassLook: Boolean = false) {
+    if (glassLook) {
+        val shape = RoundedCornerShape(24.dp)
+        Column(
+            modifier
+                .height(91.dp)
+                .clip(shape)
+                .frostedBackdrop()
+                .background(GlassTokens.Tile)
+                .border(1.dp, Color.White.copy(alpha = 0.40f), shape),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Ico(icon, 25.dp, Color.White)
+            Spacer(Modifier.height(9.dp))
+            Text(label, style = MaterialTheme.typography.labelSmall, color = GlassTokens.TileText)
+        }
+        return
+    }
     Column(
         modifier
             .glass(RoundedCornerShape(20.dp), fillAlpha = 0.05f, rimAlpha = 0.18f)
@@ -439,6 +531,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var homeSafe by remember { mutableStateOf(Prefs.homeSafe(context)) }
     var homeSpot by remember { mutableStateOf(Prefs.homeSpot(context)) }
     var breakEvery by remember { mutableStateOf(Prefs.breakEvery(context)) }
+    var look by remember { mutableStateOf(Prefs.look(context)) }
     // Android 13+: the lock screen note is a notification, which needs permission.
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (!granted) Toast.makeText(context, "Allow notifications for RideComm to show it on the lock screen", Toast.LENGTH_LONG).show()
@@ -454,6 +547,16 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     GlassDialog(onDismiss = cancel) {
         Text("Settings", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp))
         ProfileEditor(riderName) { riderName = it }
+        OptionChips(
+            "Look",
+            when (look) {
+                UiLook.CLASSIC -> "The original RideComm look."
+                UiLook.GLASS -> "Frosted glass over a violet glow. The home screen first; the ride screen and the rest follow."
+            },
+            UiLook.entries,
+            look,
+            { it.label },
+        ) { look = it }
         if (!inRide) {
             GlassTextField(
                 value = tokenId,
@@ -660,6 +763,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setHomeSpot(context, homeSpot)
                 HomeSafe.applySettings()
                 Prefs.setBreakEvery(context, breakEvery)
+                LookSetting.set(context, look)
                 BreakReminder.applySettings(context)
                 DataSaver.applySettings(context)
                 if (voiceAvailable) Prefs.setVoiceCommands(context, voiceCommands)
@@ -1015,18 +1119,41 @@ private fun CrashReportCard() {
 
 /** "Riding as Saquelain" with my photo; tap to edit in Settings. */
 @Composable
-private fun ProfileRow(name: String, photo: Bitmap?, onEdit: () -> Unit) {
+private fun ProfileRow(name: String, photo: Bitmap?, glassLook: Boolean = false, onEdit: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).clickable(onClick = onEdit),
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .clickable(onClick = onEdit)
+            .then(if (glassLook) Modifier.padding(bottom = 7.dp) else Modifier),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Avatar(name, 56.dp, Palette.Brand, ring = null, photo = photo)
-        Spacer(Modifier.width(14.dp))
+        if (glassLook) {
+            // A light-blue ring with a soft glow around the photo.
+            Box(Modifier.glow(GlassTokens.AvatarGlow, 14.dp, CircleShape).border(2.dp, GlassTokens.AvatarRing, CircleShape).padding(2.dp)) {
+                Avatar(name, 70.dp, Palette.Brand, ring = null, photo = photo)
+            }
+            Spacer(Modifier.width(15.dp))
+        } else {
+            Avatar(name, 56.dp, Palette.Brand, ring = null, photo = photo)
+            Spacer(Modifier.width(14.dp))
+        }
         Column(Modifier.weight(1f)) {
             SectionLabel("Riding as")
-            Text(name, style = MaterialTheme.typography.titleLarge)
+            if (glassLook) Spacer(Modifier.height(5.dp))
+            Text(
+                name,
+                style = if (glassLook) MaterialTheme.typography.titleLarge.copy(fontSize = 25.sp, letterSpacing = (-0.8).sp) else MaterialTheme.typography.titleLarge,
+                maxLines = 1,
+            )
         }
-        GlassIconButton(R.drawable.ms_edit, "Edit profile", size = 44.dp, iconSize = 20.dp, onClick = onEdit)
+        GlassIconButton(
+            R.drawable.ms_edit,
+            "Edit profile",
+            size = if (glassLook) 47.dp else 44.dp,
+            iconSize = if (glassLook) 22.dp else 20.dp,
+            onClick = onEdit,
+        )
     }
 }
 

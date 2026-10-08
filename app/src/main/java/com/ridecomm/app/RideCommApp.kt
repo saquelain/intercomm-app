@@ -5,6 +5,7 @@ import com.ridecomm.app.ride.RideService
 import com.ridecomm.app.profile.Profile
 import com.ridecomm.app.sos.LockScreenInfo
 import com.ridecomm.app.sos.SosManager
+import com.ridecomm.app.ui.LookSetting
 import com.ridecomm.app.ui.map.MapSetup
 
 class RideCommApp : Application() {
@@ -16,5 +17,6 @@ class RideCommApp : Application() {
         Profile.load(this)
         MapSetup.configure(this)
         LockScreenInfo.refresh(this)
+        LookSetting.load(this)
     }
 }

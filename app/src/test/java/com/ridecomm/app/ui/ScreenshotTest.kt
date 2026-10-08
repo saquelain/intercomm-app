@@ -199,6 +199,41 @@ class ScreenshotTest {
         shot("1b_home_profile") { HomeScreen(RideState()) }
     }
 
+    // ---- Glass look ----
+
+    private fun glassShot(name: String, content: @Composable () -> Unit) = captureRoboImage("screenshots/$name.png") {
+        RideCommTheme {
+            GlassScene { Box(Modifier.fillMaxSize().padding(top = 24.dp)) { LookScope(UiLook.GLASS) { content() } } }
+        }
+    }
+
+    @Test
+    fun homeGlass() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        com.ridecomm.app.Prefs.setRiderName(context, "Saquelain")
+        com.ridecomm.app.Prefs.setTokenServerId(context, "ridecomm-test")
+        com.ridecomm.app.Prefs.rideStarted(context, "GMMCBR", System.currentTimeMillis() - 11 * 60_000)
+        com.ridecomm.app.Prefs.clearUnfinishedRide(context)
+        glassShot("40_home_glass") { HomeScreen(RideState()) }
+    }
+
+    @Test
+    fun homeGlassFirstRun() = glassShot("41_home_glass_first_run") { HomeScreen(RideState(error = "Could not reach the ride server. Check internet and the token server ID.")) }
+
+    @Test
+    fun homeGlassCards() = glassShot("42_home_glass_cards") {
+        val now = 100L * 60 * 60 * 1000
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            HomeCheckInCard(com.ridecomm.app.ride.RecentRide("XCQGCW", now), "Saquelain") {}
+            RejoinCard(com.ridecomm.app.ride.RecentRide("XCQGCW", now - 25 * 60_000), now, {}) {}
+            GlassCard(tint = Palette.Amber) {
+                androidx.compose.material3.Text("Finish setup", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+                androidx.compose.material3.Text("Add your ride server details once to start riding.", style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
+                GlassButton("Open settings", com.ridecomm.app.R.drawable.ms_settings) {}
+            }
+        }
+    }
+
     @Test
     fun crashCountdown() = shot("5b_crash_countdown") { SosCountdown(12, crash = true) }
 

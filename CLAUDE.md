@@ -82,7 +82,8 @@ Links the owner uses:
 - `Prefs.kt`: every setting (SharedPreferences). `ui/HomeScreen.kt` → `SettingsDialog` shows them.
 - `ui/RideScreen.kt` (`RideContent` takes plain state so screenshots can render any situation),
   `ui/Glass.kt` (shared glass components), `ui/Theme.kt` (`Palette`), `ui/NightFilter.kt`,
-  `ui/RideExtras.kt` (destination, break, home safe cards), `ui/WhisperUi.kt`.
+  `ui/RideExtras.kt` (destination, break, home safe cards), `ui/WhisperUi.kt`, `ui/Look.kt` (Classic / Glass
+  look: see "Glass look" in HANDOFF.md; screens opt in with `LookScope`, mock-ups in `design/glass/`).
 - Features: `audio/` (wind noise gate, MicGate), `vote/`, `sos/` (SOS, SMS fallback, emergency info),
   `music/` (shared songs), `group/` (positions, map logic, regroup, lead & sweep), `ui/map/` (osmdroid
   map, MarkerPainter), `hazard/`, `trip/` (speed, distance), `alerts/` (joins, batteries, calls),

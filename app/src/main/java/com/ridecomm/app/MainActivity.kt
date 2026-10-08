@@ -20,7 +20,10 @@ import com.ridecomm.app.overlay.AppVisibility
 import com.ridecomm.app.ride.InviteLink
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideStatus
-import com.ridecomm.app.ui.GlassBackground
+import com.ridecomm.app.ui.LookBackground
+import com.ridecomm.app.ui.LookSetting
+import com.ridecomm.app.ui.LookScope
+import com.ridecomm.app.ui.UiLook
 import com.ridecomm.app.ui.HomeScreen
 import com.ridecomm.app.ui.RideCommTheme
 import com.ridecomm.app.ui.RideScreen
@@ -49,9 +52,12 @@ class MainActivity : ComponentActivity() {
                         screenBrightness = if (night) NIGHT_BRIGHTNESS else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
                     }
                 }
-                GlassBackground(Modifier.nightFilter(night)) {
+                val look by LookSetting.current.collectAsStateWithLifecycle()
+                // Screens switch to Glass as their design is done: the home screen so far.
+                val screenLook = if (state.status == RideStatus.IDLE) look else UiLook.CLASSIC
+                LookBackground(screenLook, Modifier.nightFilter(night)) {
                     Box(Modifier.fillMaxSize().safeDrawingPadding()) {
-                        if (state.status == RideStatus.IDLE) HomeScreen(state) else RideScreen(state)
+                        if (state.status == RideStatus.IDLE) LookScope(screenLook) { HomeScreen(state) } else RideScreen(state)
                     }
                 }
             }
