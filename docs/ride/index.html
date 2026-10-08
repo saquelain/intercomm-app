@@ -137,6 +137,9 @@
   #map { position: absolute; inset: 0; background: #10121C; }
   #map.dark .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) saturate(.55) brightness(.85); }
   #map.light { background: #F2EFE9; }
+  /* Google Maps: the map ends above the bottom panel so Google's logo shows; it has its own credit line. */
+  .mapview.google #map { bottom: var(--panel-h, 0px); }
+  .mapview.google .attrib { display: none; }
   .mapbar { position: absolute; z-index: 500; left: 12px; right: 12px; top: max(12px, env(safe-area-inset-top)); display: flex; align-items: center; gap: 8px;
     padding: 8px 10px; border-radius: 24px; background: rgba(16,18,34,.88); border: 1px solid var(--rim); }
   .mapbar .iconbtn { width: 46px; height: 46px; }
@@ -389,6 +392,7 @@
   html.look-neu #destCard .row3 [data-open-dest].btn { justify-content: center; min-height: 54px; padding: 0; box-shadow: var(--neu-out-sm); }
   html.look-neu #destCard .row3 [data-open-dest].btn::after { content: none; }
   html.look-neu #destCard .row3 [data-open-dest].btn svg { width: 24px; height: 24px; padding: 0; background: none; box-shadow: none; color: var(--text); }
+  html.look-neu .mapview { background: #eef0f8; }
   html.look-neu #mapCard .avatar { background: linear-gradient(135deg, #fff, #e3ebff) !important; color: #2f6bff !important; box-shadow: var(--neu-out-sm); }
   /* Bottom bar and mic */
   html.look-neu .dock-in { background: var(--neu-surface); border: 0; box-shadow: var(--neu-out); backdrop-filter: none; -webkit-backdrop-filter: none; border-radius: 30px; padding: 18px; }
@@ -627,6 +631,8 @@
     whisper: 'rc-whisper', dest: 'rc-dest', home: 'rc-home' };
   // The group's private ride server (Cloudflare Worker), once it's deployed. Riders can also type it in Settings.
   const RIDE_SERVER = '';
+  // Google Maps JavaScript key, restricted to this site in Google Cloud. Empty: the map is OpenStreetMap.
+  const GMAPS_KEY = '';
   /** A rider who already left, checking in "home safe" for a moment: not shown or announced as a rider. */
   const isCheckIn = (id) => /~home$/.test(id || '');
   const VOTE_TIMEOUT_MS = 45000, RESULT_SHOWN_MS = 6000, BYE_VALID_MS = 30000;
@@ -688,8 +694,8 @@
   };
 
   // ---- Settings: every extra can be switched on or off at any time, also mid-ride ----
-  const DEFAULTS = { map: false, voice: true, vibrate: true, awake: true, darkMap: true, hazards: true, roles: true, talk: 'open', night: 'off', shareInfo: true,
-    whisper: true, dest: true, home: true, breakEvery: '120', look: 'classic', locked: !!RIDE_SERVER, server: RIDE_SERVER };
+  const DEFAULTS = { map: false, voice: true, vibrate: true, awake: true, darkMap: false, hazards: true, roles: true, talk: 'open', night: 'off', shareInfo: true,
+    whisper: true, dest: true, home: true, breakEvery: '120', look: 'classic', mapKind: 'google', locked: !!RIDE_SERVER, server: RIDE_SERVER };
   const SET = Object.assign({}, DEFAULTS, (() => { try { return JSON.parse(store.get('rc-web-settings') || '{}'); } catch (e) { return {}; } })());
   const saveSettings = () => store.set('rc-web-settings', JSON.stringify(SET));
   const TOGGLES = [
@@ -708,6 +714,11 @@
       classic: 'The original RideComm look.',
       glass: 'Frosted glass over a violet glow, on every screen.',
       neu: 'Light "neumorphism": soft raised cards and buttons on a pale page. Easier to read in bright sun.' }],
+    ['mapKind', 'Map', [['google', 'Google Maps'], ['osm', 'OpenStreetMap']], GMAPS_KEY ? {
+      google: 'The Group map looks like the Google Maps app: same roads, places and labels.',
+      osm: 'The free OpenStreetMap map, as before.' } : {
+      google: "Google Maps isn't set up on this page yet, so the Group map uses OpenStreetMap.",
+      osm: "Google Maps isn't set up on this page yet, so the Group map uses OpenStreetMap." }],
     ['talk', 'Talk mode', [['open', 'Open mic'], ['ptt', 'Push to talk']], {
       open: 'Just talk: your mic is always on.',
       ptt: 'Silent until you hold the mic button. Tap it once to talk hands-free, tap again to stop.' }],
@@ -739,6 +750,10 @@
       applyNight(); renderSettings();
     } else if (key === 'look') {
       applyLook(); renderSettings();
+    } else if (key === 'mapKind') {
+      const open = !$('mapView').classList.contains('hidden');
+      resetMap(); renderSettings();
+      if (open) openMap();
     } else if (key === 'shareInfo') saveSettings();
     else if (key === 'whisper') { if (!on) stopWhisper(); renderRiders(); }
     else if (key === 'dest') { if (on) send(T.dest, { t: 'sync' }); else { D.dest = null; if (!needLocation()) stopLocation(); } renderDest(); renderMapView(); }
@@ -1243,7 +1258,31 @@
     }
   }
 
-  // The map itself (Leaflet + OpenStreetMap, loaded only when first opened).
+  // ---- The map itself: Google Maps when this page has a key (Settings → Map), else Leaflet + OpenStreetMap.
+  // Loaded only when first opened. Both sit behind one small "engine" so the code above doesn't care which. ----
+  const GM = { loading: null, failed: false };
+  const useGoogle = () => !!GMAPS_KEY && SET.mapKind === 'google' && !GM.failed;
+  // Google's own night colours (the dark map), same as the app's.
+  const GM_NIGHT = [
+    { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: '#9aa3b5' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#1a2230' }] },
+    { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+    { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+    { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#263c3f' }] },
+    { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#6b9a76' }] },
+    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
+    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
+    { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
+    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#746855' }] },
+    { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1f2835' }] },
+    { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#f3d19c' }] },
+    { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2f3948' }] },
+    { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
+    { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#515c6d' }] },
+    { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: '#17263c' }] },
+  ];
   let leaflet = null;
   function loadLeaflet() {
     if (leaflet) return leaflet;
@@ -1254,26 +1293,183 @@
     });
     return leaflet;
   }
+  function loadGoogle() {
+    if (GM.loading) return GM.loading;
+    GM.loading = new Promise((ok, bad) => {
+      window.__rcGoogleReady = () => ok(window.google);
+      // Google calls this when it refuses the key (wrong site, API not switched on…): fall back to OpenStreetMap.
+      window.gm_authFailure = () => {
+        GM.failed = true;
+        banner("Google Maps didn't accept this page's key, so the map is OpenStreetMap for now");
+        const open = !$('mapView').classList.contains('hidden');
+        resetMap();
+        if (open) openMap();
+      };
+      const js = document.createElement('script');
+      js.async = true;
+      js.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(GMAPS_KEY) + '&v=weekly&loading=async&callback=__rcGoogleReady';
+      js.onerror = () => { GM.loading = null; bad(new Error('map')); };
+      document.head.appendChild(js);
+    });
+    return GM.loading;
+  }
+  /** Dark or light map colours; keeps the map library's own classes on the element. */
+  const shade = (el, dark) => { el.classList.toggle('dark', dark); el.classList.toggle('light', !dark); };
+  /** A marker picture: HTML, its size and the point (from its top-left) that sits on the spot. */
+  const mk = (html, w, h, ax, ay) => ({ html, w, h, ax, ay });
+
+  function leafletEngine(el) {
+    const map = L.map(el, { zoomControl: false, attributionControl: false, tapHold: true }).setView([20.6, 78.9], 5);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    const di = (i) => L.divIcon({ html: i.html, iconSize: [i.w, i.h], iconAnchor: [i.ax, i.ay], className: '' });
+    return {
+      kind: 'osm',
+      view: (lat, lon, z) => map.setView([lat, lon], z),
+      pan: (lat, lon) => map.panTo([lat, lon]),
+      zoom: () => map.getZoom(),
+      // Room for the top bar and the bottom panel, which lie over the map.
+      fit: (pts) => map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [40, 110], paddingBottomRight: [40, 280], maxZoom: 17 }),
+      resize: () => map.invalidateSize(),
+      dark: (on) => shade(el, on),
+      marker(lat, lon, i, z, onClick) {
+        const m = L.marker([lat, lon], { icon: di(i), zIndexOffset: z || 0 }).addTo(map);
+        if (onClick) m.on('click', onClick);
+        return { move: (a, b) => m.setLatLng([a, b]), icon: (n) => m.setIcon(di(n)), remove: () => m.remove() };
+      },
+      onLongPress: (cb) => map.on('contextmenu', (e) => cb(e.latlng.lat, e.latlng.lng)),
+      onDrag: (cb) => map.on('dragstart', cb),
+      destroy: () => map.remove(),
+    };
+  }
+
+  function googleEngine(el) {
+    const g = google.maps;
+    const map = new g.Map(el, {
+      center: { lat: 20.6, lng: 78.9 }, zoom: 5, disableDefaultUI: true, clickableIcons: false,
+      gestureHandling: 'greedy', keyboardShortcuts: false, styles: SET.darkMap ? GM_NIGHT : null,
+    });
+    // Only for turning a finger position into a place (long press).
+    const helper = new g.OverlayView();
+    helper.onAdd = () => {}; helper.draw = () => {}; helper.onRemove = () => {};
+    helper.setMap(map);
+    // Our own HTML markers (photos, name tags, flags), same as on the OpenStreetMap map. Field names
+    // start with rc so they can't clash with Google's own.
+    class Html extends g.OverlayView {
+      constructor(lat, lon, i, z, onClick) {
+        super();
+        this.rcAt = new g.LatLng(lat, lon);
+        this.rcDiv = document.createElement('div');
+        this.rcDiv.style.cssText = 'position:absolute;cursor:pointer';
+        this.rcDiv.style.zIndex = String(1000 + (z || 0));
+        if (onClick) this.rcDiv.addEventListener('click', (e) => { e.stopPropagation(); onClick(); });
+        this.rcIcon(i);
+        this.setMap(map);
+      }
+      rcIcon(i) {
+        this.rcI = i;
+        this.rcDiv.innerHTML = i.html;
+        this.rcDiv.style.width = i.w + 'px'; this.rcDiv.style.height = i.h + 'px';
+        this.draw();
+      }
+      rcMove(lat, lon) { this.rcAt = new g.LatLng(lat, lon); this.draw(); }
+      onAdd() { this.getPanes().overlayMouseTarget.appendChild(this.rcDiv); }
+      draw() {
+        const p = this.getProjection && this.getProjection();
+        const pt = p && p.fromLatLngToDivPixel(this.rcAt);
+        if (!pt) return;
+        this.rcDiv.style.left = (pt.x - this.rcI.ax) + 'px';
+        this.rcDiv.style.top = (pt.y - this.rcI.ay) + 'px';
+      }
+      onRemove() { this.rcDiv.remove(); }
+    }
+    let pressTimer = null, pressAt = null, lastPress = 0;
+    const cancelPress = () => { clearTimeout(pressTimer); pressTimer = null; };
+    const press = (cb, x, y) => {
+      if (Date.now() - lastPress < 1000) return;
+      const proj = helper.getProjection();
+      if (!proj) return;
+      lastPress = Date.now();
+      const r = el.getBoundingClientRect();
+      const ll = proj.fromContainerPixelToLatLng(new g.Point(x - r.left, y - r.top));
+      if (ll) cb(ll.lat(), ll.lng());
+    };
+    return {
+      kind: 'google',
+      view: (lat, lon, z) => { map.setZoom(z); map.panTo({ lat, lng: lon }); },
+      pan: (lat, lon) => map.panTo({ lat, lng: lon }),
+      zoom: () => map.getZoom(),
+      // The map ends above the bottom panel here (so Google's logo shows), so less room is needed below.
+      fit(pts) {
+        const b = new g.LatLngBounds();
+        pts.forEach((p) => b.extend({ lat: p[0], lng: p[1] }));
+        map.fitBounds(b, { top: 110, left: 40, right: 40, bottom: 40 });
+        g.event.addListenerOnce(map, 'idle', () => { if (map.getZoom() > 17) map.setZoom(17); });
+      },
+      resize: () => {},
+      dark: (on) => { shade(el, on); map.setOptions({ styles: on ? GM_NIGHT : null }); },
+      marker(lat, lon, i, z, onClick) {
+        const m = new Html(lat, lon, i, z, onClick);
+        return { move: (a, b) => m.rcMove(a, b), icon: (n) => m.rcIcon(n), remove: () => m.setMap(null) };
+      },
+      // Long press with a finger (Google has no such event), or a right click with a mouse.
+      onLongPress(cb) {
+        el.addEventListener('pointerdown', (e) => {
+          cancelPress();
+          if (!e.isPrimary || e.pointerType === 'mouse') return;
+          pressAt = [e.clientX, e.clientY];
+          pressTimer = setTimeout(() => { pressTimer = null; press(cb, pressAt[0], pressAt[1]); }, 600);
+        }, true);
+        el.addEventListener('pointermove', (e) => {
+          if (pressTimer && (!e.isPrimary || Math.hypot(e.clientX - pressAt[0], e.clientY - pressAt[1]) > 10)) cancelPress();
+        }, true);
+        ['pointerup', 'pointercancel'].forEach((t) => el.addEventListener(t, cancelPress, true));
+        map.addListener('contextmenu', (e) => { if (e.latLng) { lastPress = Date.now(); cb(e.latLng.lat(), e.latLng.lng()); } });
+      },
+      onDrag: (cb) => map.addListener('dragstart', () => { cancelPress(); cb(); }),
+      destroy: () => { cancelPress(); g.event.clearInstanceListeners(map); el.innerHTML = ''; },
+    };
+  }
+
+  /** Forgets the map and its markers (the Map setting changed): the next open builds the other one. */
+  function resetMap() {
+    if (!G.map) return;
+    try { G.map.destroy(); } catch (e) {}
+    G.map = null; G.meMark = null; G.pinMark = null; D.mark = null;
+    G.marks.clear(); H.marks.clear();
+    const el = $('map'); const fresh = document.createElement('div'); fresh.id = 'map'; el.replaceWith(fresh);
+    $('mapView').classList.remove('google');
+  }
+  // With Google the map stops above the bottom panel, so Google's logo stays in sight.
+  const panelWatch = window.ResizeObserver ? new ResizeObserver(() => fitPanel()) : null;
+  function fitPanel() {
+    const v = $('mapView'), panel = v.querySelector('.mappanel');
+    v.style.setProperty('--panel-h', (v.clientHeight - panel.offsetTop + 10) + 'px');
+  }
   async function openMap() {
     if (!SET.map) return;
     $('mapView').classList.remove('hidden');
-    renderMapStyle();
     if (!G.map) { $('mapChips').innerHTML = ''; $('mapBox').innerHTML = '<p style="margin:0">Loading map…</p>'; renderMapBar(); }
-    try { await loadLeaflet(); } catch (e) { banner("Couldn't load the map. Check your internet."); closeMap(); return; }
+    const google = useGoogle();
+    try {
+      if (google) await loadGoogle(); else await loadLeaflet();
+    } catch (e) { banner("Couldn't load the map. Check your internet."); closeMap(); return; }
+    if (google !== useGoogle()) return openMap(); // Google turned the key down while loading.
     if (!G.map) {
-      G.map = L.map('map', { zoomControl: false, attributionControl: false, tapHold: true }).setView([20.6, 78.9], 5);
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(G.map);
-      G.map.on('contextmenu', (e) => openPinDialog(e.latlng.lat, e.latlng.lng));
-      G.map.on('dragstart', () => { G.follow = false; renderMapBar(); });
+      $('mapView').classList.toggle('google', google);
+      if (google) { fitPanel(); if (panelWatch) panelWatch.observe($('mapView').querySelector('.mappanel')); }
+      G.map = google ? googleEngine($('map')) : leafletEngine($('map'));
+      G.map.onLongPress((lat, lon) => openPinDialog(lat, lon));
+      G.map.onDrag(() => { G.follow = false; renderMapBar(); });
     } else {
-      G.map.invalidateSize();
+      G.map.resize();
     }
+    renderMapStyle();
     G.fitted = false;
     renderMapView();
   }
   function closeMap() { $('mapView').classList.add('hidden'); }
   function renderMapStyle() {
-    $('map').className = SET.darkMap ? 'dark' : 'light';
+    if (G.map) G.map.dark(SET.darkMap); else shade($('map'), SET.darkMap);
     $('mapStyle').innerHTML = SET.darkMap
       ? icon('M480-280q-83 0-141.5-58.5T280-480q0-83 58.5-141.5T480-680q83 0 141.5 58.5T680-480q0 83-58.5 141.5T480-280ZM200-440H80q-17 0-28.5-11.5T40-480q0-17 11.5-28.5T80-520h120q17 0 28.5 11.5T240-480q0 17-11.5 28.5T200-440Zm680 0H760q-17 0-28.5-11.5T720-480q0-17 11.5-28.5T760-520h120q17 0 28.5 11.5T920-480q0 17-11.5 28.5T880-440ZM480-760q-17 0-28.5-11.5T440-800v-120q0-17 11.5-28.5T480-960q17 0 28.5 11.5T520-920v120q0 17-11.5 28.5T480-760Zm0 720q-17 0-28.5-11.5T440-80v-120q0-17 11.5-28.5T480-240q17 0 28.5 11.5T520-200v120q0 17-11.5 28.5T480-40Z')
       : icon('M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q14 0 27.5 1t26.5 3q-41 29-65.5 75.5T444-660q0 90 63 153t153 63q55 0 101-24.5t75-65.5q2 13 3 26.5t1 27.5q0 150-105 255T480-120Z');
@@ -1281,7 +1477,7 @@
   /** Me on the map: my photo (or initial) like the others, with an orange ring and a "You" tag. */
   function meIcon() {
     const face = '<div class="face"' + (myPhoto ? ' style="background-image:url(' + myPhoto + ')"' : '') + '>' + (myPhoto ? '' : esc((S.name || '•').charAt(0).toUpperCase())) + '</div>';
-    return L.divIcon({ html: '<div class="mk me">' + face + '<div class="tagname">You</div></div>', iconSize: [44, 44], iconAnchor: [22, 22], className: '' });
+    return mk('<div class="mk me">' + face + '<div class="tagname">You</div></div>', 44, 44, 22, 22);
   }
   function markerHtml(name, photo, talk, hdg, stale, role) {
     const face = '<div class="face"' + (photo ? ' style="background-image:url(' + photo + ')"' : '') + '>' + (photo ? '' : esc(name.charAt(0).toUpperCase())) + '</div>';
@@ -1294,38 +1490,37 @@
     const seen = new Set();
     G.pos.forEach((p, id) => {
       seen.add(id);
-      const icn = L.divIcon({ html: markerHtml(p.name, S.photos.get(id), talking.has(id), (p.spd || 0) >= 8 ? p.hdg : null, Date.now() - p.at > 45000, roleOf(id)), iconSize: [44, 44], iconAnchor: [22, 22], className: '' });
+      const icn = mk(markerHtml(p.name, S.photos.get(id), talking.has(id), (p.spd || 0) >= 8 ? p.hdg : null, Date.now() - p.at > 45000, roleOf(id)), 44, 44, 22, 22);
       const m = G.marks.get(id);
-      if (m) { m.setLatLng([p.lat, p.lon]); m.setIcon(icn); }
-      else G.marks.set(id, L.marker([p.lat, p.lon], { icon: icn }).addTo(G.map).on('click', () => { G.follow = false; G.map.setView([p.lat, p.lon], 16); }));
+      if (m) { m.move(p.lat, p.lon); m.icon(icn); }
+      else G.marks.set(id, G.map.marker(p.lat, p.lon, icn, 0, () => { G.follow = false; const q = G.pos.get(id); if (q) G.map.view(q.lat, q.lon, 16); renderMapBar(); }));
     });
     G.marks.forEach((m, id) => { if (!seen.has(id)) { m.remove(); G.marks.delete(id); } });
     const hzSeen = new Set();
     if (SET.hazards) H.list.forEach((h, id) => {
       hzSeen.add(id);
       if (H.marks.has(id)) return;
-      const icn = L.divIcon({ html: '<div class="mkhz">' + hazIcon(h.kind) + '<div class="tagname">' + HAZ[h.kind].label + '</div></div>', iconSize: [34, 34], iconAnchor: [17, 17], className: '' });
-      H.marks.set(id, L.marker([h.lat, h.lon], { icon: icn, zIndexOffset: -200 }).addTo(G.map));
+      const icn = mk('<div class="mkhz">' + hazIcon(h.kind) + '<div class="tagname">' + HAZ[h.kind].label + '</div></div>', 34, 34, 17, 17);
+      H.marks.set(id, G.map.marker(h.lat, h.lon, icn, -200));
     });
     H.marks.forEach((m, id) => { if (!hzSeen.has(id)) { m.remove(); H.marks.delete(id); } });
     if (G.me) {
-      const ll = [G.me.lat, G.me.lon];
-      if (G.meMark) G.meMark.setLatLng(ll);
-      else G.meMark = L.marker(ll, { icon: meIcon(), zIndexOffset: 1000 }).addTo(G.map);
+      if (G.meMark) G.meMark.move(G.me.lat, G.me.lon);
+      else G.meMark = G.map.marker(G.me.lat, G.me.lon, meIcon(), 1000);
       // My photo can change mid-ride; only rebuild the icon when it does.
-      if (G.meMark.__photo !== myPhoto) { G.meMark.setIcon(meIcon()); G.meMark.__photo = myPhoto; }
+      if (G.meMark.__photo !== myPhoto) { G.meMark.icon(meIcon()); G.meMark.__photo = myPhoto; }
     } else if (G.meMark) { G.meMark.remove(); G.meMark = null; }
     const g = S.regroup;
     if (g) {
-      const icn = L.divIcon({ html: '<div class="pin"><div class="tagname">' + esc(g.label) + '<br><span style="opacity:.75">' + g.arrived.size + ' of ' + riderIds().length + ' here</span></div><div class="head">' + icon(P.flag) + '</div><div class="stem"></div><div class="tip"></div></div>', iconSize: [46, 76], iconAnchor: [23, 73], className: '' });
-      if (G.pinMark) { G.pinMark.setLatLng([g.lat, g.lon]); G.pinMark.setIcon(icn); } else G.pinMark = L.marker([g.lat, g.lon], { icon: icn, zIndexOffset: -100 }).addTo(G.map);
+      const icn = mk('<div class="pin"><div class="tagname">' + esc(g.label) + '<br><span style="opacity:.75">' + g.arrived.size + ' of ' + riderIds().length + ' here</span></div><div class="head">' + icon(P.flag) + '</div><div class="stem"></div><div class="tip"></div></div>', 46, 76, 23, 73);
+      if (G.pinMark) { G.pinMark.move(g.lat, g.lon); G.pinMark.icon(icn); } else G.pinMark = G.map.marker(g.lat, g.lon, icn, -100);
     } else if (G.pinMark) { G.pinMark.remove(); G.pinMark = null; }
     const d = SET.dest ? D.dest : null;
     if (d) {
-      const icn = L.divIcon({ html: '<div class="pin dest"><div class="tagname">' + esc(d.label) + '<br><span style="opacity:.75">Destination</span></div><div class="head">' + icon(P.finish) + '</div><div class="stem"></div><div class="tip"></div></div>', iconSize: [46, 76], iconAnchor: [23, 73], className: '' });
-      if (D.mark) { D.mark.setLatLng([d.lat, d.lon]); D.mark.setIcon(icn); } else D.mark = L.marker([d.lat, d.lon], { icon: icn, zIndexOffset: -150 }).addTo(G.map);
+      const icn = mk('<div class="pin dest"><div class="tagname">' + esc(d.label) + '<br><span style="opacity:.75">Destination</span></div><div class="head">' + icon(P.finish) + '</div><div class="stem"></div><div class="tip"></div></div>', 46, 76, 23, 73);
+      if (D.mark) { D.mark.move(d.lat, d.lon); D.mark.icon(icn); } else D.mark = G.map.marker(d.lat, d.lon, icn, -150);
     } else if (D.mark) { D.mark.remove(); D.mark = null; }
-    if (G.follow && G.me) G.map.panTo([G.me.lat, G.me.lon]);
+    if (G.follow && G.me) G.map.pan(G.me.lat, G.me.lon);
     else if (!G.fitted) fitAll();
     renderMapBar(); renderMapBox();
   }
@@ -1336,8 +1531,8 @@
     if (S.regroup) pts.push([S.regroup.lat, S.regroup.lon]);
     if (!pts.length) return;
     G.fitted = true;
-    if (pts.length === 1) G.map.setView(pts[0], 15);
-    else G.map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [40, 110], paddingBottomRight: [40, 280], maxZoom: 17 });
+    if (pts.length === 1) G.map.view(pts[0][0], pts[0][1], 15);
+    else G.map.fit(pts);
   }
   function renderMapBar() {
     $('mapSub').textContent = (G.pos.size + (G.me ? 1 : 0)) + ' of ' + riderIds().length + ' riders on the map';
@@ -2330,7 +2525,7 @@
     if (e.target.closest('[data-open-settings]')) openSettings();
     if (e.target.closest('[data-open-map]')) openMap();
     const chip = e.target.closest('[data-chip]');
-    if (chip && G.map) { const p = G.pos.get(chip.dataset.chip); if (p) { G.follow = false; G.map.setView([p.lat, p.lon], 16); renderMapBar(); } }
+    if (chip && G.map) { const p = G.pos.get(chip.dataset.chip); if (p) { G.follow = false; G.map.view(p.lat, p.lon, 16); renderMapBar(); } }
     if (e.target.closest('#pinHere')) { if (G.me) openPinDialog(G.me.lat, G.me.lon); else banner('Waiting for your location…'); }
     if (e.target.closest('#pinClear')) clearRegroup();
     const lab = e.target.closest('[data-label]');
@@ -2435,7 +2630,7 @@
   $('mapBack').addEventListener('click', closeMap);
   $('mapStyle').addEventListener('click', () => { SET.darkMap = !SET.darkMap; saveSettings(); renderMapStyle(); });
   $('mapFit').addEventListener('click', () => { G.follow = false; G.fitted = false; renderMapView(); });
-  $('mapFollow').addEventListener('click', () => { G.follow = !G.follow; if (G.follow && G.me && G.map) G.map.setView([G.me.lat, G.me.lon], Math.max(G.map.getZoom(), 15)); renderMapBar(); });
+  $('mapFollow').addEventListener('click', () => { G.follow = !G.follow; if (G.follow && G.me && G.map) G.map.view(G.me.lat, G.me.lon, Math.max(G.map.zoom(), 15)); renderMapBar(); });
   $('pinCancel').addEventListener('click', () => $('pinDialog').classList.add('hidden'));
   $('pinName').addEventListener('input', renderPinLabels);
   $('pinDest').addEventListener('click', () => {

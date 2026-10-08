@@ -44,6 +44,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.RideComm">
 
+        <!-- Google Maps key for the Group map; empty when the build has none (then OpenStreetMap is used). -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${mapsApiKey}" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

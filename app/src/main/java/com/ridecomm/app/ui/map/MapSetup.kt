@@ -76,15 +76,18 @@ object MapSetup {
  * Draws [markers] (riders, me, regroup point) over the map, and turns a long-press into a
  * regroup point request.
  */
-class GroupOverlay(context: Context, private val onLongPress: (GeoPoint) -> Unit) : Overlay() {
+class GroupOverlay(context: Context, private val onLongPress: (Spot) -> Unit) : Overlay() {
     private val painter = MarkerPainter(context)
     private val point = Point()
 
     /** Map positions to draw; set from the UI, then the map is invalidated. */
     var places: List<Place> = emptyList()
 
-    /** A marker at a map position (converted to screen pixels when drawn). */
-    data class Place(val lat: Double, val lon: Double, val make: (x: Float, y: Float, metresPerPixel: Float) -> MapMarker)
+    /**
+     * A marker at a map position (converted to screen pixels when drawn). [key] stays the same while
+     * it moves (a rider's id), so a map that keeps its own markers (Google) can move it.
+     */
+    data class Place(val lat: Double, val lon: Double, val key: String, val make: (x: Float, y: Float, metresPerPixel: Float) -> MapMarker)
 
     override fun draw(canvas: Canvas, mapView: MapView, shadow: Boolean) {
         if (shadow) return
@@ -103,7 +106,7 @@ class GroupOverlay(context: Context, private val onLongPress: (GeoPoint) -> Unit
 
     override fun onLongPress(e: MotionEvent, mapView: MapView): Boolean {
         val geo = mapView.projection.fromPixels(e.x.toInt(), e.y.toInt()) as GeoPoint
-        onLongPress(geo)
+        onLongPress(Spot(geo.latitude, geo.longitude))
         return true
     }
 }

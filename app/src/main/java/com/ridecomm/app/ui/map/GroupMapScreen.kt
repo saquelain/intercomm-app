@@ -38,6 +38,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -77,7 +80,7 @@ import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
 
 /** A position shown on the map, for fitting and centring. */
-internal data class Spot(val lat: Double, val lon: Double)
+data class Spot(val lat: Double, val lon: Double)
 
 /**
  * Full-screen live map of the group: every rider sharing their location (photo, name, direction),
@@ -111,7 +114,12 @@ internal fun GroupMapScreen(
     var focus by remember { mutableStateOf<Spot?>(null) }
     var fitKey by remember { mutableIntStateOf(0) }
     var dark by remember { mutableStateOf(Prefs.mapDark(context)) }
-    var pinAt by remember { mutableStateOf<GeoPoint?>(null) }
+    var pinAt by remember { mutableStateOf<Spot?>(null) }
+    val google = remember { mapContent == null && GoogleMapSetup.use(context) }
+    // How much of the map the top bar and bottom panel cover, so Google keeps its logo and the riders clear of them.
+    var height by remember { mutableIntStateOf(0) }
+    var topPx by remember { mutableIntStateOf(0) }
+    var bottomTopPx by remember { mutableIntStateOf(0) }
     val names = riders.associate { it.id to it.name }
     val talking = riders.filter { it.isSpeaking }.map { it.id }.toSet()
     val now = System.currentTimeMillis()
@@ -119,19 +127,19 @@ internal fun GroupMapScreen(
     val places = buildList {
         hazards.forEach { v ->
             val h = v.hazard
-            add(GroupOverlay.Place(h.lat, h.lon) { x, y, _ -> MapMarker.Hazard(x, y, h.kind.icon, h.kind.label) })
+            add(GroupOverlay.Place(h.lat, h.lon, "hazard:${h.id}") { x, y, _ -> MapMarker.Hazard(x, y, h.kind.icon, h.kind.label) })
         }
         destination?.let { d ->
-            add(GroupOverlay.Place(d.lat, d.lon) { x, y, _ -> MapMarker.Regroup(x, y, d.label, "Destination", destination = true) })
+            add(GroupOverlay.Place(d.lat, d.lon, "destination") { x, y, _ -> MapMarker.Regroup(x, y, d.label, "Destination", destination = true) })
         }
         group.regroup?.let { p ->
             val detail = "${p.arrived.size} of ${riders.size.coerceAtLeast(1)} here"
-            add(GroupOverlay.Place(p.lat, p.lon) { x, y, _ -> MapMarker.Regroup(x, y, p.label, detail) })
+            add(GroupOverlay.Place(p.lat, p.lon, "regroup") { x, y, _ -> MapMarker.Regroup(x, y, p.label, detail) })
         }
         group.positions.forEach { (id, pos) ->
             val moving = (pos.speedKmh ?: 0f) >= 8f
             add(
-                GroupOverlay.Place(pos.lat, pos.lon) { x, y, _ ->
+                GroupOverlay.Place(pos.lat, pos.lon, "rider:$id") { x, y, _ ->
                     MapMarker.Rider(
                         x, y,
                         name = names[id] ?: pos.name.ifBlank { "Rider" },
@@ -147,20 +155,31 @@ internal fun GroupMapScreen(
         group.me?.let { me ->
             val self = riders.firstOrNull { it.isMe }
             add(
-                GroupOverlay.Place(me.lat, me.lon) { x, y, mpp ->
+                GroupOverlay.Place(me.lat, me.lon, "me") { x, y, mpp ->
                     MapMarker.Me(x, y, me.headingDeg?.toFloat(), me.accuracyM / mpp, self?.name.orEmpty(), self?.let { photos[it.id] })
                 },
             )
         }
     }
 
-    Box(Modifier.fillMaxSize().background(Palette.Night)) {
-        val onLongPress: (GeoPoint) -> Unit = { pinAt = it }
-        if (mapContent != null) mapContent(places) else LiveMap(group, places, focus, follow, fitKey, dark, onLongPress)
+    Box(Modifier.fillMaxSize().background(Palette.Night).onSizeChanged { height = it.height }) {
+        val onLongPress: (Spot) -> Unit = { pinAt = it }
+        when {
+            mapContent != null -> mapContent(places)
+            google -> GoogleLiveMap(
+                group, places, focus, follow, fitKey, dark,
+                topPx = topPx,
+                bottomPx = (height - bottomTopPx).coerceAtLeast(0),
+                onGesture = { follow = false },
+                onLongPress = onLongPress,
+            )
+            else -> LiveMap(group, places, focus, follow, fitKey, dark, onLongPress)
+        }
 
         // Top bar
         Row(
             Modifier
+                .onGloballyPositioned { topPx = (it.positionInParent().y + it.size.height).toInt() }
                 .statusBarsPadding()
                 .padding(12.dp)
                 .fillMaxWidth()
@@ -200,12 +219,14 @@ internal fun GroupMapScreen(
         Column(
             Modifier
                 .align(Alignment.BottomCenter)
+                .onGloballyPositioned { bottomTopPx = it.positionInParent().y.toInt() }
                 .navigationBarsPadding()
                 .padding(12.dp)
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
+            // Google Maps shows its own logo; OpenStreetMap asks for this line.
+            if (!google) Text(
                 MapSetup.ATTRIBUTION,
                 style = MaterialTheme.typography.labelSmall,
                 color = if (LocalLook.current == UiLook.NEU) NeuTokens.InkMuted else Color.White.copy(alpha = 0.8f),
@@ -251,7 +272,7 @@ internal fun GroupMapScreen(
                         if (me == null) {
                             Toast.makeText(context, "Waiting for your location…", Toast.LENGTH_SHORT).show()
                         } else {
-                            pinAt = GeoPoint(me.lat, me.lon)
+                            pinAt = Spot(me.lat, me.lon)
                         }
                     }
                 }
@@ -263,12 +284,12 @@ internal fun GroupMapScreen(
         RegroupDialog(
             onCancel = { pinAt = null },
             onSet = { label ->
-                GroupTracker.setRegroup(at.latitude, at.longitude, label)
+                GroupTracker.setRegroup(at.lat, at.lon, label)
                 pinAt = null
             },
             onDestination = onSetDestination?.let { set ->
                 { label: String ->
-                    set(at.latitude, at.longitude, label)
+                    set(at.lat, at.lon, label)
                     pinAt = null
                 }
             },
@@ -288,7 +309,7 @@ private fun mapPanel() = when (LocalLook.current) {
     UiLook.CLASSIC -> MapPanel
 }
 
-/** The osmdroid map with the dark tiles and the group overlay. */
+/** The OpenStreetMap (osmdroid) map, darkened on the phone when asked, with the group overlay. */
 @Composable
 private fun LiveMap(
     group: GroupState,
@@ -297,7 +318,7 @@ private fun LiveMap(
     follow: Boolean,
     fitKey: Int,
     dark: Boolean,
-    onLongPress: (GeoPoint) -> Unit,
+    onLongPress: (Spot) -> Unit,
 ) {
     val context = LocalContext.current
     val overlay = remember { GroupOverlay(context) { onLongPress(it) } }
@@ -349,7 +370,7 @@ private fun LiveMap(
     )
 }
 
-private fun spotsOf(group: GroupState): List<Spot> = buildList {
+internal fun spotsOf(group: GroupState): List<Spot> = buildList {
     group.me?.let { add(Spot(it.lat, it.lon)) }
     group.positions.values.forEach { add(Spot(it.lat, it.lon)) }
     group.regroup?.let { add(Spot(it.lat, it.lon)) }

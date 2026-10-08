@@ -8,7 +8,8 @@ phones send each other). `README.md` describes every feature in detail.
 RideComm is a group intercom for bike riders (4–6 riders on a ride), built and tested step by step with
 the owner, who rides with it on real phones and reports back.
 
-- **Android app** (`app/`): Kotlin, Jetpack Compose, LiveKit Android SDK 2.29.0, Media3, osmdroid.
+- **Android app** (`app/`): Kotlin, Jetpack Compose, LiveKit Android SDK 2.29.0, Media3, Google Maps (Play services) with osmdroid
+  as the fallback.
   minSdk 26, target 35. Package `com.ridecomm.app`.
 - **iPhone / browser version** (`docs/ride/index.html`): one self-contained page (HTML + CSS + vanilla JS,
   LiveKit JS 2.22.3 from jsdelivr, Leaflet 1.9.4 from cdnjs), served by GitHub Pages. iPhones can't
@@ -52,7 +53,7 @@ Links the owner uses:
 - Commit messages: a short title, a plain-language body, then the attribution lines the session asks for.
 - Every push runs `.github/workflows/build-apk.yml`: `testReleaseUnitTest assembleRelease assembleUnshrunk`,
   then replaces the `latest` pre-release with the three APKs. A failing unit test means no new APK.
-- `LIVEKIT_TOKEN_SERVER_ID` / `RIDE_SERVER_URL` come from repo secrets; `versionCode` is the run number.
+- `LIVEKIT_TOKEN_SERVER_ID` / `RIDE_SERVER_URL` / `GOOGLE_MAPS_API_KEY` come from repo secrets; `versionCode` is the run number.
 
 ## Build, test, look (in the cloud container)
 
@@ -86,8 +87,8 @@ Links the owner uses:
   look: see "Glass look" in HANDOFF.md; screens opt in with `LookScope`, mock-ups in `design/glass/`),
   `ui/Neu.kt` (the Soft / neumorphism look; `Palette` colours depend on the look, see HANDOFF.md).
 - Features: `audio/` (wind noise gate, MicGate), `vote/`, `sos/` (SOS, SMS fallback, emergency info),
-  `music/` (shared songs), `group/` (positions, map logic, regroup, lead & sweep), `ui/map/` (osmdroid
-  map, MarkerPainter), `hazard/`, `trip/` (speed, distance), `alerts/` (joins, batteries, calls),
+  `music/` (shared songs), `group/` (positions, map logic, regroup, lead & sweep), `ui/map/` (Google Maps in
+  `GoogleGroupMap.kt` when the build has a key, else the osmdroid map; MarkerPainter), `hazard/`, `trip/` (speed, distance), `alerts/` (joins, batteries, calls),
   `voice/` (voice commands), `headset/`, `crash/`, `night/`, `overlay/` (floating button), `profile/`,
   `whisper/` (talk to one rider), `home/` (home safe), `group/RideDestination` (shared destination),
   `trip/BreakReminder`, `sos/LockScreenInfo`.

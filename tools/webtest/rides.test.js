@@ -136,8 +136,8 @@ fs.mkdirSync(OUT, { recursive: true });
   await b.screenshot({ path: OUT + 'w11_card_regroup.png' });
   await a.click('#mapStyle');
   await a.waitForTimeout(300);
-  check('Map switches to light', await a.evaluate(() => document.getElementById('map').className === 'light' && JSON.parse(localStorage.getItem('rc-web-settings')).darkMap === false));
-  await a.screenshot({ path: OUT + 'w12_map_light.png' });
+  check('Map switches to dark', await a.evaluate(() => document.getElementById('map').classList.contains('dark') && JSON.parse(localStorage.getItem('rc-web-settings')).darkMap === true));
+  await a.screenshot({ path: OUT + 'w12_map_dark.png' });
   await a.click('#mapStyle');
   // B rides to the point: arrival counted, everyone there announced.
   const pin = await a.evaluate(() => ({ lat: 0 }));

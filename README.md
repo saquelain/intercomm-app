@@ -70,8 +70,9 @@ between phones).
   **Ride updates** speak "42.3 kilometres. 1 hour 10 minutes riding. Average 56." every 15/30 min or 10/25 km.
   "RideComm, speed" gives the same on demand.
 - **Group map** (Settings → Group map, **off by default**): with it on, your position is shared with the ride
-  every 5 s while moving (15 s when slow or saving data). The map (OpenStreetMap, no API key; darkened on the
-  phone to match the app, with a light option for bright sun) shows every rider's photo, name and direction,
+  every 5 s while moving (15 s when slow or saving data). The map (Google Maps when the APK was built with a
+  key, Settings → Map; otherwise OpenStreetMap; light like the Google Maps app, with a dark option) shows every
+  rider's photo, name and direction,
   you, and how far each one is ("Rahul · 2.5 km behind", tap to jump to them). You hear when someone falls 1 km
   behind and when they're back. **Regroup point:** long-press the map (or "Regroup at my location", or say
   "RideComm, regroup here"), pick a name (Petrol pump, Dhaba, Toll plaza…) and everyone hears "Amit set a regroup
@@ -210,7 +211,7 @@ The gear button opens **Settings**, saved in the browser and changeable any time
 
 - **Profile photo**: picked from the phone, cropped to a small square and shown to everyone, on the app too.
 - **Group map** (off by default): shares the iPhone's location with the app riders and shows everyone on a live
-  map (Leaflet + OpenStreetMap, dark or light). Long-press the map, or tap "Regroup at my location", to set a
+  map (Google Maps when the page has a key, Settings → Map; else Leaflet + OpenStreetMap; light or dark). Long-press the map, or tap "Regroup at my location", to set a
   regroup point. Riders get "Navigate" directions, arrival counts and the "Everyone is at the regroup point" alert.
   Switching it off stops sharing straight away.
 - **Spoken alerts**, **Vibration** and **Keep screen on**, each on by default.

@@ -28,6 +28,7 @@ jobs:
         env:
           LIVEKIT_TOKEN_SERVER_ID: ${{ secrets.LIVEKIT_TOKEN_SERVER_ID }}
           RIDE_SERVER_URL: ${{ secrets.RIDE_SERVER_URL }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
           ./gradlew testReleaseUnitTest assembleRelease assembleUnshrunk --console=plain

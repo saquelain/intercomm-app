@@ -72,6 +72,67 @@ class MarkerPainter(private val context: Context) {
     private val flag = ContextCompat.getDrawable(context, R.drawable.ms_flag)!!.mutate()
     private val finish = ContextCompat.getDrawable(context, R.drawable.ms_sports_score)!!.mutate()
 
+    /** One marker as a picture for a map library that places it itself (Google Maps), and where its point is. */
+    class Icon(val bitmap: Bitmap, val anchorX: Float, val anchorY: Float)
+
+    /** Draws [m] (its own x and y are ignored) into a bitmap just big enough to hold it. */
+    fun icon(m: MapMarker): Icon {
+        val box = extent(m)
+        val w = kotlin.math.ceil(box.width()).toInt().coerceAtLeast(1)
+        val h = kotlin.math.ceil(box.height()).toInt().coerceAtLeast(1)
+        val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        canvas.translate(-box.left, -box.top)
+        draw(canvas, listOf(moved(m, 0f, 0f)))
+        return Icon(bitmap, -box.left / w, -box.top / h)
+    }
+
+    private fun moved(m: MapMarker, x: Float, y: Float): MapMarker = when (m) {
+        is MapMarker.Rider -> m.copy(x = x, y = y)
+        is MapMarker.Me -> m.copy(x = x, y = y)
+        is MapMarker.Regroup -> m.copy(x = x, y = y)
+        is MapMarker.Hazard -> m.copy(x = x, y = y)
+    }
+
+    /** The area [m] draws on, around its point (0, 0), from the same sizes the drawing code uses. */
+    internal fun extent(m: MapMarker): RectF {
+        val r = AVATAR_DP / 2 * d
+        val box = when (m) {
+            is MapMarker.Rider -> {
+                val tag = tagSize(m.name.substringBefore(' ').take(12), m.role)
+                val side = maxOf(r + 11 * d, tag.first / 2)
+                RectF(-side, -(r + 11 * d), side, maxOf(r + 11 * d, r + 6 * d + tag.second))
+            }
+            is MapMarker.Hazard -> {
+                val h = 15 * d
+                val tag = tagSize(m.label, null)
+                val side = maxOf(h, tag.first / 2)
+                RectF(-side, -h, side, h + 4 * d + tag.second)
+            }
+            is MapMarker.Me -> {
+                val reach = maxOf(if (m.headingDeg != null) r + 30 * d else r + 7 * d, if (m.accuracyPx > 24 * d) m.accuracyPx else 0f)
+                RectF(-reach, -reach, reach, maxOf(reach, r + 8 * d + tagSize("You", null).second))
+            }
+            is MapMarker.Regroup -> {
+                val tag = tagSize(m.label, m.detail)
+                val side = maxOf(r + 3 * d, tag.first / 2)
+                RectF(-side, -30 * d - r - 30 * d, side, 6 * d)
+            }
+        }
+        // A little room for strokes and shadows.
+        box.inset(-3 * d, -3 * d)
+        return box
+    }
+
+    /** Width and height of a [nameTag]. */
+    private fun tagSize(title: String, detail: String?): Pair<Float, Float> {
+        text.textSize = 13 * d
+        val w1 = text.measureText(title)
+        text.textSize = 11 * d
+        val w2 = detail?.let { text.measureText(it) } ?: 0f
+        return (maxOf(w1, w2) + 16 * d) to (if (detail != null) 36 * d else 22 * d)
+    }
+
     fun draw(canvas: Canvas, markers: List<MapMarker>) {
         // Regroup flag at the back, me on top of everyone else.
         markers.filterIsInstance<MapMarker.Hazard>().forEach { drawHazard(canvas, it) }

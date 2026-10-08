@@ -17,6 +17,12 @@ val rideServerUrl: String = System.getenv("RIDE_SERVER_URL")
     ?: (project.findProperty("rideServerUrl") as String?)
     ?: ""
 
+// Google Maps key for the Group map (Maps SDK for Android), from the GOOGLE_MAPS_API_KEY secret in CI.
+// Without it the Group map uses OpenStreetMap, as before.
+val mapsApiKey: String = System.getenv("GOOGLE_MAPS_API_KEY")
+    ?: (project.findProperty("googleMapsApiKey") as String?)
+    ?: ""
+
 // CI sets BUILD_NUMBER so every APK installs as an update over the previous one.
 val buildNumber: Int = System.getenv("BUILD_NUMBER")?.toIntOrNull() ?: 1
 
@@ -32,6 +38,8 @@ android {
         versionName = "0.1.$buildNumber"
         buildConfigField("String", "DEFAULT_TOKEN_SERVER_ID", "\"$tokenServerId\"")
         buildConfigField("String", "DEFAULT_RIDE_SERVER_URL", "\"$rideServerUrl\"")
+        buildConfigField("boolean", "HAS_GOOGLE_MAPS", mapsApiKey.isNotBlank().toString())
+        manifestPlaceholders["mapsApiKey"] = mapsApiKey
     }
 
     signingConfigs {
@@ -101,6 +109,8 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:1.11.1")
     // Group map: OpenStreetMap-based, no API key or Google services needed.
     implementation("org.osmdroid:osmdroid-android:6.1.20")
+    // Group map on Google Maps when a key is set (free on Android; the map itself comes from Play services).
+    implementation("com.google.android.gms:play-services-maps:20.0.0")
 
     implementation(platform("androidx.compose:compose-bom:2025.12.01"))
     implementation("androidx.compose.ui:ui")

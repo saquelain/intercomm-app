@@ -65,7 +65,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import com.ridecomm.app.CrashLog
+import com.ridecomm.app.BuildConfig
 import com.ridecomm.app.Prefs
+import com.ridecomm.app.ui.map.GoogleMapSetup
+import com.ridecomm.app.ui.map.MapProvider
 import com.ridecomm.app.hazard.Hazards
 import com.ridecomm.app.night.NightMode
 import com.ridecomm.app.night.NightModeSetting
@@ -531,6 +534,8 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var homeSpot by remember { mutableStateOf(Prefs.homeSpot(context)) }
     var breakEvery by remember { mutableStateOf(Prefs.breakEvery(context)) }
     var look by remember { mutableStateOf(Prefs.look(context)) }
+    var mapProvider by remember { mutableStateOf(Prefs.mapProvider(context)) }
+    val googleMaps = remember { GoogleMapSetup.available(context) }
     // Android 13+: the lock screen note is a notification, which needs permission.
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (!granted) Toast.makeText(context, "Allow notifications for RideComm to show it on the lock screen", Toast.LENGTH_LONG).show()
@@ -682,6 +687,18 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 "falls behind, and regroup points. Uses GPS; turned off unless you switch it on.",
             shareLocation,
         ) { shareLocation = it }
+        OptionChips(
+            "Map",
+            when {
+                !googleMaps && !BuildConfig.HAS_GOOGLE_MAPS -> "Google Maps isn't set up in this version yet, so the Group map uses OpenStreetMap."
+                !googleMaps -> "Google Maps needs Google Play services, which this phone doesn't have, so the Group map uses OpenStreetMap."
+                mapProvider == MapProvider.GOOGLE -> "The Group map looks like the Google Maps app: same roads, places and labels."
+                else -> "The free OpenStreetMap map, as before."
+            },
+            MapProvider.entries,
+            mapProvider,
+            { it.label },
+        ) { mapProvider = it }
         SettingSwitch(
             "Hazard alerts",
             "Mark potholes, speed breakers, police, accidents… for the riders behind, and hear \"Pothole in 300 meters\" " +
@@ -734,6 +751,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setBubbleEnabled(context, bubbleOn)
                 Prefs.setEmergencyNumbers(context, numbers)
                 Prefs.setShareLocation(context, shareLocation)
+                Prefs.setMapProvider(context, mapProvider)
                 Prefs.setKeepOtherMusic(context, keepMusic)
                 if (riderName.isNotBlank()) Prefs.setRiderName(context, riderName.trim())
                 Prefs.setCrashDetection(context, crashDetection)

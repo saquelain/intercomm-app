@@ -118,6 +118,31 @@ and `design/soft/neukit.html` (NeuKit tokens). How it's built:
 - Components in `Glass.kt` branch on `UiLook.NEU`; ride-screen parts (stats tiles, dock, mic, SOS) too.
 - Web: `html.look-neu` CSS block (variables `--neu-out`, `--neu-in`…).
 
+## Google Maps for the Group map
+
+The owner found the OpenStreetMap Group map didn't look good and chose real Google Maps (app + web), with
+Settings → **Map**: Google Maps / OpenStreetMap. OpenStreetMap stays as the fallback, so nothing breaks
+without a key.
+- App: `ui/map/GoogleGroupMap.kt` (`GoogleLiveMap`, Play services `MapView` 20.0.0 in an `AndroidView`;
+  maps-compose needs Kotlin 2.4, too new for this project). Markers are the same pictures as on
+  OpenStreetMap: `MarkerPainter.icon()` draws one marker into a bitmap (`extent()` sizes it,
+  `MarkerIconTest` checks nothing is cut off). The map is padded by the top bar and bottom panel so
+  Google's logo shows; dragging stops "Follow me"; tap a marker to centre it. Dark = `res/raw/map_night.json`
+  (a style JSON, so no map ID is needed and Android maps stay free).
+- Key: GitHub secret `GOOGLE_MAPS_API_KEY` → `BuildConfig.HAS_GOOGLE_MAPS` and the manifest's
+  `com.google.android.geo.API_KEY`. `GoogleMapSetup.use()` also needs Google Play services on the phone.
+  Restrict the key in Google Cloud to Android apps, package `com.ridecomm.app`, SHA-1
+  `52:A7:1F:7B:2B:E0:C6:C3:42:8E:89:1A:D2:A6:11:40:54:7A:D6:43` (the committed test keystore), API "Maps
+  SDK for Android". A wrong key shows a blank grey map: the rider can switch to OpenStreetMap in Settings.
+- Web: `GMAPS_KEY` near the top of the page's script (a *separate* key restricted to websites
+  `https://saquelain.github.io/*`, API "Maps JavaScript API"; it is public by design). A small "engine"
+  (`leafletEngine` / `googleEngine`) hides which map is showing; Google markers are HTML `OverlayView`s
+  with the same `.mk` / `.pin` / `.mkhz` HTML, long press is timed by the page, and the map ends above the
+  bottom panel so Google's logo shows. If Google refuses the key (`gm_authFailure`) the page switches to
+  OpenStreetMap and says so. Test: `tools/webtest/gmap.test.js` (Google's real map in keyless mode).
+- Cost: Android maps are free; the web map has a free monthly allowance (cap it with a quota in Google
+  Cloud). Place search still uses OpenStreetMap (Nominatim), Navigate still opens the Google Maps app.
+
 ## Ideas not built yet (from the last "what next" list)
 
 - **Ride summary card**: route on a map, distance, time, top/average speed, stops; share as an image.

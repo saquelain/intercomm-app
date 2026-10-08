@@ -12,6 +12,7 @@ import com.ridecomm.app.sos.EmergencyInfo
 import com.ridecomm.app.trip.BreakEvery
 import com.ridecomm.app.trip.UpdateEvery
 import com.ridecomm.app.ui.UiLook
+import com.ridecomm.app.ui.map.MapProvider
 import java.util.UUID
 
 /** Small on-device settings: rider name, a stable device id, and the LiveKit token server id. */
@@ -61,6 +62,7 @@ object Prefs {
     private const val KEY_BREAK_EVERY = "break_every"
     private const val KEY_LOCK_SCREEN_INFO = "lock_screen_info"
     private const val KEY_LOOK = "ui_look"
+    private const val KEY_MAP_PROVIDER = "map_provider"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -253,8 +255,8 @@ object Prefs {
     fun setDataSaver(context: Context, mode: DataSaverMode) =
         prefs(context).edit().putString(KEY_DATA_SAVER, mode.name).apply()
 
-    /** Group map in dark colours (default) or the normal light map, which reads better in bright sun. */
-    fun mapDark(context: Context): Boolean = prefs(context).getBoolean(KEY_MAP_DARK, true)
+    /** Group map in dark colours or the normal light map (default, like Google Maps; reads better in bright sun). */
+    fun mapDark(context: Context): Boolean = prefs(context).getBoolean(KEY_MAP_DARK, false)
 
     fun setMapDark(context: Context, dark: Boolean) = prefs(context).edit().putBoolean(KEY_MAP_DARK, dark).apply()
 
@@ -350,4 +352,11 @@ object Prefs {
         UiLook.entries.firstOrNull { it.name == prefs(context).getString(KEY_LOOK, null) } ?: UiLook.CLASSIC
 
     fun setLook(context: Context, look: UiLook) = prefs(context).edit().putString(KEY_LOOK, look.name).apply()
+
+    /** Which map the Group map shows: Google Maps (when this build has a key) or OpenStreetMap. */
+    fun mapProvider(context: Context): MapProvider =
+        MapProvider.entries.firstOrNull { it.name == prefs(context).getString(KEY_MAP_PROVIDER, null) } ?: MapProvider.GOOGLE
+
+    fun setMapProvider(context: Context, provider: MapProvider) =
+        prefs(context).edit().putString(KEY_MAP_PROVIDER, provider.name).apply()
 }

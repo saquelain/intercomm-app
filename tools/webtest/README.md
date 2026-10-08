@@ -12,6 +12,8 @@ mute, a fake signal drop with `goOffline()` / `goOnline()`). GPS is faked too: `
 - `more.test.js` (three riders): talk to one rider (hold in the sheet, hold to reply, hold a rider's row),
   shared destination (search, pasted maps link, arrival, clear), break reminder (clock moved forward), home
   safe (card, leave dialog, later check-in under `~home`), and rides locked with a group key from the link.
+- `gmap.test.js`: the Group map on Google Maps (Google's real script in keyless mode, served a stand-in key),
+  long press, tap a rider, dark map, switching to OpenStreetMap in Settings, and a refused key falling back.
 
 Each prints `PASS` / `FAIL` lines and ends with "No page errors". Screenshots go to `out/`.
 
@@ -23,6 +25,7 @@ mkdir -p tools/webtest/vendor && cd tools/webtest/vendor && \
 node tools/webtest/rides.test.js
 node tools/webtest/features.test.js
 node tools/webtest/more.test.js
+node tools/webtest/gmap.test.js
 ```
 
 In the Claude cloud container Playwright lives at `/opt/node22/lib/node_modules/playwright` (set
