@@ -568,14 +568,32 @@ private fun TripRow(trip: TripState) {
         return
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        TripTile(trip.speedKmh?.let { "${it.roundToInt()}" } ?: "–", "km/h", "Speed", Modifier.weight(1f))
-        TripTile(String.format(Locale.US, "%.1f", trip.distanceM / 1000), "km", "Distance", Modifier.weight(1f))
-        TripTile(time, "h", "Riding", Modifier.weight(1f))
+        TripTile(trip.speedKmh?.let { "${it.roundToInt()}" } ?: "–", "km/h", "Speed", Modifier.weight(1f), R.drawable.ms_speed)
+        TripTile(String.format(Locale.US, "%.1f", trip.distanceM / 1000), "km", "Distance", Modifier.weight(1f), R.drawable.ms_route)
+        TripTile(time, "h", "Riding", Modifier.weight(1f), R.drawable.ms_schedule)
     }
 }
 
 @Composable
-private fun TripTile(value: String, unit: String, label: String, modifier: Modifier) {
+private fun TripTile(value: String, unit: String, label: String, modifier: Modifier, icon: Int = R.drawable.ms_speed) {
+    if (LocalLook.current == UiLook.GLASS) {
+        // Glass: icon on top, a big number, the label underneath.
+        Column(
+            modifier
+                .frost(RoundedCornerShape(23.dp), glow = false)
+                .padding(horizontal = 12.dp, vertical = 14.dp),
+        ) {
+            Ico(icon, 20.dp, GlassTokens.StatIcon)
+            Spacer(Modifier.height(6.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(value, style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, letterSpacing = 0.sp), maxLines = 1)
+                Spacer(Modifier.width(3.dp))
+                Text(unit, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(bottom = 4.dp))
+            }
+            Text(label, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, color = GlassTokens.Muted))
+        }
+        return
+    }
     Column(
         modifier
             .glass(RoundedCornerShape(18.dp), fillAlpha = 0.06f, rimAlpha = 0.18f)
@@ -623,25 +641,30 @@ private fun Dock(
     onLeave: () -> Unit,
     onShare: () -> Unit,
 ) {
+    val glassLook = LocalLook.current == UiLook.GLASS
     Row(
         Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
-            .glass(RoundedCornerShape(36.dp), fillAlpha = 0.10f)
-            .padding(horizontal = 18.dp, vertical = 14.dp),
+            .then(if (glassLook) Modifier.frost(RoundedCornerShape(30.dp)) else Modifier.glass(RoundedCornerShape(36.dp), fillAlpha = 0.10f))
+            .padding(horizontal = 18.dp, vertical = if (glassLook) 18.dp else 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        DockSide(R.drawable.ms_logout, "Leave", Palette.Stop, onLeave)
+        DockSide(R.drawable.ms_logout, "Leave", Palette.Stop, onLeave, if (glassLook) GlassTokens.Leave else null)
         if (pushToTalk) TalkButton(talking, latched, muted) else MicButton(muted, speaking, filterStatus)
-        DockSide(R.drawable.ms_share, "Share", Color.White, onShare)
+        DockSide(R.drawable.ms_share, "Share", Color.White, onShare, if (glassLook) GlassTokens.Share else null)
     }
 }
 
 @Composable
-private fun DockSide(icon: Int, label: String, tint: Color, onClick: () -> Unit) {
+private fun DockSide(icon: Int, label: String, tint: Color, onClick: () -> Unit, glassBrush: Brush? = null) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        GlassIconButton(icon, label, size = 56.dp, tint = tint, onClick = onClick)
+        if (glassBrush != null) {
+            GlassIconButton(icon, label, size = 64.dp, iconSize = 28.dp, brush = glassBrush, onClick = onClick)
+        } else {
+            GlassIconButton(icon, label, size = 56.dp, tint = tint, onClick = onClick)
+        }
         Spacer(Modifier.height(6.dp))
         Text(label, style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
     }
@@ -650,15 +673,35 @@ private fun DockSide(icon: Int, label: String, tint: Color, onClick: () -> Unit)
 @Composable
 private fun MicButton(muted: Boolean, speaking: Boolean, filterStatus: GateStatus?) {
     val pulse by animateFloatAsState(if (speaking && !muted) 1.06f else 1f, label = "pulse")
+    val glassLook = LocalLook.current == UiLook.GLASS
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier
                 .scale(pulse)
-                .size(96.dp)
-                .border(3.dp, Color.White.copy(alpha = if (speaking && !muted) 0.7f else 0.2f), CircleShape)
-                .padding(6.dp)
+                .size(if (glassLook) 100.dp else 96.dp)
+                .then(
+                    if (glassLook) {
+                        // Glass: teal with a soft glowing ring; grey when the mic is off.
+                        Modifier
+                            .then(if (muted) Modifier else Modifier.glow(GlassTokens.MicGlow, 30.dp, CircleShape))
+                            .border(7.dp, if (muted) Color.White.copy(alpha = 0.13f) else Color(0x444DFDE9), CircleShape)
+                            .padding(7.dp)
+                            .border(5.dp, Color.White.copy(alpha = 0.4f), CircleShape)
+                    } else {
+                        Modifier
+                            .border(3.dp, Color.White.copy(alpha = if (speaking && !muted) 0.7f else 0.2f), CircleShape)
+                            .padding(6.dp)
+                    },
+                )
                 .clip(CircleShape)
-                .background(if (muted) Palette.StopGradient else Palette.GoGradient)
+                .background(
+                    when {
+                        glassLook && muted -> GlassTokens.MicOff
+                        glassLook -> GlassTokens.MicOn
+                        muted -> Palette.StopGradient
+                        else -> Palette.GoGradient
+                    },
+                )
                 .clickable(onClick = RideManager::toggleMute),
             contentAlignment = Alignment.Center,
         ) {
@@ -669,8 +712,8 @@ private fun MicButton(muted: Boolean, speaking: Boolean, filterStatus: GateStatu
         val (label, color) = when {
             muted -> "Mic off · tap to talk" to Palette.Stop
             filterStatus == GateStatus.NOISE -> "Mic on · wind blocked" to Palette.Amber
-            filterStatus == GateStatus.VOICE -> "Mic on · sending" to Palette.Go
-            else -> "Mic on" to Palette.Go
+            filterStatus == GateStatus.VOICE -> "Mic on · sending" to if (glassLook) GlassTokens.MicLabel else Palette.Go
+            else -> "Mic on" to if (glassLook) GlassTokens.MicLabel else Palette.Go
         }
         Text(label, style = MaterialTheme.typography.labelSmall, color = color)
     }
@@ -684,15 +727,34 @@ private fun MicButton(muted: Boolean, speaking: Boolean, filterStatus: GateStatu
 private fun TalkButton(talking: Boolean, latched: Boolean, muted: Boolean) {
     val haptics = LocalHapticFeedback.current
     val grow by animateFloatAsState(if (talking) 1.08f else 1f, label = "grow")
+    val glassLook = LocalLook.current == UiLook.GLASS
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier
                 .scale(grow)
-                .size(96.dp)
-                .border(3.dp, Color.White.copy(alpha = if (talking) 0.8f else 0.25f), CircleShape)
-                .padding(6.dp)
+                .size(if (glassLook) 100.dp else 96.dp)
+                .then(
+                    if (glassLook) {
+                        Modifier
+                            .then(if (talking) Modifier.glow(GlassTokens.MicGlow, 30.dp, CircleShape) else Modifier)
+                            .border(7.dp, if (talking) Color(0x444DFDE9) else Color.White.copy(alpha = 0.13f), CircleShape)
+                            .padding(7.dp)
+                            .border(5.dp, Color.White.copy(alpha = 0.4f), CircleShape)
+                    } else {
+                        Modifier
+                            .border(3.dp, Color.White.copy(alpha = if (talking) 0.8f else 0.25f), CircleShape)
+                            .padding(6.dp)
+                    },
+                )
                 .clip(CircleShape)
-                .background(if (talking) Palette.GoGradient else Brush.linearGradient(listOf(Color(0xFF3A3F5C), Color(0xFF23263B))))
+                .background(
+                    when {
+                        glassLook && talking -> GlassTokens.MicOn
+                        glassLook -> GlassTokens.MicOff
+                        talking -> Palette.GoGradient
+                        else -> Brush.linearGradient(listOf(Color(0xFF3A3F5C), Color(0xFF23263B)))
+                    },
+                )
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onPress = {

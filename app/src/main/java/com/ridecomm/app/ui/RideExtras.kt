@@ -61,7 +61,11 @@ fun DestinationCard(state: DestinationState, onPick: () -> Unit, onClear: () -> 
     val context = LocalContext.current
     val d = state.destination
     if (d == null) {
-        GlassButton("Where are we heading?", R.drawable.ms_sports_score, Modifier.fillMaxWidth(), height = 52.dp, onClick = onPick)
+        if (LocalLook.current == UiLook.GLASS) {
+            ActionRow(R.drawable.ms_sports_score, "Where are we heading?", onClick = onPick)
+        } else {
+            GlassButton("Where are we heading?", R.drawable.ms_sports_score, Modifier.fillMaxWidth(), height = 52.dp, onClick = onPick)
+        }
         return
     }
     GlassCard(tint = DestinationColor, fillAlpha = 0.12f) {
@@ -181,7 +185,11 @@ fun BreakCard(due: BreakDue, onAsk: () -> Unit, onNotNow: () -> Unit) {
 fun HomeSafeCard(state: HomeSafeState, riders: List<Rider>, onImHome: () -> Unit, onLeave: () -> Unit) {
     val anyone = state.meHome || state.home.isNotEmpty()
     if (!anyone && state.leftNotHome.isEmpty()) {
-        GlassButton("I'm home safe", R.drawable.ms_home, Modifier.fillMaxWidth(), height = 52.dp, onClick = onImHome)
+        if (LocalLook.current == UiLook.GLASS) {
+            ActionRow(R.drawable.ms_home, "I'm home safe", iconTint = Palette.Go, iconBackground = Palette.Go.copy(alpha = 0.22f), onClick = onImHome)
+        } else {
+            GlassButton("I'm home safe", R.drawable.ms_home, Modifier.fillMaxWidth(), height = 52.dp, onClick = onImHome)
+        }
         return
     }
     val homeNames = buildList {

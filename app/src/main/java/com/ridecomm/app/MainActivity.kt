@@ -23,7 +23,7 @@ import com.ridecomm.app.ride.RideStatus
 import com.ridecomm.app.ui.LookBackground
 import com.ridecomm.app.ui.LookSetting
 import com.ridecomm.app.ui.LookScope
-import com.ridecomm.app.ui.UiLook
+import com.ridecomm.app.ui.GlassSceneStyle
 import com.ridecomm.app.ui.HomeScreen
 import com.ridecomm.app.ui.RideCommTheme
 import com.ridecomm.app.ui.RideScreen
@@ -53,11 +53,10 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val look by LookSetting.current.collectAsStateWithLifecycle()
-                // Screens switch to Glass as their design is done: the home screen so far.
-                val screenLook = if (state.status == RideStatus.IDLE) look else UiLook.CLASSIC
-                LookBackground(screenLook, Modifier.nightFilter(night)) {
+                val home = state.status == RideStatus.IDLE
+                LookBackground(look, Modifier.nightFilter(night), if (home) GlassSceneStyle.HOME else GlassSceneStyle.RIDE) {
                     Box(Modifier.fillMaxSize().safeDrawingPadding()) {
-                        if (state.status == RideStatus.IDLE) LookScope(screenLook) { HomeScreen(state) } else RideScreen(state)
+                        LookScope(look) { if (home) HomeScreen(state) else RideScreen(state) }
                     }
                 }
             }

@@ -41,12 +41,14 @@ import com.ridecomm.app.sos.SosState
 @Composable
 fun SosButton(sos: SosState) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        val glassLook = LocalLook.current == UiLook.GLASS
         GlassIconButton(
             R.drawable.ms_sos,
             "SOS",
-            size = 64.dp,
+            modifier = if (glassLook) Modifier.glow(GlassTokens.SosGlow, 25.dp, CircleShape) else Modifier,
+            size = if (glassLook) 60.dp else 64.dp,
             iconSize = 34.dp,
-            brush = Palette.StopGradient,
+            brush = if (glassLook) GlassTokens.Sos else Palette.StopGradient,
             enabled = !sos.mySosActive && sos.countdown == null,
             onClick = SosManager::startCountdown,
         )

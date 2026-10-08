@@ -87,18 +87,22 @@ reminder, lock-screen emergency info, lock rides to the group (app and web toget
 
 The owner asked for a second look: **Settings → Look: Classic / Glass** (app and web). They design each
 screen with ChatGPT (a mock-up image + one HTML file) and send it; Claude turns it into the Glass version of
-that screen in the app and the web page, keeping every feature. Order agreed: 1. home screen ✅ (build #39), 2. ride screen, 3. pop-ups (Settings, rider card, votes, SOS countdown, hazard picker, destination
-search), 4. group map, 5. floating button. Mock-ups are kept in `design/glass/`.
+that screen in the app and the web page, keeping every feature. Home screen came first (build #39), then the
+ride screen; the owner then asked for Glass on **every** screen without sending more designs, so the rest
+(Settings, rider card, pop-ups, map panels) use the same style. Mock-ups: `design/glass/home.html`,
+`design/glass/ride.html`. Not Glass: overlays over other apps (floating button, speaker photos, SOS
+overlay) and notifications, which are Android views. Further screen designs can still be dropped in.
 
 How it's built:
 - App: `ui/Look.kt` has `UiLook`, `LookSetting` (saved choice), `LocalLook`, `LookScope` (Glass also switches
   the type to Inter), `GlassTokens`, `GlassScene` (background) and `Modifier.frost` / `glow`. The shared
   components in `Glass.kt` (GlassCard, PrimaryButton, GlassButton, GlassIconButton, GlassTextField,
-  SectionLabel) draw Glass when `LocalLook` is Glass. A screen opts in by being wrapped in
-  `LookScope(look)`; `MainActivity` does that for the home screen only, and the background follows. Settings
-  opened from home is forced Classic until its design arrives.
-- Web: `html.look-glass` (from `SET.look`) plus `html.in-ride` while riding; Glass CSS is scoped to
-  `html.look-glass:not(.in-ride)` so far. Lift that scope screen by screen.
+  SectionLabel, GlassDialog, and `Modifier.glass` itself) draw Glass when `LocalLook` is Glass; `ActionRow`
+  is the Glass row with an icon tile and an arrow. `MainActivity` wraps both screens in `LookScope(look)`;
+  the background is `GlassScene` with `GlassSceneStyle.HOME` or `RIDE`. Cards paint a softened copy of the
+  scene (`frostedBackdrop`) instead of a real blur; dialogs don't (separate window).
+- Web: `html.look-glass` (from `SET.look`) plus `html.in-ride` while riding (ride background); all Glass
+  CSS is under `html.look-glass`.
 
 ## Ideas not built yet (from the last "what next" list)
 

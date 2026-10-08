@@ -65,6 +65,10 @@ import com.ridecomm.app.ui.Ico
 import com.ridecomm.app.ui.Palette
 import com.ridecomm.app.ui.PrimaryButton
 import com.ridecomm.app.ui.glass
+import com.ridecomm.app.ui.ActionRow
+import com.ridecomm.app.ui.GlassMapPanel
+import com.ridecomm.app.ui.LocalLook
+import com.ridecomm.app.ui.UiLook
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
@@ -158,7 +162,7 @@ internal fun GroupMapScreen(
                 .statusBarsPadding()
                 .padding(12.dp)
                 .fillMaxWidth()
-                .background(MapPanel, RoundedCornerShape(24.dp))
+                .background(mapPanel(), RoundedCornerShape(24.dp))
                 .glass(RoundedCornerShape(24.dp), fillAlpha = 0.10f)
                 .padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -204,7 +208,7 @@ internal fun GroupMapScreen(
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.8f),
                 modifier = Modifier
-                    .background(MapPanel, RoundedCornerShape(8.dp))
+                    .background(mapPanel(), RoundedCornerShape(8.dp))
                     .padding(horizontal = 8.dp, vertical = 3.dp),
             )
             RiderChips(group, names) { lat, lon ->
@@ -214,7 +218,7 @@ internal fun GroupMapScreen(
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .background(MapPanel, RoundedCornerShape(26.dp))
+                    .background(mapPanel(), RoundedCornerShape(26.dp))
                     .glass(RoundedCornerShape(26.dp), fillAlpha = 0.10f)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -274,6 +278,9 @@ private const val STALE_MS = 45_000L
 
 /** Panels over the map are nearly opaque so street names underneath don't show through the text. */
 private val MapPanel = Color(0xE0101222)
+
+@Composable
+private fun mapPanel() = if (LocalLook.current == UiLook.GLASS) GlassMapPanel else MapPanel
 
 /** The osmdroid map with the dark tiles and the group overlay. */
 @Composable
@@ -463,6 +470,16 @@ internal fun RegroupDialog(onCancel: () -> Unit, onSet: (String) -> Unit, onDest
 internal fun GroupMapCard(group: GroupState, riderCount: Int, onOpen: () -> Unit) {
     val context = LocalContext.current
     val point = group.regroup
+    if (point == null && LocalLook.current == UiLook.GLASS) {
+        val onMap = group.positions.size + if (group.me != null) 1 else 0
+        ActionRow(
+            R.drawable.ms_map,
+            "Group map",
+            if (group.sharing) "$onMap of ${riderCount.coerceAtLeast(1)} riders on the map · set a regroup point" else "Turn on location to share yours",
+            onClick = onOpen,
+        )
+        return
+    }
     GlassCard(tint = if (point != null) Palette.Amber else Color.White, fillAlpha = if (point != null) 0.14f else 0.09f) {
         if (point != null) {
             RegroupInfo(point, group.regroupDistanceM, group.regroupRelation, riderCount)

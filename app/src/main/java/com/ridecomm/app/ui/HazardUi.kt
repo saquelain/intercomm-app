@@ -48,7 +48,11 @@ private val HazardGradient = Brush.linearGradient(listOf(Color(0xFFFF5E3A), Colo
 @Composable
 fun HazardCard(hazards: List<HazardView>, nowMs: Long, onMark: () -> Unit, onRemove: (String) -> Unit) {
     if (hazards.isEmpty()) {
-        GlassButton("Mark a road hazard", R.drawable.ms_warning, Modifier.fillMaxWidth(), height = 52.dp, onClick = onMark)
+        if (LocalLook.current == UiLook.GLASS) {
+            ActionRow(R.drawable.ms_warning, "Mark a road hazard", iconTint = Color.White, iconBackground = GlassTokens.TileOrange, onClick = onMark)
+        } else {
+            GlassButton("Mark a road hazard", R.drawable.ms_warning, Modifier.fillMaxWidth(), height = 52.dp, onClick = onMark)
+        }
         return
     }
     GlassCard(spacing = 12.dp) {

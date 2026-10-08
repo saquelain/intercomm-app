@@ -287,8 +287,7 @@ fun HomeScreen(state: RideState) {
         }
     }
 
-    // Settings keeps the Classic look until its Glass design is done.
-    if (showSettings) LookScope(UiLook.CLASSIC) {
+    if (showSettings) {
         SettingsDialog(
             onClose = { showSettings = false },
             onSaved = {
@@ -551,7 +550,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             "Look",
             when (look) {
                 UiLook.CLASSIC -> "The original RideComm look."
-                UiLook.GLASS -> "Frosted glass over a violet glow. The home screen first; the ride screen and the rest follow."
+                UiLook.GLASS -> "Frosted glass over a violet glow, on every screen."
             },
             UiLook.entries,
             look,

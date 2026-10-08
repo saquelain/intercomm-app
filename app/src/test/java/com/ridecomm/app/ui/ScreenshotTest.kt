@@ -201,9 +201,79 @@ class ScreenshotTest {
 
     // ---- Glass look ----
 
-    private fun glassShot(name: String, content: @Composable () -> Unit) = captureRoboImage("screenshots/$name.png") {
+    private fun glassShot(name: String, style: GlassSceneStyle = GlassSceneStyle.HOME, content: @Composable () -> Unit) = captureRoboImage("screenshots/$name.png") {
         RideCommTheme {
-            GlassScene { Box(Modifier.fillMaxSize().padding(top = 24.dp)) { LookScope(UiLook.GLASS) { content() } } }
+            GlassScene(style = style) { Box(Modifier.fillMaxSize().padding(top = 24.dp)) { LookScope(UiLook.GLASS) { content() } } }
+        }
+    }
+
+    private val trip0 = com.ridecomm.app.trip.TripState(active = true, startedAtMs = System.currentTimeMillis(), gps = true, speedKmh = 0f)
+
+    @Test
+    fun rideGlassLikeMockup() = glassShot("43_ride_glass", GlassSceneStyle.RIDE) {
+        RideContent(
+            ride.copy(riders = riders.take(1)), MusicState(), VoteState(), SosState(),
+            group = GroupState(enabled = true, sharing = true, me = com.ridecomm.app.group.MyFix(12.9, 77.6, null, 8f)),
+            trip = trip0,
+            hazards = com.ridecomm.app.hazard.HazardsState(enabled = true),
+            destination = com.ridecomm.app.group.DestinationState(enabled = true),
+            homeSafe = com.ridecomm.app.home.HomeSafeState(enabled = true),
+        )
+    }
+
+    @Test
+    fun rideGlassBusy() = glassShot("44_ride_glass_busy", GlassSceneStyle.RIDE) {
+        val vote = Vote("v", VoteKind.BREAK, "Amit", System.currentTimeMillis(), 4, mapOf("a" to Ballot("Amit", true), "r" to Ballot("Rahul", true)))
+        RideContent(
+            ride, MusicState(), VoteState(active = vote, activeSinceMs = System.currentTimeMillis()), SosState(), roles = roles, hazards = hazards,
+            trip = trip0.copy(speedKmh = 42f, distanceM = 18_400.0),
+            batteries = mapOf("r" to com.ridecomm.app.alerts.BatteryInfo(18, false)),
+            whisper = com.ridecomm.app.whisper.WhisperState(fromMe = com.ridecomm.app.whisper.WhisperView("a", "Amit", "me", "Saquelain"), fromMeNow = true, others = mapOf("v" to "Rahul")),
+            destination = dest,
+            breakDue = com.ridecomm.app.trip.BreakDue(2 * 60 * 60_000L + 5 * 60_000L),
+        )
+    }
+
+    @Test
+    fun rideGlassPushToTalkMuted() = glassShot("45_ride_glass_ptt", GlassSceneStyle.RIDE) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+            RideContent(ride.copy(pushToTalk = true, micMuted = false), MusicState(), VoteState(), SosState(alerts = listOf(SosAlert("r", "Rahul", 12.97, 77.59, 1_200f, now, crash = false, info = com.ridecomm.app.sos.EmergencyInfo("O+", "Allergic to penicillin", "Ammi", "+91 98450 12345")))), roles = roles)
+        }
+    }
+
+    @Test
+    fun settingsGlass() = glassShot("46_settings_glass") { SettingsDialog(onClose = {}) }
+
+    @Test
+    fun riderSheetGlass() = glassShot("47_rider_sheet_glass", GlassSceneStyle.RIDE) {
+        RiderSheet(riders[1], null, com.ridecomm.app.ride.RiderVolume(1.5f), roles, {}, {}, {}, {}, onWhisperStart = {})
+    }
+
+    @Test
+    fun hazardPickerGlass() = glassShot("48_hazard_picker_glass", GlassSceneStyle.RIDE) { HazardPicker({}, {}) }
+
+    @Test
+    fun destinationDialogGlass() = glassShot("49_destination_glass", GlassSceneStyle.RIDE) { DestinationDialog({}, {}) }
+
+    @Test
+    fun groupMapGlass() = captureRoboImage("screenshots/50_map_glass.png") {
+        RideCommTheme {
+            LookScope(UiLook.GLASS) {
+                com.ridecomm.app.ui.map.GroupMapScreen(
+                    sampleGroup, riders, emptyMap(), onClose = {}, hazards = hazards.hazards, roles = roles,
+                    destination = com.ridecomm.app.group.Destination("d", 12.7600, 77.3300, "Lonavala", "Amit", "a", 1),
+                    mapContent = mapStandIn(dark = true),
+                )
+            }
+        }
+    }
+
+    @Test
+    fun cardsGlass() = glassShot("51_cards_glass", GlassSceneStyle.RIDE) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            HomeSafeCard(com.ridecomm.app.home.HomeSafeState(enabled = true, home = mapOf("a" to "Amit"), leftNotHome = mapOf("x" to "Imran")), riders, {}, {})
+            com.ridecomm.app.ui.map.GroupMapCard(sampleGroup, 4) {}
+            MusicCard(MusicState())
         }
     }
 

@@ -182,9 +182,11 @@ between phones).
 ## Looks: Classic and Glass
 
 Settings → **Look** picks **Classic** (the original design, default) or **Glass** (frosted glass over a violet
-glow, Inter font), in the app and on the web page. Screens move to Glass one at a time as their design is
-done; the rest stay Classic until then. Done so far: the **home screen** (app) and the **join screen** (web).
-The design files live in `design/glass/`.
+glow, Inter font), in the app and on the web page, for every screen: home / join, the ride screen, Settings,
+the rider card, all pop-ups and the panels over the group map. The home and ride screens follow the owner's
+designs in `design/glass/` (each with its own background light); the rest use the same style. The things
+shown over other apps (floating button, who's-talking photos, the full-screen SOS alert) and notifications
+keep their usual look.
 
 In the app, Android can't blur what's behind a view, so a Glass card paints a softened copy of the
 background inside itself (the glowing spheres get blurred edges on Android 9+); it looks the same as a real

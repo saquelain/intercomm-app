@@ -104,6 +104,21 @@ object GlassTokens {
     val Recent = Brush.linearGradient(listOf(Color(0x4AF4A2E3), Color(0x544B92FF)))
     val Tile = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.25f), Color.White.copy(alpha = 0.05f)))
     val Divider = Brush.horizontalGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.27f), Color.Transparent))
+    // Ride screen (from the ride mock-up)
+    val Sos = Brush.linearGradient(listOf(Color(0xFFFF797C), Color(0xFFFC2488)))
+    val SosGlow = Color(0x66FF4E9D)
+    val MicOn = Brush.linearGradient(listOf(Color(0xFF17F4BC), Color(0xFF0CB5C3)))
+    val MicOff = Brush.linearGradient(listOf(Color(0xFF9C99AE), Color(0xFF56526C)))
+    val MicGlow = Color(0x8816E6CC)
+    val MicLabel = Color(0xFF20F0B4)
+    val Leave = Brush.linearGradient(listOf(Color(0x88FF689A), Color(0x77AE2E8A)))
+    val Share = Brush.linearGradient(listOf(Color(0x995B9CF9), Color(0x88303DBB)))
+    val StatIcon = Color(0xFFB9FAFF)
+    val Muted = Color(0xFFD0C7E8)
+    val TileBlue = Color(0x3827B8FF)
+    val TileBlueIcon = Color(0xFF36EAFF)
+    val TileOrange = Color(0x50FF9D4D)
+    val ConnectedDot = Color(0xFF0EE7A8)
 }
 
 val Inter = FontFamily(
@@ -188,10 +203,13 @@ fun Modifier.frost(shape: Shape, tint: Color? = null, glow: Boolean = true): Mod
     )
 
 /** Where the Glass scene is on screen, so frosted cards can show a softened copy of what's behind them. */
-class GlassSceneInfo {
+class GlassSceneInfo(val style: GlassSceneStyle) {
     var origin by mutableStateOf(Offset.Zero)
     var size by mutableStateOf(Size.Zero)
 }
+
+/** The home screen and the ride screen have slightly different light (from their mock-ups). */
+enum class GlassSceneStyle { HOME, RIDE }
 
 val LocalGlassScene = staticCompositionLocalOf<GlassSceneInfo?> { null }
 
@@ -200,13 +218,22 @@ private val SceneBase = Brush.linearGradient(
     0.55f to Color(0xFF20165F),
     1f to Color(0xFF151353),
 )
+private val RideSceneBase = Brush.linearGradient(
+    0f to Color(0xFF192B8E),
+    0.62f to Color(0xFF251253),
+    1f to Color(0xFF080D4B),
+)
 
 /**
  * Paints the Glass scene: deep indigo with blue, magenta and purple light, and four glowing spheres
  * at the edges (positions from the mock-up, which is 400 wide). [soft] blurs the spheres' edges, as
  * seen through frosted glass.
  */
-private fun DrawScope.drawGlassScene(sceneSize: Size, soft: Boolean) {
+private fun DrawScope.drawGlassScene(sceneSize: Size, soft: Boolean, style: GlassSceneStyle) {
+    if (style == GlassSceneStyle.RIDE) {
+        drawRideScene(sceneSize, soft)
+        return
+    }
     drawRect(SceneBase, size = sceneSize)
     val u = sceneSize.width / 400f
     fun light(color: Color, x: Float, y: Float, r: Float) {
@@ -245,10 +272,43 @@ private fun DrawScope.drawGlassScene(sceneSize: Size, soft: Boolean) {
     orb(400f + 170f - 240f, sceneSize.height - (220f + 120f) * u, 240f, Color(0xFF7DE9FF), Color(0xFF228AFF), 0.30f, 0.40f, null)
 }
 
+/** The ride screen's scene: blue-violet with magenta light, a pink sphere at the top right and one at the bottom left. */
+private fun DrawScope.drawRideScene(sceneSize: Size, soft: Boolean) {
+    drawRect(RideSceneBase, size = sceneSize)
+    val u = sceneSize.width / 400f
+    fun light(color: Color, x: Float, y: Float, r: Float) {
+        val center = Offset(sceneSize.width * x, sceneSize.height * y)
+        drawCircle(Brush.radialGradient(listOf(color, color.copy(alpha = 0f)), center, r * u), r * u, center)
+    }
+    light(Color(0xFF454BFA), 0.0f, 0.12f, 380f)
+    light(Color(0xFFB72AB9), 1.1f, 0.24f, 380f)
+    light(Color(0xFFB51CA8), 0.05f, 0.85f, 340f)
+    light(Color(0xFF0875F5), 1.05f, 0.90f, 380f)
+    fun orb(c: Offset, r: Float, color: Color, hx: Float, hy: Float, fade: Float, glow: Color?) {
+        if (glow != null) drawCircle(Brush.radialGradient(listOf(glow, glow.copy(alpha = 0f)), c, r * 1.5f), r * 1.5f, c)
+        val shader = Brush.radialGradient(
+            0f to color,
+            fade to color.copy(alpha = 0f),
+            center = Offset(c.x - r + 2 * r * hx, c.y - r + 2 * r * hy),
+            radius = 2 * r * kotlin.math.hypot(maxOf(hx, 1 - hx), maxOf(hy, 1 - hy)),
+        )
+        if (soft && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val paint = Paint().apply { asFrameworkPaint().maskFilter = BlurMaskFilter(24.dp.toPx(), BlurMaskFilter.Blur.NORMAL) }
+            shader.applyTo(size, paint, 1f)
+            drawIntoCanvas { it.drawCircle(c, r, paint) }
+        } else {
+            drawCircle(shader, r, c)
+        }
+    }
+    // 370 wide, top -230, right -160; 320 wide, bottom -180, left -190 (mock-up px at 400 wide).
+    orb(Offset((400f + 160f - 185f) * u, (-230f + 185f) * u), 185f * u, Color(0xFFFF66E7), 0.40f, 0.65f, 0.65f, Color(0x66E336E4))
+    orb(Offset((-190f + 160f) * u, sceneSize.height + (180f - 160f) * u), 160f * u, Color(0xFFF83AD9), 0.5f, 0.5f, 0.72f, null)
+}
+
 /** The Glass background, behind everything drawn in [content]. */
 @Composable
-fun GlassScene(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
-    val info = remember { GlassSceneInfo() }
+fun GlassScene(modifier: Modifier = Modifier, style: GlassSceneStyle = GlassSceneStyle.HOME, content: @Composable BoxScope.() -> Unit) {
+    val info = remember(style) { GlassSceneInfo(style) }
     Box(
         modifier
             .fillMaxSize()
@@ -256,7 +316,7 @@ fun GlassScene(modifier: Modifier = Modifier, content: @Composable BoxScope.() -
                 info.origin = it.positionInRoot()
                 info.size = it.size.toSize()
             }
-            .drawBehind { drawGlassScene(size, soft = false) },
+            .drawBehind { drawGlassScene(size, soft = false, style) },
     ) {
         CompositionLocalProvider(LocalGlassScene provides info) { content() }
     }
@@ -272,12 +332,53 @@ internal fun Modifier.frostedBackdrop(): Modifier = composed {
     onGloballyPositioned { at = it.positionInRoot() }
         .drawBehind {
             val shift = scene.origin - at
-            translate(shift.x, shift.y) { drawGlassScene(scene.size, soft = true) }
+            translate(shift.x, shift.y) { drawGlassScene(scene.size, soft = true, scene.style) }
         }
 }
 
 /** The app background for [look]. */
 @Composable
-fun LookBackground(look: UiLook, modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
-    if (look == UiLook.GLASS) GlassScene(modifier, content) else GlassBackground(modifier, content)
+fun LookBackground(
+    look: UiLook,
+    modifier: Modifier = Modifier,
+    style: GlassSceneStyle = GlassSceneStyle.HOME,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    if (look == UiLook.GLASS) GlassScene(modifier, style, content) else GlassBackground(modifier, content)
 }
+
+/**
+ * Any glass surface in the Glass look (chips, tiles, pills…): frosted white, tinted by [tint] in
+ * proportion to [fillAlpha] (selected chips are tinted more), with a light rim.
+ */
+internal fun Modifier.glassLookSurface(shape: Shape, tint: Color, fillAlpha: Float): Modifier {
+    val tinted = tint != Color.White
+    return this
+        .clip(shape)
+        .frostedBackdrop()
+        .background(GlassTokens.Card)
+        .then(
+            if (tinted) {
+                Modifier.background(
+                    Brush.linearGradient(listOf(tint.copy(alpha = (fillAlpha * 1.5f).coerceAtMost(0.55f)), tint.copy(alpha = fillAlpha * 0.5f))),
+                )
+            } else {
+                Modifier
+            },
+        )
+        .border(
+            1.dp,
+            if (tinted && fillAlpha >= 0.2f) {
+                Brush.linearGradient(listOf(tint.copy(alpha = 0.85f), tint.copy(alpha = 0.4f)))
+            } else {
+                Brush.linearGradient(listOf(Color.White.copy(alpha = 0.55f), Color.White.copy(alpha = 0.3f)))
+            },
+            shape,
+        )
+}
+
+/** Pop-up panel in the Glass look (from the ride mock-up's dialog): violet glass, nearly opaque. */
+val GlassDialogPanel = Brush.linearGradient(listOf(Color(0xF0463FA6), Color(0xF0622B86)))
+
+/** Panels over the map in the Glass look: violet, opaque enough to read over streets. */
+val GlassMapPanel = Color(0xE8302873)

@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -59,6 +60,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.composed
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.heightIn
+import com.ridecomm.app.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -107,7 +112,11 @@ fun Modifier.glass(
     tint: Color = Color.White,
     fillAlpha: Float = 0.09f,
     rimAlpha: Float = 0.32f,
-): Modifier = this
+): Modifier = composed {
+    if (LocalLook.current == UiLook.GLASS) glassLookSurface(shape, tint, fillAlpha) else classicGlass(shape, tint, fillAlpha, rimAlpha)
+}
+
+private fun Modifier.classicGlass(shape: Shape, tint: Color, fillAlpha: Float, rimAlpha: Float): Modifier = this
     .clip(shape)
     .background(
         Brush.linearGradient(
@@ -187,7 +196,9 @@ fun PrimaryButton(
             Ico(icon, if (glassLook) 25.dp else 24.dp, contentColor)
             Spacer(Modifier.width(if (glassLook) 12.dp else 10.dp))
         }
-        Text(text, style = MaterialTheme.typography.labelLarge, color = contentColor, maxLines = 1, softWrap = false)
+        // Long labels on narrow buttons shrink a little instead of being cut off.
+        val style = MaterialTheme.typography.labelLarge
+        Text(text, style = style, color = contentColor, maxLines = 1, softWrap = false, autoSize = TextAutoSize.StepBased(12.sp, style.fontSize))
     }
 }
 
@@ -227,13 +238,8 @@ fun GlassButton(
             Ico(icon, 22.dp, contentColor)
             Spacer(Modifier.width(if (glassLook) 10.dp else 8.dp))
         }
-        Text(
-            text,
-            style = if (glassLook) MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold) else MaterialTheme.typography.labelLarge,
-            color = contentColor,
-            maxLines = 1,
-            softWrap = false,
-        )
+        val style = if (glassLook) MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold) else MaterialTheme.typography.labelLarge
+        Text(text, style = style, color = contentColor, maxLines = 1, softWrap = false, autoSize = TextAutoSize.StepBased(12.sp, style.fontSize))
     }
 }
 
@@ -373,20 +379,68 @@ fun GlassTextField(
 @Composable
 fun GlassDialog(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     val night by NightMode.active.collectAsState()
+    val glassLook = LocalLook.current == UiLook.GLASS
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Column(
-            Modifier
-                .padding(20.dp)
-                .nightFilter(night)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .clip(CardShape)
-                .background(Brush.linearGradient(listOf(Color(0xF21B1F33), Color(0xF2120F26))))
-                .border(1.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.3f), Color.White.copy(alpha = 0.05f))), CardShape)
-                .padding(22.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            content = content,
-        )
+        // A dialog is its own window: the scene behind can't line up with it, so no softened copy inside.
+        CompositionLocalProvider(LocalGlassScene provides null) {
+            Column(
+                Modifier
+                    .padding(20.dp)
+                    .nightFilter(night)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .clip(CardShape)
+                    .background(if (glassLook) GlassDialogPanel else Brush.linearGradient(listOf(Color(0xF21B1F33), Color(0xF2120F26))))
+                    .border(
+                        1.dp,
+                        if (glassLook) {
+                            Brush.linearGradient(listOf(Color.White.copy(alpha = 0.55f), Color.White.copy(alpha = 0.3f)))
+                        } else {
+                            Brush.linearGradient(listOf(Color.White.copy(alpha = 0.3f), Color.White.copy(alpha = 0.05f)))
+                        },
+                        CardShape,
+                    )
+                    .padding(22.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                content = content,
+            )
+        }
+    }
+}
+
+/**
+ * Glass look: a whole-width row to open something ("Where are we heading?", "Mark a road hazard"),
+ * with a coloured icon tile and an arrow, from the ride mock-up.
+ */
+@Composable
+fun ActionRow(
+    @DrawableRes icon: Int,
+    title: String,
+    subtitle: String? = null,
+    iconTint: Color = GlassTokens.TileBlueIcon,
+    iconBackground: Color = GlassTokens.TileBlue,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(28.dp)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 76.dp)
+            .frost(shape, glow = false)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(49.dp).clip(RoundedCornerShape(18.dp)).background(iconBackground), contentAlignment = Alignment.Center) {
+            Ico(icon, 24.dp, iconTint)
+        }
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), maxLines = 1)
+            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, color = GlassTokens.Muted), maxLines = 2)
+        }
+        Spacer(Modifier.width(10.dp))
+        Ico(R.drawable.ms_arrow_forward, 24.dp, Color.White)
     }
 }
 

@@ -217,48 +217,120 @@
   #nightRed { background: #FF2A1A; mix-blend-mode: multiply; z-index: 2147483647; }
 
 
-  /* ---- Glass look (Settings → Look): the join screen so far; the ride screen stays Classic until its design is done ---- */
+  /* ---- Glass look (Settings → Look): every screen. Join screen from design/glass/home.html, ride screen from ride.html ---- */
   .orbs { display: none; }
-  html.look-glass:not(.in-ride) body {
+  html.look-glass body {
     font-family: Inter, system-ui, sans-serif;
     background: radial-gradient(ellipse at 2% 13%, #5278ff 0%, transparent 37%), radial-gradient(ellipse at 95% 27%, #bb3cda 0%, transparent 36%),
       radial-gradient(ellipse at 15% 84%, #9d27cb 0%, transparent 40%), radial-gradient(ellipse at 100% 88%, #1266e7 0%, transparent 40%),
       linear-gradient(145deg, #2c257f, #20165f 55%, #151353);
     background-attachment: fixed;
   }
-  html.look-glass:not(.in-ride) .glow { display: none; }
-  html.look-glass:not(.in-ride) .orbs { display: block; }
+  html.look-glass .glow { display: none; }
+  html.look-glass .orbs { display: block; }
+  html.look-glass.in-ride body {
+    background: radial-gradient(ellipse at 0 12%, #454bfa 0, transparent 44%), radial-gradient(ellipse at 110% 24%, #b72ab9 0, transparent 45%),
+      radial-gradient(ellipse at 5% 85%, #b51ca8 0, transparent 40%), radial-gradient(ellipse at 105% 90%, #0875f5 0, transparent 44%),
+      linear-gradient(145deg, #192b8e, #251253 62%, #080d4b);
+    background-attachment: fixed;
+  }
+  html.look-glass.in-ride .orbs .o1, html.look-glass.in-ride .orbs .o3, html.look-glass.in-ride .orbs .o4 { display: none; }
+  html.look-glass.in-ride .orbs .o2 { width: 370px; height: 370px; top: -230px; right: -160px; background: radial-gradient(circle at 40% 65%, #ff66e7, transparent 65%); box-shadow: 0 0 120px #e336e466; }
   .orbs i { position: fixed; z-index: 0; border-radius: 50%; pointer-events: none; }
   .orbs .o1 { width: 390px; height: 390px; top: -220px; left: -130px; background: radial-gradient(circle at 65% 70%, #9b9eff, #6a61ff 58%, transparent 73%); box-shadow: 0 0 90px #a278ff88; }
   .orbs .o2 { width: 340px; height: 340px; right: -230px; top: 270px; background: radial-gradient(circle at 30% 45%, #ff7ff0, #d936d7 65%, transparent 75%); box-shadow: 0 0 90px #ef61ee77; }
   .orbs .o3 { width: 280px; height: 280px; left: -170px; bottom: 90px; background: radial-gradient(circle at 70% 35%, #f983e3, #a927c6 60%, transparent 73%); }
   .orbs .o4 { width: 240px; height: 240px; right: -170px; bottom: 220px; background: radial-gradient(circle at 30% 40%, #7de9ff, #228aff 65%, transparent 76%); }
-  html.look-glass:not(.in-ride) #join input, html.look-glass:not(.in-ride) #join button { font-family: Inter, system-ui, sans-serif; }
-  html.look-glass:not(.in-ride) #join .joincard { background: none; border: 0; padding: 0; margin-top: 8px; backdrop-filter: none; -webkit-backdrop-filter: none; animation: none; }
-  html.look-glass:not(.in-ride) .joinhead { gap: 14px; margin: 8px 3px 25px; }
-  html.look-glass:not(.in-ride) .joinhead .logo { width: 68px; height: 68px; border-radius: 23px; border: 1.5px solid #ffd6f6b8;
+  html.look-glass #join input, html.look-glass #join button { font-family: Inter, system-ui, sans-serif; }
+  html.look-glass #join .joincard { background: none; border: 0; padding: 0; margin-top: 8px; backdrop-filter: none; -webkit-backdrop-filter: none; animation: none; }
+  html.look-glass .joinhead { gap: 14px; margin: 8px 3px 25px; }
+  html.look-glass .joinhead .logo { width: 68px; height: 68px; border-radius: 23px; border: 1.5px solid #ffd6f6b8;
     background: linear-gradient(135deg, #ffbc3d, #ff5d5f 55%, #f22ebc); box-shadow: 0 8px 30px #ff43c655, inset 0 1px 2px #ffffff90; }
-  html.look-glass:not(.in-ride) .joinhead .logo svg { width: 39px !important; height: 39px !important; }
-  html.look-glass:not(.in-ride) .joinhead h1 { white-space: nowrap; font-size: clamp(22px, 7vw, 32px); letter-spacing: -1.4px; font-weight: 800; margin: 0 0 4px; }
-  html.look-glass:not(.in-ride) .joinhead p { font-size: 13px; color: #d2c9ff; font-weight: 600; margin: 0; }
-  html.look-glass:not(.in-ride) #join .iconbtn { width: 53px; height: 53px; border: 1px solid #ffffff70; background: linear-gradient(135deg, #ffffff40, #ffffff10);
+  html.look-glass .joinhead .logo svg { width: 39px !important; height: 39px !important; }
+  html.look-glass .joinhead h1 { white-space: nowrap; font-size: clamp(22px, 7vw, 32px); letter-spacing: -1.4px; font-weight: 800; margin: 0 0 4px; }
+  html.look-glass .joinhead p { font-size: 13px; color: #d2c9ff; font-weight: 600; margin: 0; }
+  html.look-glass #join .iconbtn { width: 53px; height: 53px; border: 1px solid #ffffff70; background: linear-gradient(135deg, #ffffff40, #ffffff10);
     box-shadow: inset 0 1px 2px #ffffff45, 0 5px 22px #26177e33; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
-  html.look-glass:not(.in-ride) .joinbody, html.look-glass:not(.in-ride) #checkIn .card {
+  html.look-glass .joinbody, html.look-glass #checkIn .card {
     border: 1.4px solid #ffffff7b; border-radius: 30px; background: linear-gradient(125deg, #ffffff3e, #ffffff12 55%, #ffffff22);
     box-shadow: inset 0 1px 2px #ffffff70, 0 13px 40px #130e5d3d, 0 0 20px #d761ff25;
     backdrop-filter: blur(24px) saturate(135%); -webkit-backdrop-filter: blur(24px) saturate(135%); }
-  html.look-glass:not(.in-ride) .joinbody { padding: 22px 20px 20px; }
-  html.look-glass:not(.in-ride) .joinbody .field:first-child { margin-top: 0; }
-  html.look-glass:not(.in-ride) #join .label { font-size: 12px; font-weight: 700; letter-spacing: 1.6px; color: #d3c9fa; }
-  html.look-glass:not(.in-ride) #join input { height: 64px; border-radius: 23px; border: 1px solid #ffffff88; margin-top: 12px;
+  html.look-glass .joinbody { padding: 22px 20px 20px; }
+  html.look-glass .joinbody .field:first-child { margin-top: 0; }
+  html.look-glass #join .label { font-size: 12px; font-weight: 700; letter-spacing: 1.6px; color: #d3c9fa; }
+  html.look-glass #join input { height: 64px; border-radius: 23px; border: 1px solid #ffffff88; margin-top: 12px;
     background: linear-gradient(110deg, #ffffff43, #ffffff15); box-shadow: inset 0 2px 5px #ffffff25; font-weight: 700; }
-  html.look-glass:not(.in-ride) #join input.code { height: 76px; font-size: clamp(20px, 6vw, 26px); font-weight: 800; letter-spacing: 5px; }
-  html.look-glass:not(.in-ride) #join input::placeholder { color: #ffffffa0; }
-  html.look-glass:not(.in-ride) #joinBtn { min-height: 65px; border: 1.5px solid #ffbdf0; font-size: 17px; font-weight: 800;
+  html.look-glass #join input.code { height: 76px; font-size: clamp(20px, 6vw, 26px); font-weight: 800; letter-spacing: 5px; }
+  html.look-glass #join input::placeholder { color: #ffffffa0; }
+  html.look-glass #joinBtn { min-height: 65px; border: 1.5px solid #ffbdf0; font-size: 17px; font-weight: 800;
     background: linear-gradient(105deg, #ffb72d, #ff665a 48%, #f326a9); box-shadow: 0 0 20px #ff64cb8a, inset 0 1px 2px #ffffff90; }
-  html.look-glass:not(.in-ride) #join .error { color: #ffb3c1; font-weight: 600; }
-  html.look-glass:not(.in-ride) #checkIn .card { border-color: rgba(52,232,158,.7); background: linear-gradient(125deg, #34e89e45, #ffffff12 55%, #34e89e22); }
-  html.look-glass:not(.in-ride) #join .note { color: #d8d0fbcc; margin: 18px 6px 0; }
+  html.look-glass #join .error { color: #ffb3c1; font-weight: 600; }
+  html.look-glass #checkIn .card { border-color: rgba(52,232,158,.7); background: linear-gradient(125deg, #34e89e45, #ffffff12 55%, #34e89e22); }
+  html.look-glass #join .note { color: #d8d0fbcc; margin: 18px 6px 0; }
+
+  /* Glass: the ride screen, pop-ups and map (from the ride design) */
+  html.look-glass button, html.look-glass input { font-family: Inter, system-ui, sans-serif; }
+  html.look-glass #ride .card, html.look-glass .sheet-in .card {
+    border: 1px solid #ffffff69; border-radius: 28px; background: linear-gradient(135deg, #ffffff36, #ffffff0c 62%, #a4d7ff24);
+    box-shadow: inset 0 1px #ffffff50, 0 12px 28px #090b4c35; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  html.look-glass #ride .card.alert { border-color: rgba(255,120,150,.8); background: linear-gradient(135deg, #ff4d6d66, #ff4d6d22 62%, #ff7ac333); }
+  html.look-glass #ride .card.dest { border-color: rgba(52,232,158,.7); background: linear-gradient(135deg, #34e89e40, #ffffff0c 62%, #34e89e22); }
+  html.look-glass #ride .card.brk { border-color: rgba(255,201,60,.75); background: linear-gradient(135deg, #ffc93c45, #ffffff0c 62%, #ffc93c22); }
+  html.look-glass #ride .card.home { border-color: rgba(52,232,158,.6); }
+  html.look-glass #ride .label, html.look-glass .sheet-in .label, html.look-glass .mappanel .label { font-size: 12px; font-weight: 700; letter-spacing: 2px; color: #c8c3f9; }
+  html.look-glass .code-big { font-size: clamp(34px, 10vw, 48px); font-weight: 800; letter-spacing: 5px; }
+  html.look-glass #ride .pill { padding: 12px 16px; margin-top: 18px; font-size: 13px; font-weight: 600; border: 1px solid #ffffff69;
+    background: linear-gradient(135deg, #ffffff36, #ffffff0c 62%, #a4d7ff24); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  html.look-glass #statusDot { box-shadow: 0 0 14px currentColor; }
+  html.look-glass .rsub, html.look-glass #ride p, html.look-glass .sheet-in p, html.look-glass .setting .d { color: #d0c7e8; }
+  html.look-glass .rsub.talking { color: #20f0b4; } html.look-glass .rsub.call, html.look-glass .rsub.ahead { color: var(--amber); } html.look-glass .rsub.whisper { color: #b9a8ff; }
+  html.look-glass .iconbtn, html.look-glass .x { border: 1px solid #ffffff70; background: linear-gradient(135deg, #ffffff40, #ffffff10);
+    box-shadow: inset 0 1px 2px #ffffff45; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+  html.look-glass .sos-btn { width: 60px; height: 60px; font-size: 17px; font-weight: 900; border: 1px solid #ffb7cb;
+    background: linear-gradient(140deg, #ff797c, #fc2488); box-shadow: 0 0 25px #ff4e9d66; }
+  html.look-glass .btn { border-color: #ffffff75; background: linear-gradient(105deg, #e8a6e34d, #4b8ffb50); box-shadow: inset 0 1px 2px #ffffff55; font-weight: 700; }
+  html.look-glass .btn.primary { border: 1.5px solid #ffbdf0; background: linear-gradient(105deg, #ffb72d, #ff665a 48%, #f326a9); box-shadow: 0 0 20px #ff64cb8a, inset 0 1px 2px #ffffff90; font-weight: 800; }
+  html.look-glass .btn.go { border-color: #b8ffe4; box-shadow: 0 0 18px #16e6cc66; }
+  html.look-glass .btn.stop { border-color: #ffb7cb; box-shadow: 0 0 18px #ff4e9d55; }
+  html.look-glass .tile { border-radius: 24px; border: 1px solid #ffffff67; background: linear-gradient(145deg, #ffffff40, #ffffff0c);
+    box-shadow: inset 0 1px 2px #ffffff58; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+  /* Rows that open something: "Where are we heading?", "Mark a road hazard", "I'm home safe" */
+  html.look-glass #ride [data-open-dest].btn, html.look-glass #ride [data-open-hazards].btn:not(.card *), html.look-glass #ride #homeBtn:not(.card *) {
+    justify-content: flex-start; text-align: left; min-height: 76px; border-radius: 28px; padding: 14px 20px; gap: 16px; font-size: 18px;
+    border: 1px solid #ffffff69; background: linear-gradient(135deg, #ffffff36, #ffffff0c 62%, #a4d7ff24); box-shadow: inset 0 1px #ffffff50, 0 12px 28px #090b4c35;
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  html.look-glass #ride [data-open-dest].btn svg, html.look-glass #ride [data-open-hazards].btn:not(.card *) svg, html.look-glass #ride #homeBtn:not(.card *) svg {
+    width: 49px; height: 49px; padding: 12px; border-radius: 18px; background: #27b8ff38; color: #36eaff; }
+  html.look-glass #ride [data-open-hazards].btn:not(.card *) svg { background: #ff9d4d50; color: #fff; }
+  html.look-glass #ride #homeBtn:not(.card *) svg { background: #34e89e38; color: #34e89e; }
+  html.look-glass #ride [data-open-dest].btn::after, html.look-glass #ride [data-open-hazards].btn:not(.card *)::after, html.look-glass #ride #homeBtn:not(.card *)::after {
+    content: '→'; margin-left: auto; font-size: 26px; font-weight: 300; }
+  html.look-glass #destCard .row3 [data-open-dest].btn { justify-content: center; min-height: 54px; padding: 0; font-size: 18px; }
+  html.look-glass #destCard .row3 [data-open-dest].btn::after { content: none; }
+  html.look-glass #destCard .row3 [data-open-dest].btn svg { width: 24px; height: 24px; padding: 0; background: none; color: inherit; }
+  /* Bottom bar and mic */
+  html.look-glass .dock-in { border-radius: 30px; padding: 18px; border: 1px solid #ffffff69;
+    /* Cards scroll underneath: a darker base keeps the bar easy to read. */
+    background: linear-gradient(135deg, #ffffff36, #ffffff0c 62%, #a4d7ff24), #2a2070d9; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    box-shadow: inset 0 1px #ffffff50, 0 12px 28px #090b4c35; }
+  html.look-glass .side .circ { width: 64px; height: 64px; border: 1px solid #ffffff69; color: #fff !important; }
+  html.look-glass #leaveBtn .circ { background: linear-gradient(145deg, #ff689a88, #ae2e8a77); }
+  html.look-glass #shareBtn .circ { background: linear-gradient(145deg, #5b9cf999, #303dbb88); }
+  html.look-glass .mic { width: 100px; height: 100px; border: 5px solid #ffffff65; background: linear-gradient(140deg, #17f4bc, #0cb5c3);
+    box-shadow: 0 0 0 7px #4dfde944, 0 0 30px #16e6cc88, 0 0 calc(var(--lvl) * 40px) #16e6cc; }
+  html.look-glass .mic.off, html.look-glass .mic.ptt { background: linear-gradient(145deg, #9c99ae, #56526c); box-shadow: 0 0 0 7px #ffffff22; }
+  html.look-glass .mic.ptt.talking { background: linear-gradient(140deg, #17f4bc, #0cb5c3); box-shadow: 0 0 0 7px #4dfde944, 0 0 30px #16e6cc88; }
+  html.look-glass .miclabel { color: #20f0b4; } html.look-glass .miclabel.off { color: var(--stop); } html.look-glass .miclabel.idle { color: #d0c7e8; }
+  /* Pop-ups: violet glass panels */
+  html.look-glass .sheet-in { background: linear-gradient(135deg, #463fa6f0, #622b86f0); border: 1px solid #ffffff8c; box-shadow: 0 25px 70px #0008; }
+  html.look-glass .sheet-in input { border-radius: 18px; border-color: #ffffff88; background: linear-gradient(110deg, #ffffff43, #ffffff15); }
+  html.look-glass .setting { border-top-color: #ffffff22; }
+  html.look-glass .seg button, html.look-glass .lchips button { border-color: #ffffff60; background: #ffffff1c; color: #eee5ff; }
+  html.look-glass .seg button.sel, html.look-glass .lchips button.sel { background: linear-gradient(105deg, #ffb72dcc, #f326a9cc); color: #fff; border-color: #ffbdf0; }
+  html.look-glass .place { border-color: #ffffff60; background: #ffffff1c; }
+  html.look-glass .banner { background: linear-gradient(135deg, #463fa6f2, #622b86f2); border-color: #ffffff8c; }
+  /* Map */
+  html.look-glass .mapbar, html.look-glass .mappanel .box, html.look-glass .chip { background: #302873e8; border-color: #ffffff69; }
 
   /* Talk to one rider (violet, never green like talking to everyone) */
   .wbar { position: fixed; left: 16px; right: 16px; z-index: 6; bottom: calc(150px + env(safe-area-inset-bottom)); max-width: 488px; margin: 0 auto;
@@ -550,7 +622,7 @@
   const CHOICES = [
     ['look', 'Look', [['classic', 'Classic'], ['glass', 'Glass']], {
       classic: 'The original RideComm look.',
-      glass: 'Frosted glass over a violet glow. The join screen first; the ride screen and the rest follow.' }],
+      glass: 'Frosted glass over a violet glow, on every screen.' }],
     ['talk', 'Talk mode', [['open', 'Open mic'], ['ptt', 'Push to talk']], {
       open: 'Just talk: your mic is always on.',
       ptt: 'Silent until you hold the mic button. Tap it once to talk hands-free, tap again to stop.' }],
