@@ -551,6 +551,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             when (look) {
                 UiLook.CLASSIC -> "The original RideComm look."
                 UiLook.GLASS -> "Frosted glass over a violet glow, on every screen."
+                UiLook.NEU -> "Light \"neumorphism\": soft raised cards and buttons on a pale page. Easier to read in bright sun."
             },
             UiLook.entries,
             look,
@@ -821,11 +822,7 @@ internal fun SpeedAlertSetting(limitKmh: Int, onChange: (Int) -> Unit) {
                     onValueChange = { onChange(((it / 5).roundToInt() * 5)) },
                     valueRange = 30f..160f,
                     modifier = Modifier.weight(1f),
-                    colors = SliderDefaults.colors(
-                        thumbColor = Color.White,
-                        activeTrackColor = Palette.Orange,
-                        inactiveTrackColor = Color.White.copy(alpha = 0.15f),
-                    ),
+                    colors = lookSliderColors(),
                 )
                 Spacer(Modifier.width(12.dp))
                 Text("$limitKmh km/h", style = MaterialTheme.typography.titleMedium, color = Palette.Orange)
@@ -851,7 +848,7 @@ internal fun <T> OptionChips(title: String, description: String, options: List<T
                         .height(44.dp)
                         .glass(
                             RoundedCornerShape(14.dp),
-                            tint = if (selected) Palette.Orange else Color.White,
+                            tint = if (selected) Palette.Accent else Color.White,
                             fillAlpha = if (selected) 0.32f else 0.06f,
                         )
                         .clickable { onChange(option) },
@@ -1007,7 +1004,7 @@ internal fun DataSaverSetting(value: DataSaverMode, onChange: (DataSaverMode) ->
                         .height(44.dp)
                         .glass(
                             RoundedCornerShape(14.dp),
-                            tint = if (selected) Palette.Orange else Color.White,
+                            tint = if (selected) Palette.Accent else Color.White,
                             fillAlpha = if (selected) 0.32f else 0.06f,
                         )
                         .clickable { onChange(option) },
@@ -1039,7 +1036,7 @@ internal fun RideUpdatesSetting(value: UpdateEvery, onChange: (UpdateEvery) -> U
                         .height(44.dp)
                         .glass(
                             RoundedCornerShape(14.dp),
-                            tint = if (selected) Palette.Orange else Color.White,
+                            tint = if (selected) Palette.Accent else Color.White,
                             fillAlpha = if (selected) 0.32f else 0.06f,
                         )
                         .clickable { onChange(option) },
@@ -1080,10 +1077,7 @@ private fun SettingSwitch(
         Switch(
             checked = checked,
             onCheckedChange = onChange,
-            colors = SwitchDefaults.colors(
-                checkedTrackColor = Palette.Orange,
-                uncheckedTrackColor = Color.White.copy(alpha = 0.1f),
-            ),
+            colors = lookSwitchColors(),
         )
     }
 }

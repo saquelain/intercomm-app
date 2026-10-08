@@ -43,7 +43,7 @@ import com.ridecomm.app.trip.TripSpeech
 import com.ridecomm.app.ui.map.openDirections
 import kotlinx.coroutines.launch
 
-private val DestinationColor = Palette.Go
+private val DestinationColor: Color @Composable get() = Palette.Go
 
 /** Round coloured icon at the start of a card. */
 @Composable
@@ -61,8 +61,12 @@ fun DestinationCard(state: DestinationState, onPick: () -> Unit, onClear: () -> 
     val context = LocalContext.current
     val d = state.destination
     if (d == null) {
-        if (LocalLook.current == UiLook.GLASS) {
-            ActionRow(R.drawable.ms_sports_score, "Where are we heading?", onClick = onPick)
+        if (LocalLook.current != UiLook.CLASSIC) {
+            if (LocalLook.current == UiLook.NEU) {
+                ActionRow(R.drawable.ms_sports_score, "Where are we heading?", iconTint = NeuTokens.IconViolet, onClick = onPick)
+            } else {
+                ActionRow(R.drawable.ms_sports_score, "Where are we heading?", onClick = onPick)
+            }
         } else {
             GlassButton("Where are we heading?", R.drawable.ms_sports_score, Modifier.fillMaxWidth(), height = 52.dp, onClick = onPick)
         }
@@ -185,7 +189,7 @@ fun BreakCard(due: BreakDue, onAsk: () -> Unit, onNotNow: () -> Unit) {
 fun HomeSafeCard(state: HomeSafeState, riders: List<Rider>, onImHome: () -> Unit, onLeave: () -> Unit) {
     val anyone = state.meHome || state.home.isNotEmpty()
     if (!anyone && state.leftNotHome.isEmpty()) {
-        if (LocalLook.current == UiLook.GLASS) {
+        if (LocalLook.current != UiLook.CLASSIC) {
             ActionRow(R.drawable.ms_home, "I'm home safe", iconTint = Palette.Go, iconBackground = Palette.Go.copy(alpha = 0.22f), onClick = onImHome)
         } else {
             GlassButton("I'm home safe", R.drawable.ms_home, Modifier.fillMaxWidth(), height = 52.dp, onClick = onImHome)

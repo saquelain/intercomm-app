@@ -24,6 +24,8 @@ import com.ridecomm.app.ui.LookBackground
 import com.ridecomm.app.ui.LookSetting
 import com.ridecomm.app.ui.LookScope
 import com.ridecomm.app.ui.GlassSceneStyle
+import com.ridecomm.app.ui.UiLook
+import androidx.core.view.WindowCompat
 import com.ridecomm.app.ui.HomeScreen
 import com.ridecomm.app.ui.RideCommTheme
 import com.ridecomm.app.ui.RideScreen
@@ -53,6 +55,13 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val look by LookSetting.current.collectAsStateWithLifecycle()
+                // The Soft look is light: dark status bar and navigation icons.
+                LaunchedEffect(look) {
+                    WindowCompat.getInsetsController(window, window.decorView).apply {
+                        isAppearanceLightStatusBars = look == UiLook.NEU
+                        isAppearanceLightNavigationBars = look == UiLook.NEU
+                    }
+                }
                 val home = state.status == RideStatus.IDLE
                 LookBackground(look, Modifier.nightFilter(night), if (home) GlassSceneStyle.HOME else GlassSceneStyle.RIDE) {
                     Box(Modifier.fillMaxSize().safeDrawingPadding()) {

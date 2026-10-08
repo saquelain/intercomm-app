@@ -30,8 +30,8 @@ import com.ridecomm.app.ride.Rider
 import com.ridecomm.app.ride.RiderVolume
 import kotlin.math.roundToInt
 
-private val LeadColor = Palette.Orange
-private val SweepColor = Palette.Cyan
+private val LeadColor: Color @Composable get() = Palette.Orange
+private val SweepColor: Color @Composable get() = Palette.Cyan
 
 /** "LEAD" / "SWEEP" pill next to a rider's name. */
 @Composable
@@ -105,11 +105,7 @@ fun RiderSheet(
                         onValueChange = { onVolume(volume.copy(volume = (it * 10).roundToInt() / 10f, mutedForMe = false)) },
                         valueRange = RiderVolume.MIN..RiderVolume.MAX,
                         modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-                        colors = SliderDefaults.colors(
-                            thumbColor = Color.White,
-                            activeTrackColor = Palette.Orange,
-                            inactiveTrackColor = Color.White.copy(alpha = 0.15f),
-                        ),
+                        colors = lookSliderColors(),
                     )
                     Ico(R.drawable.ms_volume_up, 20.dp, Palette.TextTertiary)
                 }
@@ -124,7 +120,7 @@ fun RiderSheet(
                 Switch(
                     checked = volume.mutedForMe,
                     onCheckedChange = { onVolume(volume.copy(mutedForMe = it)) },
-                    colors = SwitchDefaults.colors(checkedTrackColor = Palette.Stop, uncheckedTrackColor = Color.White.copy(alpha = 0.1f)),
+                    colors = lookSwitchColors(Palette.Stop),
                 )
             }
         }

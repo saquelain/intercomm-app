@@ -60,8 +60,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.composed
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.foundation.layout.heightIn
 import com.ridecomm.app.R
 import androidx.compose.ui.text.font.FontWeight
@@ -72,6 +74,8 @@ val CardShape = RoundedCornerShape(28.dp)
 val PillShape = RoundedCornerShape(50)
 /** Cards in the Glass look are rounder. */
 val GlassCardShape = RoundedCornerShape(30.dp)
+/** Cards in the Soft look. */
+val NeuCardShape = RoundedCornerShape(26.dp)
 
 /**
  * The scene behind the glass: a deep night gradient with soft colour glows. The glows are what
@@ -94,10 +98,10 @@ fun GlassBackground(modifier: Modifier = Modifier, content: @Composable BoxScope
                     center,
                 )
             }
-            glow(Palette.Violet, 0.0f, 0.05f, 0.95f, 0.60f)
-            glow(Palette.Pink, 1.0f, 0.30f, 0.75f, 0.42f)
-            glow(Palette.Orange, 0.10f, 0.62f, 0.60f, 0.30f)
-            glow(Palette.Cyan, 0.95f, 0.95f, 0.75f, 0.32f)
+            glow(Palette.VioletBright, 0.0f, 0.05f, 0.95f, 0.60f)
+            glow(Palette.PinkBright, 1.0f, 0.30f, 0.75f, 0.42f)
+            glow(Palette.OrangeBright, 0.10f, 0.62f, 0.60f, 0.30f)
+            glow(Palette.CyanBright, 0.95f, 0.95f, 0.75f, 0.32f)
         }
         content()
     }
@@ -113,8 +117,28 @@ fun Modifier.glass(
     fillAlpha: Float = 0.09f,
     rimAlpha: Float = 0.32f,
 ): Modifier = composed {
-    if (LocalLook.current == UiLook.GLASS) glassLookSurface(shape, tint, fillAlpha) else classicGlass(shape, tint, fillAlpha, rimAlpha)
+    when (LocalLook.current) {
+        UiLook.GLASS -> glassLookSurface(shape, tint, fillAlpha)
+        UiLook.NEU -> neuSurface(shape, tint, fillAlpha)
+        UiLook.CLASSIC -> classicGlass(shape, tint, fillAlpha, rimAlpha)
+    }
 }
+
+/**
+ * The Soft look's version of a glass surface: raised from the page. A strongly tinted one (a
+ * selected chip) is filled with the colour, a lightly tinted one (a warning card) just takes a hint
+ * of it.
+ */
+internal fun Modifier.neuSurface(shape: Shape, tint: Color, fillAlpha: Float, depth: Dp = 4.dp): Modifier = when {
+    tint == Color.White -> neuRaised(shape, depth)
+    fillAlpha >= 0.2f -> neuRaised(shape, depth, Brush.linearGradient(listOf(tint.copy(alpha = 0.85f), tint)))
+    else -> neuRaised(shape, depth, neuTinted(tint))
+}
+
+/** The page colour with a hint of [tint], lit from the top-left. */
+internal fun neuTinted(tint: Color, amount: Float = 0.12f): Brush = Brush.linearGradient(
+    listOf(lerp(Color(0xFFF8F9FE), tint, amount), lerp(Color(0xFFE9ECF6), tint, amount)),
+)
 
 private fun Modifier.classicGlass(shape: Shape, tint: Color, fillAlpha: Float, rimAlpha: Float): Modifier = this
     .clip(shape)
@@ -138,22 +162,32 @@ fun GlassCard(
     spacing: Dp = 12.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val glassLook = LocalLook.current == UiLook.GLASS
+    val look = LocalLook.current
+    // Soft: a strongly tinted card (an SOS) is filled with its colour and takes white text.
+    val solid = look == UiLook.NEU && tint != Color.White && fillAlpha >= 0.25f
     Column(
         modifier
             .fillMaxWidth()
             .then(
-                if (glassLook) {
-                    Modifier.frost(GlassCardShape, tint = tint.takeIf { it != Color.White })
-                } else {
-                    Modifier.glass(tint = tint, fillAlpha = fillAlpha)
+                when {
+                    look == UiLook.GLASS -> Modifier.frost(GlassCardShape, tint = tint.takeIf { it != Color.White })
+                    solid -> Modifier.neuRaised(NeuCardShape, 7.dp, Brush.linearGradient(listOf(tint.copy(alpha = 0.88f), tint)))
+                    look == UiLook.NEU -> Modifier.neuRaised(NeuCardShape, 7.dp, if (tint == Color.White) NeuTokens.Surface else neuTinted(tint))
+                    else -> Modifier.glass(tint = tint, fillAlpha = fillAlpha)
                 },
             )
-            .padding(if (glassLook) maxOf(padding, 20.dp) else padding),
+            .padding(if (look != UiLook.CLASSIC) maxOf(padding, 20.dp) else padding),
         verticalArrangement = Arrangement.spacedBy(spacing),
-        content = content,
-    )
+    ) {
+        val ink = if (look == UiLook.NEU && !solid) NeuTokens.Ink else Color.White
+        CompositionLocalProvider(LocalCardInk provides ink) {
+            if (solid) MaterialTheme(colorScheme = MaterialTheme.colorScheme, typography = neuOnColorTypography) { content() } else content()
+        }
+    }
 }
+
+/** Text and icon colour drawn straight on the current card: white, or dark on a pale Soft card. */
+val LocalCardInk = compositionLocalOf { Color.White }
 
 @Composable
 fun Ico(@DrawableRes icon: Int, size: Dp = 24.dp, tint: Color = Palette.TextPrimary, description: String? = null) {
@@ -172,20 +206,30 @@ fun PrimaryButton(
     height: Dp = 62.dp,
     onClick: () -> Unit,
 ) {
-    val glassLook = LocalLook.current == UiLook.GLASS
-    // Glass: the brand action turns into the warm orange-to-pink pill with a pink glow.
+    val look = LocalLook.current
+    val glassLook = look == UiLook.GLASS
+    // Glass: the brand action turns into the warm orange-to-pink pill with a pink glow. Soft: blue.
     val brand = brush == Palette.Brand
     Row(
         modifier
             .alpha(if (enabled) 1f else 0.4f)
-            .height(if (glassLook && height == 62.dp) 65.dp else height)
-            .then(if (glassLook && enabled) Modifier.glow(if (brand) GlassTokens.ButtonGlow else Color.White.copy(alpha = 0.18f), 20.dp, PillShape) else Modifier)
-            .clip(PillShape)
-            .background(if (glassLook && brand) GlassTokens.Action else brush)
-            .border(
-                if (glassLook) 1.5.dp else 1.dp,
-                if (glassLook && brand) GlassTokens.ButtonRim else Color.White.copy(alpha = if (glassLook) 0.5f else 0.35f),
-                PillShape,
+            .height(if (look != UiLook.CLASSIC && height == 62.dp) 64.dp else height)
+            .then(
+                if (look == UiLook.NEU) {
+                    Modifier
+                        .then(if (enabled && brand) Modifier.glow(NeuTokens.BlueGlow, 18.dp, PillShape, offsetY = 6.dp) else Modifier)
+                        .neuRaised(PillShape, 5.dp, if (brand) NeuTokens.BlueAction else brush)
+                } else {
+                    Modifier
+                        .then(if (glassLook && enabled) Modifier.glow(if (brand) GlassTokens.ButtonGlow else Color.White.copy(alpha = 0.18f), 20.dp, PillShape) else Modifier)
+                        .clip(PillShape)
+                        .background(if (glassLook && brand) GlassTokens.Action else brush)
+                        .border(
+                            if (glassLook) 1.5.dp else 1.dp,
+                            if (glassLook && brand) GlassTokens.ButtonRim else Color.White.copy(alpha = if (glassLook) 0.5f else 0.35f),
+                            PillShape,
+                        )
+                },
             )
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 16.dp),
@@ -214,13 +258,15 @@ fun GlassButton(
     height: Dp = 56.dp,
     onClick: () -> Unit,
 ) {
-    val glassLook = LocalLook.current == UiLook.GLASS
+    val look = LocalLook.current
+    val glassLook = look != UiLook.CLASSIC
     Row(
         modifier
             .alpha(if (enabled) 1f else if (glassLook) 0.58f else 0.4f)
             .height(if (glassLook && height == 56.dp) 58.dp else height)
             .then(
                 when {
+                    look == UiLook.NEU -> Modifier.neuRaised(PillShape, 5.dp, if (tint == Color.White) NeuTokens.Surface else neuTinted(tint, 0.16f))
                     !glassLook -> Modifier.glass(PillShape, tint = tint, fillAlpha = if (tint == Color.White) 0.10f else 0.22f)
                     tint == Color.White -> Modifier
                         .clip(PillShape)
@@ -256,12 +302,15 @@ fun GlassIconButton(
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
+    val soft = LocalLook.current == UiLook.NEU
     Box(
         modifier
             .alpha(if (enabled) 1f else 0.4f)
             .size(size)
             .then(
-                if (brush != null) {
+                if (soft) {
+                    Modifier.neuRaised(CircleShape, if (size >= 52.dp) 6.dp else 4.dp, brush ?: NeuTokens.Surface)
+                } else if (brush != null) {
                     Modifier.clip(CircleShape).background(brush).border(1.dp, Color.White.copy(alpha = 0.35f), CircleShape)
                 } else if (LocalLook.current == UiLook.GLASS && tint == Color.White) {
                     Modifier.clip(CircleShape).background(GlassTokens.Round).border(1.dp, Color.White.copy(alpha = 0.44f), CircleShape)
@@ -271,7 +320,15 @@ fun GlassIconButton(
             )
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
-    ) { Ico(icon, iconSize, Color.White, description) }
+    ) {
+        // Soft: the icon takes the colour on a plain raised button (dark, or red for Leave…).
+        val iconColor = when {
+            !soft || brush != null -> Color.White
+            tint == Color.White -> NeuTokens.Ink
+            else -> tint
+        }
+        Ico(icon, iconSize, iconColor, description)
+    }
 }
 
 /** Icon tile with a caption underneath, for rows of quick actions. */
@@ -292,7 +349,7 @@ fun GlassTile(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Ico(icon, 28.dp, accent)
+        Ico(icon, 28.dp, if (accent == Color.White) Palette.OnSurface else accent)
         Spacer(Modifier.height(6.dp))
         Text(label, style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary, maxLines = 1)
     }
@@ -300,8 +357,12 @@ fun GlassTile(
 
 @Composable
 fun SectionLabel(text: String, modifier: Modifier = Modifier) {
-    val glassLook = LocalLook.current == UiLook.GLASS
-    Text(text.uppercase(), style = MaterialTheme.typography.labelMedium, color = if (glassLook) GlassTokens.Lavender else Palette.TextTertiary, modifier = modifier)
+    val color = when (LocalLook.current) {
+        UiLook.GLASS -> GlassTokens.Lavender
+        UiLook.NEU -> NeuTokens.InkMuted
+        UiLook.CLASSIC -> Palette.TextTertiary
+    }
+    Text(text.uppercase(), style = MaterialTheme.typography.labelMedium, color = color, modifier = modifier)
 }
 
 /** Small status capsule with a coloured dot. */
@@ -332,8 +393,9 @@ fun GlassTextField(
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     center: Boolean = false,
 ) {
-    val glassLook = LocalLook.current == UiLook.GLASS
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(if (glassLook) 12.dp else 8.dp)) {
+    val look = LocalLook.current
+    val glassLook = look == UiLook.GLASS
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(if (look != UiLook.CLASSIC) 12.dp else 8.dp)) {
         SectionLabel(label)
         val style = textStyle.copy(
             color = Palette.TextPrimary,
@@ -344,7 +406,7 @@ fun GlassTextField(
             onValueChange = onValueChange,
             singleLine = true,
             textStyle = style,
-            cursorBrush = SolidColor(Palette.Orange),
+            cursorBrush = SolidColor(if (look == UiLook.NEU) NeuTokens.Blue else Palette.Orange),
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
             modifier = Modifier.fillMaxWidth(),
@@ -353,7 +415,10 @@ fun GlassTextField(
                     Modifier
                         .fillMaxWidth()
                         .then(
-                            if (glassLook) {
+                            if (look == UiLook.NEU) {
+                                // Pressed into the page.
+                                Modifier.neuInset(RoundedCornerShape(20.dp))
+                            } else if (glassLook) {
                                 Modifier
                                     .clip(RoundedCornerShape(23.dp))
                                     .background(GlassTokens.Input)
@@ -362,7 +427,7 @@ fun GlassTextField(
                                 Modifier.glass(RoundedCornerShape(18.dp), fillAlpha = 0.06f, rimAlpha = 0.25f)
                             },
                         )
-                        .padding(PaddingValues(horizontal = 18.dp, vertical = if (glassLook) 18.dp else 16.dp)),
+                        .padding(PaddingValues(horizontal = 18.dp, vertical = if (look != UiLook.CLASSIC) 18.dp else 16.dp)),
                     contentAlignment = if (center) Alignment.Center else Alignment.CenterStart,
                 ) {
                     if (value.isEmpty() && placeholder.isNotEmpty()) {
@@ -379,7 +444,8 @@ fun GlassTextField(
 @Composable
 fun GlassDialog(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     val night by NightMode.active.collectAsState()
-    val glassLook = LocalLook.current == UiLook.GLASS
+    val look = LocalLook.current
+    val glassLook = look == UiLook.GLASS
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         // A dialog is its own window: the scene behind can't line up with it, so no softened copy inside.
         CompositionLocalProvider(LocalGlassScene provides null) {
@@ -388,18 +454,25 @@ fun GlassDialog(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Un
                     .padding(20.dp)
                     .nightFilter(night)
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .clip(CardShape)
-                    .background(if (glassLook) GlassDialogPanel else Brush.linearGradient(listOf(Color(0xF21B1F33), Color(0xF2120F26))))
-                    .border(
-                        1.dp,
-                        if (glassLook) {
-                            Brush.linearGradient(listOf(Color.White.copy(alpha = 0.55f), Color.White.copy(alpha = 0.3f)))
+                    .then(
+                        if (look == UiLook.NEU) {
+                            Modifier.neuRaised(CardShape, 8.dp, SolidColor(NeuTokens.Page))
                         } else {
-                            Brush.linearGradient(listOf(Color.White.copy(alpha = 0.3f), Color.White.copy(alpha = 0.05f)))
+                            Modifier
+                                .clip(CardShape)
+                                .background(if (glassLook) GlassDialogPanel else Brush.linearGradient(listOf(Color(0xF21B1F33), Color(0xF2120F26))))
+                                .border(
+                                    1.dp,
+                                    if (glassLook) {
+                                        Brush.linearGradient(listOf(Color.White.copy(alpha = 0.55f), Color.White.copy(alpha = 0.3f)))
+                                    } else {
+                                        Brush.linearGradient(listOf(Color.White.copy(alpha = 0.3f), Color.White.copy(alpha = 0.05f)))
+                                    },
+                                    CardShape,
+                                )
                         },
-                        CardShape,
                     )
+                    .verticalScroll(rememberScrollState())
                     .padding(22.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 content = content,
@@ -421,26 +494,42 @@ fun ActionRow(
     iconBackground: Color = GlassTokens.TileBlue,
     onClick: () -> Unit,
 ) {
+    val soft = LocalLook.current == UiLook.NEU
     val shape = RoundedCornerShape(28.dp)
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 76.dp)
-            .frost(shape, glow = false)
+            .then(if (soft) Modifier.neuRaised(shape, 6.dp) else Modifier.frost(shape, glow = false))
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(49.dp).clip(RoundedCornerShape(18.dp)).background(iconBackground), contentAlignment = Alignment.Center) {
-            Ico(icon, 24.dp, iconTint)
+        if (soft) {
+            // A raised round badge with the coloured icon, as in the Soft mock-up.
+            Box(Modifier.size(50.dp).neuRaised(CircleShape, 4.dp, neuTinted(iconTint, 0.14f)), contentAlignment = Alignment.Center) {
+                Ico(icon, 26.dp, iconTint)
+            }
+        } else {
+            Box(Modifier.size(49.dp).clip(RoundedCornerShape(18.dp)).background(iconBackground), contentAlignment = Alignment.Center) {
+                Ico(icon, 24.dp, iconTint)
+            }
         }
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), maxLines = 1)
-            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, color = GlassTokens.Muted), maxLines = 2)
+            if (subtitle != null) {
+                Text(subtitle, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, color = if (soft) NeuTokens.InkMuted else GlassTokens.Muted), maxLines = 2)
+            }
         }
         Spacer(Modifier.width(10.dp))
-        Ico(R.drawable.ms_arrow_forward, 24.dp, Color.White)
+        if (soft) {
+            Box(Modifier.size(36.dp).neuRaised(CircleShape, 3.dp), contentAlignment = Alignment.Center) {
+                Ico(R.drawable.ms_chevron_right, 22.dp, NeuTokens.InkMuted)
+            }
+        } else {
+            Ico(R.drawable.ms_arrow_forward, 24.dp, Color.White)
+        }
     }
 }
 
@@ -487,7 +576,7 @@ fun TimeLine(startMs: Long, durationMs: Long, color: Color, modifier: Modifier =
             .fillMaxWidth()
             .height(5.dp)
             .clip(PillShape)
-            .background(Color.White.copy(alpha = 0.12f)),
+            .background(if (LocalLook.current == UiLook.NEU) NeuTokens.Track else Color.White.copy(alpha = 0.12f)),
     ) {
         Box(
             Modifier

@@ -83,7 +83,8 @@ Links the owner uses:
 - `ui/RideScreen.kt` (`RideContent` takes plain state so screenshots can render any situation),
   `ui/Glass.kt` (shared glass components), `ui/Theme.kt` (`Palette`), `ui/NightFilter.kt`,
   `ui/RideExtras.kt` (destination, break, home safe cards), `ui/WhisperUi.kt`, `ui/Look.kt` (Classic / Glass
-  look: see "Glass look" in HANDOFF.md; screens opt in with `LookScope`, mock-ups in `design/glass/`).
+  look: see "Glass look" in HANDOFF.md; screens opt in with `LookScope`, mock-ups in `design/glass/`),
+  `ui/Neu.kt` (the Soft / neumorphism look; `Palette` colours depend on the look, see HANDOFF.md).
 - Features: `audio/` (wind noise gate, MicGate), `vote/`, `sos/` (SOS, SMS fallback, emergency info),
   `music/` (shared songs), `group/` (positions, map logic, regroup, lead & sweep), `ui/map/` (osmdroid
   map, MarkerPainter), `hazard/`, `trip/` (speed, distance), `alerts/` (joins, batteries, calls),

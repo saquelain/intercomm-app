@@ -67,6 +67,8 @@ import com.ridecomm.app.ui.PrimaryButton
 import com.ridecomm.app.ui.glass
 import com.ridecomm.app.ui.ActionRow
 import com.ridecomm.app.ui.GlassMapPanel
+import com.ridecomm.app.ui.GlassTokens
+import com.ridecomm.app.ui.NeuTokens
 import com.ridecomm.app.ui.LocalLook
 import com.ridecomm.app.ui.UiLook
 import org.osmdroid.util.BoundingBox
@@ -206,7 +208,7 @@ internal fun GroupMapScreen(
             Text(
                 MapSetup.ATTRIBUTION,
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.8f),
+                color = if (LocalLook.current == UiLook.NEU) NeuTokens.InkMuted else Color.White.copy(alpha = 0.8f),
                 modifier = Modifier
                     .background(mapPanel(), RoundedCornerShape(8.dp))
                     .padding(horizontal = 8.dp, vertical = 3.dp),
@@ -280,7 +282,11 @@ private const val STALE_MS = 45_000L
 private val MapPanel = Color(0xE0101222)
 
 @Composable
-private fun mapPanel() = if (LocalLook.current == UiLook.GLASS) GlassMapPanel else MapPanel
+private fun mapPanel() = when (LocalLook.current) {
+    UiLook.GLASS -> GlassMapPanel
+    UiLook.NEU -> Color(0xF2EEF0F8)
+    UiLook.CLASSIC -> MapPanel
+}
 
 /** The osmdroid map with the dark tiles and the group overlay. */
 @Composable
@@ -435,7 +441,7 @@ internal fun RegroupDialog(onCancel: () -> Unit, onSet: (String) -> Unit, onDest
                         .height(44.dp)
                         .glass(
                             RoundedCornerShape(14.dp),
-                            tint = if (selected) Palette.Orange else Color.White,
+                            tint = if (selected) Palette.Accent else Color.White,
                             fillAlpha = if (selected) 0.32f else 0.06f,
                         )
                         .clickable { label = option }
@@ -470,12 +476,13 @@ internal fun RegroupDialog(onCancel: () -> Unit, onSet: (String) -> Unit, onDest
 internal fun GroupMapCard(group: GroupState, riderCount: Int, onOpen: () -> Unit) {
     val context = LocalContext.current
     val point = group.regroup
-    if (point == null && LocalLook.current == UiLook.GLASS) {
+    if (point == null && LocalLook.current != UiLook.CLASSIC) {
         val onMap = group.positions.size + if (group.me != null) 1 else 0
         ActionRow(
             R.drawable.ms_map,
             "Group map",
             if (group.sharing) "$onMap of ${riderCount.coerceAtLeast(1)} riders on the map · set a regroup point" else "Turn on location to share yours",
+            iconTint = if (LocalLook.current == UiLook.NEU) NeuTokens.IconBlue else GlassTokens.TileBlueIcon,
             onClick = onOpen,
         )
         return

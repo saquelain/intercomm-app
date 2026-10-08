@@ -41,14 +41,22 @@ import com.ridecomm.app.sos.SosState
 @Composable
 fun SosButton(sos: SosState) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        val glassLook = LocalLook.current == UiLook.GLASS
+        val look = LocalLook.current
         GlassIconButton(
             R.drawable.ms_sos,
             "SOS",
-            modifier = if (glassLook) Modifier.glow(GlassTokens.SosGlow, 25.dp, CircleShape) else Modifier,
-            size = if (glassLook) 60.dp else 64.dp,
+            modifier = when (look) {
+                UiLook.GLASS -> Modifier.glow(GlassTokens.SosGlow, 25.dp, CircleShape)
+                UiLook.NEU -> Modifier.glow(NeuTokens.SosGlow, 24.dp, CircleShape, offsetY = 6.dp)
+                UiLook.CLASSIC -> Modifier
+            },
+            size = if (look == UiLook.CLASSIC) 64.dp else 62.dp,
             iconSize = 34.dp,
-            brush = if (glassLook) GlassTokens.Sos else Palette.StopGradient,
+            brush = when (look) {
+                UiLook.GLASS -> GlassTokens.Sos
+                UiLook.NEU -> NeuTokens.Sos
+                UiLook.CLASSIC -> Palette.StopGradient
+            },
             enabled = !sos.mySosActive && sos.countdown == null,
             onClick = SosManager::startCountdown,
         )
@@ -61,11 +69,11 @@ fun SosCards(sos: SosState) {
     if (sos.mySosActive) {
         GlassCard(tint = Palette.Stop, fillAlpha = 0.26f) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Ico(R.drawable.ms_emergency, 30.dp, Color.White)
+                Ico(R.drawable.ms_emergency, 30.dp, LocalCardInk.current)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text("Your SOS is active", style = MaterialTheme.typography.titleLarge)
-                    sos.mySosStatus?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = Color.White) }
+                    sos.mySosStatus?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = LocalCardInk.current) }
                 }
             }
             PrimaryButton("I'm OK", R.drawable.ms_check_circle, Modifier.fillMaxWidth(), brush = Palette.GoGradient, height = 64.dp, onClick = SosManager::imOk)
@@ -112,8 +120,8 @@ private fun HelperCard() {
 @Composable
 private fun InfoLine(label: String, value: String, big: Boolean = false) {
     Column {
-        Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
-        Text(value, style = if (big) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleMedium, color = Color.White)
+        Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = LocalCardInk.current.copy(alpha = 0.7f))
+        Text(value, style = if (big) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleMedium, color = LocalCardInk.current)
     }
 }
 
@@ -130,7 +138,7 @@ private fun AlertCard(alert: SosAlert) {
     val context = LocalContext.current
     GlassCard(tint = Palette.Stop, fillAlpha = 0.28f) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Ico(R.drawable.ms_sos, 34.dp, Color.White)
+            Ico(R.drawable.ms_sos, 34.dp, LocalCardInk.current)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(if (alert.crash) "${alert.name} may have crashed" else "${alert.name} needs help", style = MaterialTheme.typography.titleLarge)

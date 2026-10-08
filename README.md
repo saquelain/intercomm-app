@@ -179,10 +179,13 @@ between phones).
   unlocking the phone (blood group, allergies, who to call), put back after a restart. iPhone: use the Health
   app's Medical ID instead (web pages can't reach the lock screen).
 
-## Looks: Classic and Glass
+## Looks: Classic, Glass and Soft
 
-Settings → **Look** picks **Classic** (the original design, default) or **Glass** (frosted glass over a violet
-glow, Inter font), in the app and on the web page, for every screen: home / join, the ride screen, Settings,
+Settings → **Look** picks **Classic** (the original design, default), **Glass** (frosted glass over a violet
+glow, Inter font) or **Soft** (light neumorphism: cards and buttons raised out of a pale lavender page by a
+soft shadow, dark text, blue as the main colour; from `design/soft/`), in the app and on the web page. Soft
+uses darker greens, reds and ambers so they read on the light page, fills SOS cards solid red with white text,
+and switches the phone's status bar icons to dark. Glass covers, for every screen: home / join, the ride screen, Settings,
 the rider card, all pop-ups and the panels over the group map. The home and ride screens follow the owner's
 designs in `design/glass/` (each with its own background light); the rest use the same style. The things
 shown over other apps (floating button, who's-talking photos, the full-screen SOS alert) and notifications

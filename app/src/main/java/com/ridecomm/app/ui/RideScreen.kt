@@ -107,7 +107,7 @@ import com.ridecomm.app.home.HomeSafeState
 import com.ridecomm.app.trip.BreakDue
 import com.ridecomm.app.trip.BreakReminder
 
-private val OthersGradient = Brush.linearGradient(listOf(Palette.Violet, Palette.Cyan))
+private val OthersGradient = Brush.linearGradient(listOf(Palette.VioletBright, Palette.CyanBright))
 
 @Composable
 fun RideScreen(state: RideState) {
@@ -373,6 +373,9 @@ private fun StatusLine(state: RideState, dataUsed: Long?) {
 
 private const val DATA_REFRESH_MS = 5_000L
 
+/** Soft look: the mic button while silent. */
+private val SoftMicOff = Brush.linearGradient(listOf(Color(0xFFA7ABC4), Color(0xFF7C819E)))
+
 @Composable
 private fun RidersCard(
     riders: List<Rider>,
@@ -568,14 +571,42 @@ private fun TripRow(trip: TripState) {
         return
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        TripTile(trip.speedKmh?.let { "${it.roundToInt()}" } ?: "–", "km/h", "Speed", Modifier.weight(1f), R.drawable.ms_speed)
-        TripTile(String.format(Locale.US, "%.1f", trip.distanceM / 1000), "km", "Distance", Modifier.weight(1f), R.drawable.ms_route)
-        TripTile(time, "h", "Riding", Modifier.weight(1f), R.drawable.ms_schedule)
+        TripTile(trip.speedKmh?.let { "${it.roundToInt()}" } ?: "–", "km/h", "Speed", Modifier.weight(1f), R.drawable.ms_speed, NeuTokens.TileBlue, NeuTokens.IconBlue)
+        TripTile(String.format(Locale.US, "%.1f", trip.distanceM / 1000), "km", "Distance", Modifier.weight(1f), R.drawable.ms_route, NeuTokens.TileViolet, NeuTokens.IconViolet)
+        TripTile(time, "h", "Riding", Modifier.weight(1f), R.drawable.ms_schedule, NeuTokens.TilePeach, NeuTokens.IconOrange)
     }
 }
 
 @Composable
-private fun TripTile(value: String, unit: String, label: String, modifier: Modifier, icon: Int = R.drawable.ms_speed) {
+private fun TripTile(
+    value: String,
+    unit: String,
+    label: String,
+    modifier: Modifier,
+    icon: Int = R.drawable.ms_speed,
+    softTile: Color = NeuTokens.TileBlue,
+    softIcon: Color = NeuTokens.IconBlue,
+) {
+    if (LocalLook.current == UiLook.NEU) {
+        // Soft: a raised tile with a hint of colour, the icon in a small raised circle.
+        Column(
+            modifier
+                .neuRaised(RoundedCornerShape(24.dp), 6.dp, Brush.linearGradient(listOf(Color.White, softTile)))
+                .padding(horizontal = 14.dp, vertical = 14.dp),
+        ) {
+            Box(Modifier.size(38.dp).neuRaised(CircleShape, 3.dp, Brush.linearGradient(listOf(Color.White, softTile))), contentAlignment = Alignment.Center) {
+                Ico(icon, 20.dp, softIcon)
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(value, style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, letterSpacing = 0.sp), maxLines = 1)
+                Spacer(Modifier.width(4.dp))
+                Text(unit, style = MaterialTheme.typography.labelSmall.copy(fontSize = 14.sp), modifier = Modifier.padding(bottom = 3.dp))
+            }
+            Text(label, style = MaterialTheme.typography.bodyMedium)
+        }
+        return
+    }
     if (LocalLook.current == UiLook.GLASS) {
         // Glass: icon on top, a big number, the label underneath.
         Column(
@@ -641,19 +672,50 @@ private fun Dock(
     onLeave: () -> Unit,
     onShare: () -> Unit,
 ) {
-    val glassLook = LocalLook.current == UiLook.GLASS
+    val look = LocalLook.current
+    val glassLook = look == UiLook.GLASS
     Row(
         Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
-            .then(if (glassLook) Modifier.frost(RoundedCornerShape(30.dp)) else Modifier.glass(RoundedCornerShape(36.dp), fillAlpha = 0.10f))
-            .padding(horizontal = 18.dp, vertical = if (glassLook) 18.dp else 14.dp),
+            .then(
+                when (look) {
+                    UiLook.GLASS -> Modifier.frost(RoundedCornerShape(30.dp))
+                    UiLook.NEU -> Modifier.neuRaised(RoundedCornerShape(30.dp), 8.dp)
+                    UiLook.CLASSIC -> Modifier.glass(RoundedCornerShape(36.dp), fillAlpha = 0.10f)
+                },
+            )
+            .padding(horizontal = 18.dp, vertical = if (look != UiLook.CLASSIC) 18.dp else 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        DockSide(R.drawable.ms_logout, "Leave", Palette.Stop, onLeave, if (glassLook) GlassTokens.Leave else null)
+        if (look == UiLook.NEU) {
+            SoftDockSide(R.drawable.ms_logout, "Leave", NeuTokens.Stop, NeuTokens.LeaveTint, onLeave)
+        } else {
+            DockSide(R.drawable.ms_logout, "Leave", Palette.Stop, onLeave, if (glassLook) GlassTokens.Leave else null)
+        }
         if (pushToTalk) TalkButton(talking, latched, muted) else MicButton(muted, speaking, filterStatus)
-        DockSide(R.drawable.ms_share, "Share", Color.White, onShare, if (glassLook) GlassTokens.Share else null)
+        if (look == UiLook.NEU) {
+            SoftDockSide(R.drawable.ms_share, "Share", NeuTokens.InkMuted, NeuTokens.ShareTint, onShare)
+        } else {
+            DockSide(R.drawable.ms_share, "Share", Color.White, onShare, if (glassLook) GlassTokens.Share else null)
+        }
+    }
+}
+
+/** Soft look: a raised round button with a hint of colour and a coloured icon (pink Leave, lilac Share). */
+@Composable
+private fun SoftDockSide(icon: Int, label: String, iconColor: Color, fill: Color, onClick: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            Modifier
+                .size(64.dp)
+                .neuRaised(CircleShape, 6.dp, Brush.linearGradient(listOf(Color.White, fill)))
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) { Ico(icon, 28.dp, iconColor, label) }
+        Spacer(Modifier.height(8.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 14.sp), color = Palette.TextSecondary)
     }
 }
 
@@ -674,13 +736,20 @@ private fun DockSide(icon: Int, label: String, tint: Color, onClick: () -> Unit,
 private fun MicButton(muted: Boolean, speaking: Boolean, filterStatus: GateStatus?) {
     val pulse by animateFloatAsState(if (speaking && !muted) 1.06f else 1f, label = "pulse")
     val glassLook = LocalLook.current == UiLook.GLASS
+    val soft = LocalLook.current == UiLook.NEU
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier
                 .scale(pulse)
-                .size(if (glassLook) 100.dp else 96.dp)
+                .size(if (glassLook || soft) 100.dp else 96.dp)
                 .then(
-                    if (glassLook) {
+                    if (soft) {
+                        // Soft: a raised ring around a blue button (grey when the mic is off).
+                        Modifier
+                            .neuRaised(CircleShape, 7.dp)
+                            .padding(8.dp)
+                            .then(if (muted) Modifier else Modifier.glow(NeuTokens.BlueGlow, 22.dp, CircleShape, offsetY = 4.dp))
+                    } else if (glassLook) {
                         // Glass: teal with a soft glowing ring; grey when the mic is off.
                         Modifier
                             .then(if (muted) Modifier else Modifier.glow(GlassTokens.MicGlow, 30.dp, CircleShape))
@@ -696,6 +765,8 @@ private fun MicButton(muted: Boolean, speaking: Boolean, filterStatus: GateStatu
                 .clip(CircleShape)
                 .background(
                     when {
+                        soft && muted -> SoftMicOff
+                        soft -> NeuTokens.BlueAction
                         glassLook && muted -> GlassTokens.MicOff
                         glassLook -> GlassTokens.MicOn
                         muted -> Palette.StopGradient
@@ -712,8 +783,8 @@ private fun MicButton(muted: Boolean, speaking: Boolean, filterStatus: GateStatu
         val (label, color) = when {
             muted -> "Mic off · tap to talk" to Palette.Stop
             filterStatus == GateStatus.NOISE -> "Mic on · wind blocked" to Palette.Amber
-            filterStatus == GateStatus.VOICE -> "Mic on · sending" to if (glassLook) GlassTokens.MicLabel else Palette.Go
-            else -> "Mic on" to if (glassLook) GlassTokens.MicLabel else Palette.Go
+            filterStatus == GateStatus.VOICE -> "Mic on · sending" to if (soft) NeuTokens.Blue else if (glassLook) GlassTokens.MicLabel else Palette.Go
+            else -> "Mic on" to if (soft) NeuTokens.Blue else if (glassLook) GlassTokens.MicLabel else Palette.Go
         }
         Text(label, style = MaterialTheme.typography.labelSmall, color = color)
     }
@@ -728,13 +799,19 @@ private fun TalkButton(talking: Boolean, latched: Boolean, muted: Boolean) {
     val haptics = LocalHapticFeedback.current
     val grow by animateFloatAsState(if (talking) 1.08f else 1f, label = "grow")
     val glassLook = LocalLook.current == UiLook.GLASS
+    val soft = LocalLook.current == UiLook.NEU
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier
                 .scale(grow)
-                .size(if (glassLook) 100.dp else 96.dp)
+                .size(if (glassLook || soft) 100.dp else 96.dp)
                 .then(
-                    if (glassLook) {
+                    if (soft) {
+                        Modifier
+                            .neuRaised(CircleShape, 7.dp)
+                            .padding(8.dp)
+                            .then(if (talking) Modifier.glow(NeuTokens.BlueGlow, 22.dp, CircleShape, offsetY = 4.dp) else Modifier)
+                    } else if (glassLook) {
                         Modifier
                             .then(if (talking) Modifier.glow(GlassTokens.MicGlow, 30.dp, CircleShape) else Modifier)
                             .border(7.dp, if (talking) Color(0x444DFDE9) else Color.White.copy(alpha = 0.13f), CircleShape)
@@ -749,6 +826,8 @@ private fun TalkButton(talking: Boolean, latched: Boolean, muted: Boolean) {
                 .clip(CircleShape)
                 .background(
                     when {
+                        soft && talking -> NeuTokens.BlueAction
+                        soft -> SoftMicOff
                         glassLook && talking -> GlassTokens.MicOn
                         glassLook -> GlassTokens.MicOff
                         talking -> Palette.GoGradient

@@ -30,7 +30,7 @@ import com.ridecomm.app.R
 import com.ridecomm.app.whisper.WhisperState
 
 /** Private talk is violet, so it never looks like talking to the whole group (green). */
-val WhisperColor = Palette.Violet
+val WhisperColor: Color @Composable get() = Palette.Violet
 
 /** A button that talks only to one rider while held down. */
 @Composable
@@ -45,6 +45,9 @@ fun HoldToTalkButton(text: String, active: Boolean, modifier: Modifier = Modifie
             .background(
                 if (active) {
                     Brush.linearGradient(listOf(WhisperColor, Palette.Pink))
+                } else if (LocalLook.current == UiLook.NEU) {
+                    // On the light Soft page the pale version wouldn't carry white text.
+                    Brush.linearGradient(listOf(WhisperColor.copy(alpha = 0.8f), WhisperColor))
                 } else {
                     Brush.linearGradient(listOf(WhisperColor.copy(alpha = 0.35f), WhisperColor.copy(alpha = 0.18f)))
                 },

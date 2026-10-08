@@ -332,6 +332,90 @@
   /* Map */
   html.look-glass .mapbar, html.look-glass .mappanel .box, html.look-glass .chip { background: #302873e8; border-color: #ffffff69; }
 
+
+  /* ---- Soft look (Settings → Look → Soft): light neumorphism, from the owner's screenshot and NeuKit ---- */
+  html.look-neu {
+    --text: #161a35; --muted: #636887; --faint: #9398b3; --go: #0e9f73; --stop: #e23552; --amber: #b7791f; --cyan: #0b8db0;
+    --neu-page: #eef0f8; --neu-surface: linear-gradient(135deg, #f8f9fe, #e9ecf6);
+    --neu-out: 6px 6px 14px rgba(169,174,203,.55), -6px -6px 14px #fff;
+    --neu-out-sm: 4px 4px 9px rgba(169,174,203,.5), -4px -4px 9px #fff;
+    --neu-in: inset 3px 3px 7px rgba(169,174,203,.55), inset -3px -3px 7px #fff;
+    --blue: linear-gradient(135deg, #5b8cff, #2563eb);
+  }
+  html.look-neu body { font-family: Inter, system-ui, sans-serif; color: var(--text);
+    background: radial-gradient(circle at 100% 0, #d9cbff 0, transparent 38%), radial-gradient(circle at 0 62%, #f2cbf1 0, transparent 30%),
+      radial-gradient(circle at 100% 92%, #c6d4ff 0, transparent 36%), var(--neu-page); background-attachment: fixed; }
+  html.look-neu button, html.look-neu input { font-family: Inter, system-ui, sans-serif; }
+  html.look-neu .glow, html.look-neu .orbs { display: none !important; }
+  html.look-neu .joinhead h1 { white-space: nowrap; font-size: clamp(20px, 6vw, 24px); }
+  html.look-neu .card { background: var(--neu-surface); border: 0; box-shadow: var(--neu-out); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  html.look-neu .card.alert { background: linear-gradient(135deg, #f87171, #e23552); color: #fff; }
+  html.look-neu .card.alert .rname, html.look-neu .card.alert p, html.look-neu .card.alert .label, html.look-neu .card.alert .v { color: #fff; }
+  html.look-neu .card.dest { background: linear-gradient(135deg, #f4fbf8, #dff2ea); }
+  html.look-neu .card.brk { background: linear-gradient(135deg, #fdf8ee, #f4e9d2); }
+  html.look-neu .card.home { background: linear-gradient(135deg, #f4fbf8, #e3f1ec); }
+  html.look-neu h1, html.look-neu .rname, html.look-neu .code-big, html.look-neu .t { color: var(--text); }
+  html.look-neu .code-big { font-weight: 800; letter-spacing: 4px; }
+  html.look-neu p, html.look-neu .rsub, html.look-neu .note, html.look-neu .setting .d, html.look-neu .music { color: var(--muted); }
+  html.look-neu .label { color: var(--muted); font-weight: 600; letter-spacing: 1.6px; }
+  html.look-neu .rsub.talking { color: var(--go); } html.look-neu .rsub.whisper { color: #6d4aff; }
+  html.look-neu .btn { background: var(--neu-surface); border: 0; color: var(--text); box-shadow: var(--neu-out-sm); }
+  html.look-neu .btn:active { box-shadow: var(--neu-in); }
+  html.look-neu .btn.primary { background: var(--blue); color: #fff; box-shadow: 0 8px 18px rgba(91,140,255,.45), var(--neu-out-sm); }
+  html.look-neu .btn.go { background: linear-gradient(135deg, #22c993, #0e9f73); color: #fff; }
+  html.look-neu .btn.stop { background: linear-gradient(135deg, #f87171, #e23552); color: #fff; }
+  html.look-neu input { background: #e6e9f4; border: 0; color: var(--text); box-shadow: var(--neu-in); }
+  html.look-neu input::placeholder { color: var(--faint); }
+  html.look-neu .iconbtn, html.look-neu .x { background: var(--neu-surface); border: 0; color: var(--text); box-shadow: var(--neu-out-sm); }
+  html.look-neu .sos-btn { width: 62px; height: 62px; border: 0; color: #fff; background: linear-gradient(140deg, #ff8484, #f43f5e); box-shadow: 0 8px 22px rgba(244,63,94,.45), var(--neu-out-sm); }
+  html.look-neu .pill { background: var(--neu-surface); border: 0; color: var(--text); box-shadow: var(--neu-out-sm); }
+  html.look-neu .tile { background: var(--neu-surface); border: 0; color: var(--text); box-shadow: var(--neu-out-sm); }
+  html.look-neu .tile.vote svg { color: #f59e0b; } html.look-neu .tile.say svg { color: #2f6bff; }
+  html.look-neu .hztile { background: linear-gradient(135deg, #fff5f3, #fde4df); border: 0; color: var(--text); box-shadow: var(--neu-out-sm); }
+  html.look-neu .role { background: #e5670c; border: 0; color: #fff; } html.look-neu .role.sweep { background: #0b8db0; }
+  html.look-neu .tag { color: var(--amber); } html.look-neu .tag.low { color: var(--stop); }
+  html.look-neu .timeline { background: #d6d9ea; }
+  html.look-neu .avatar.talking { border-color: var(--go); }
+  /* Rows that open something, with a raised round icon and a chevron */
+  html.look-neu #ride [data-open-dest].btn, html.look-neu #ride [data-open-hazards].btn:not(.card *), html.look-neu #ride #homeBtn:not(.card *) {
+    justify-content: flex-start; text-align: left; min-height: 76px; border-radius: 28px; padding: 13px 18px; gap: 16px; font-size: 18px; font-weight: 700; box-shadow: var(--neu-out); }
+  html.look-neu #ride [data-open-dest].btn svg, html.look-neu #ride [data-open-hazards].btn:not(.card *) svg, html.look-neu #ride #homeBtn:not(.card *) svg {
+    width: 50px; height: 50px; padding: 12px; border-radius: 50%; background: linear-gradient(135deg, #fff, #ece6ff); color: #8b5cf6; box-shadow: var(--neu-out-sm); }
+  html.look-neu #ride [data-open-hazards].btn:not(.card *) svg { background: linear-gradient(135deg, #fff, #ffe1e4); color: #e23552; }
+  html.look-neu #ride #homeBtn:not(.card *) svg { background: linear-gradient(135deg, #fff, #dcf4ea); color: #0e9f73; }
+  html.look-neu #ride [data-open-dest].btn::after, html.look-neu #ride [data-open-hazards].btn:not(.card *)::after, html.look-neu #ride #homeBtn:not(.card *)::after {
+    content: '›'; margin-left: auto; width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 24px; color: var(--muted);
+    background: var(--neu-surface); box-shadow: 3px 3px 7px rgba(169,174,203,.5), -3px -3px 7px #fff; }
+  html.look-neu #destCard .row3 [data-open-dest].btn { justify-content: center; min-height: 54px; padding: 0; box-shadow: var(--neu-out-sm); }
+  html.look-neu #destCard .row3 [data-open-dest].btn::after { content: none; }
+  html.look-neu #destCard .row3 [data-open-dest].btn svg { width: 24px; height: 24px; padding: 0; background: none; box-shadow: none; color: var(--text); }
+  html.look-neu #mapCard .avatar { background: linear-gradient(135deg, #fff, #e3ebff) !important; color: #2f6bff !important; box-shadow: var(--neu-out-sm); }
+  /* Bottom bar and mic */
+  html.look-neu .dock-in { background: var(--neu-surface); border: 0; box-shadow: var(--neu-out); backdrop-filter: none; -webkit-backdrop-filter: none; border-radius: 30px; padding: 18px; }
+  html.look-neu .side { color: var(--muted); }
+  html.look-neu .side .circ { width: 64px; height: 64px; border: 0; box-shadow: var(--neu-out-sm); }
+  html.look-neu #leaveBtn .circ { background: linear-gradient(135deg, #fff, #ffe1e8); color: #e23552 !important; }
+  html.look-neu #shareBtn .circ { background: linear-gradient(135deg, #fff, #ede9fa); color: var(--muted) !important; }
+  html.look-neu .mic { width: 100px; height: 100px; border: 8px solid #eef0f8; color: #fff; background: var(--blue);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.7), 6px 6px 14px rgba(169,174,203,.6), -6px -6px 14px #fff, 0 10px 26px rgba(91,140,255,.45); }
+  html.look-neu .mic.off, html.look-neu .mic.ptt { background: linear-gradient(135deg, #a7abc4, #7c819e); box-shadow: 6px 6px 14px rgba(169,174,203,.6), -6px -6px 14px #fff; }
+  html.look-neu .mic.ptt.talking { background: var(--blue); box-shadow: 6px 6px 14px rgba(169,174,203,.6), -6px -6px 14px #fff, 0 10px 26px rgba(91,140,255,.45); }
+  html.look-neu .miclabel { color: #2f6bff; } html.look-neu .miclabel.off { color: var(--stop); } html.look-neu .miclabel.idle { color: var(--muted); }
+  /* Pop-ups */
+  html.look-neu .sheet { background: rgba(30,34,60,.35); }
+  html.look-neu .sheet-in { background: var(--neu-page); border: 0; color: var(--text); box-shadow: 0 -10px 30px rgba(80,86,130,.25); }
+  html.look-neu .setting { border-top-color: #dcdfec; }
+  html.look-neu .switch span { background: #d6d9ea; box-shadow: var(--neu-in); }
+  html.look-neu .switch input:checked + span { background: #2f6bff; }
+  html.look-neu .seg button, html.look-neu .lchips button, html.look-neu .place { background: var(--neu-surface); border: 0; color: var(--muted); box-shadow: var(--neu-out-sm); }
+  html.look-neu .seg button.sel, html.look-neu .lchips button.sel { background: var(--blue); color: #fff; }
+  html.look-neu .seg.blood button.sel { background: linear-gradient(135deg, #f87171, #e23552); }
+  html.look-neu .place .dd { color: var(--muted); }
+  html.look-neu .hold { background: linear-gradient(135deg, #8b6cff, #6d4aff); border: 0; }
+  /* Map */
+  html.look-neu .mapbar, html.look-neu .mappanel .box, html.look-neu .chip { background: rgba(238,240,248,.95); border: 0; color: var(--text); box-shadow: var(--neu-out-sm); }
+  html.look-neu .attrib { background: rgba(238,240,248,.9); color: var(--muted); }
+
   /* Talk to one rider (violet, never green like talking to everyone) */
   .wbar { position: fixed; left: 16px; right: 16px; z-index: 6; bottom: calc(150px + env(safe-area-inset-bottom)); max-width: 488px; margin: 0 auto;
     padding: 14px 16px; border-radius: 24px; background: linear-gradient(135deg, rgba(42,31,82,.96), rgba(22,18,48,.96)); border: 1px solid rgba(124,92,255,.7); }
@@ -620,9 +704,10 @@
     ['home', 'Home safe check-in', 'At the end of the ride tap "I\'m home safe" and the riders still on the road hear it. With home saved, it happens by itself when you get there (keep this page open).'],
   ];
   const CHOICES = [
-    ['look', 'Look', [['classic', 'Classic'], ['glass', 'Glass']], {
+    ['look', 'Look', [['classic', 'Classic'], ['glass', 'Glass'], ['neu', 'Soft']], {
       classic: 'The original RideComm look.',
-      glass: 'Frosted glass over a violet glow, on every screen.' }],
+      glass: 'Frosted glass over a violet glow, on every screen.',
+      neu: 'Light "neumorphism": soft raised cards and buttons on a pale page. Easier to read in bright sun.' }],
     ['talk', 'Talk mode', [['open', 'Open mic'], ['ptt', 'Push to talk']], {
       open: 'Just talk: your mic is always on.',
       ptt: 'Silent until you hold the mic button. Tap it once to talk hands-free, tap again to stop.' }],
@@ -1589,8 +1674,10 @@
   function applyLook() {
     const root = document.documentElement;
     root.classList.toggle('look-glass', SET.look === 'glass');
+    root.classList.toggle('look-neu', SET.look === 'neu');
     root.classList.toggle('in-ride', !$('ride').classList.contains('hidden'));
-    if (!isNight()) document.querySelector('meta[name=theme-color]').setAttribute('content', SET.look === 'glass' && !root.classList.contains('in-ride') ? '#25126c' : '#070A14');
+    const bar = SET.look === 'neu' ? '#eef0f8' : SET.look === 'glass' && !root.classList.contains('in-ride') ? '#25126c' : '#070A14';
+    if (!isNight()) document.querySelector('meta[name=theme-color]').setAttribute('content', bar);
   }
   function applyNight() {
     const on = isNight();

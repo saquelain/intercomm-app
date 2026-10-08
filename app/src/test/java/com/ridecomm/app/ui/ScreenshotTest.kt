@@ -209,6 +209,84 @@ class ScreenshotTest {
 
     private val trip0 = com.ridecomm.app.trip.TripState(active = true, startedAtMs = System.currentTimeMillis(), gps = true, speedKmh = 0f)
 
+    // ---- Soft look (neumorphism) ----
+
+    private fun softShot(name: String, content: @Composable () -> Unit) = captureRoboImage("screenshots/$name.png") {
+        RideCommTheme {
+            NeuScene { Box(Modifier.fillMaxSize().padding(top = 24.dp)) { LookScope(UiLook.NEU) { content() } } }
+        }
+    }
+
+    @Test
+    fun rideSoftLikeMockup() = softShot("60_ride_soft") {
+        RideContent(
+            ride.copy(riders = riders.take(1)), MusicState(), VoteState(), SosState(),
+            group = GroupState(enabled = true, sharing = true, me = com.ridecomm.app.group.MyFix(12.9, 77.6, null, 8f)),
+            trip = trip0,
+            hazards = com.ridecomm.app.hazard.HazardsState(enabled = true),
+            destination = com.ridecomm.app.group.DestinationState(enabled = true),
+            homeSafe = com.ridecomm.app.home.HomeSafeState(enabled = true),
+        )
+    }
+
+    @Test
+    fun rideSoftBusy() = softShot("61_ride_soft_busy") {
+        val vote = Vote("v", VoteKind.BREAK, "Amit", System.currentTimeMillis(), 4, mapOf("a" to Ballot("Amit", true), "r" to Ballot("Rahul", true)))
+        RideContent(
+            ride, MusicState(), VoteState(active = vote, activeSinceMs = System.currentTimeMillis()), SosState(), roles = roles, hazards = hazards,
+            trip = trip0.copy(speedKmh = 42f, distanceM = 18_400.0),
+            batteries = mapOf("r" to com.ridecomm.app.alerts.BatteryInfo(18, false)),
+            whisper = com.ridecomm.app.whisper.WhisperState(others = mapOf("v" to "Rahul")),
+            destination = dest,
+            breakDue = com.ridecomm.app.trip.BreakDue(2 * 60 * 60_000L + 5 * 60_000L),
+        )
+    }
+
+    @Test
+    fun rideSoftPttSos() = softShot("62_ride_soft_ptt_sos") {
+        RideContent(
+            ride.copy(pushToTalk = true), MusicState(),
+            VoteState(), SosState(alerts = listOf(SosAlert("r", "Rahul", 12.97, 77.59, 1_200f, now, crash = false, info = com.ridecomm.app.sos.EmergencyInfo("O+", "Allergic to penicillin", "Ammi", "+91 98450 12345")))),
+            roles = roles, volumes = volumes,
+        )
+    }
+
+    @Test
+    fun homeSoft() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        com.ridecomm.app.Prefs.setRiderName(context, "Saquelain")
+        com.ridecomm.app.Prefs.setTokenServerId(context, "ridecomm-test")
+        com.ridecomm.app.Prefs.rideStarted(context, "GMMCBR", System.currentTimeMillis() - 11 * 60_000)
+        com.ridecomm.app.Prefs.clearUnfinishedRide(context)
+        softShot("63_home_soft") { HomeScreen(RideState()) }
+    }
+
+    @Test
+    fun settingsSoft() = softShot("64_settings_soft") { SettingsDialog(onClose = {}) }
+
+    @Test
+    fun riderSheetSoft() = softShot("65_rider_sheet_soft") {
+        RiderSheet(riders[1], null, com.ridecomm.app.ride.RiderVolume(1.5f), roles, {}, {}, {}, {}, onWhisperStart = {})
+    }
+
+    @Test
+    fun cardsSoft() = softShot("66_cards_soft") {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            HomeSafeCard(com.ridecomm.app.home.HomeSafeState(enabled = true, home = mapOf("a" to "Amit"), leftNotHome = mapOf("x" to "Imran")), riders, {}, {})
+            com.ridecomm.app.ui.map.GroupMapCard(sampleGroup, 4) {}
+            HazardPicker({}, {})
+        }
+    }
+
+    @Test
+    fun groupMapSoft() = captureRoboImage("screenshots/67_map_soft.png") {
+        RideCommTheme {
+            LookScope(UiLook.NEU) {
+                com.ridecomm.app.ui.map.GroupMapScreen(sampleGroup, riders, emptyMap(), onClose = {}, hazards = hazards.hazards, roles = roles, mapContent = mapStandIn(dark = false))
+            }
+        }
+    }
+
     @Test
     fun rideGlassLikeMockup() = glassShot("43_ride_glass", GlassSceneStyle.RIDE) {
         RideContent(

@@ -52,6 +52,8 @@ import kotlinx.coroutines.flow.asStateFlow
 enum class UiLook(val label: String) {
     CLASSIC("Classic"),
     GLASS("Glass"),
+    /** Neumorphism: light, with soft raised cards and buttons. */
+    NEU("Soft"),
 }
 
 /**
@@ -129,7 +131,7 @@ val Inter = FontFamily(
     Font(R.font.inter_extrabold, FontWeight.ExtraBold),
 )
 
-private val glassBase = TextStyle(fontFamily = Inter, color = Palette.TextPrimary)
+private val glassBase = TextStyle(fontFamily = Inter, color = Color(0xF5FFFFFF))
 
 private val glassTypography = Typography(
     displayMedium = glassBase.copy(fontSize = 34.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 5.sp),
@@ -149,7 +151,11 @@ fun LookScope(look: UiLook, content: @Composable () -> Unit) {
     CompositionLocalProvider(LocalLook provides look) {
         MaterialTheme(
             colorScheme = MaterialTheme.colorScheme,
-            typography = if (look == UiLook.GLASS) glassTypography else ClassicTypography,
+            typography = when (look) {
+                UiLook.GLASS -> glassTypography
+                UiLook.NEU -> neuTypography
+                UiLook.CLASSIC -> ClassicTypography
+            },
             content = content,
         )
     }
@@ -344,7 +350,11 @@ fun LookBackground(
     style: GlassSceneStyle = GlassSceneStyle.HOME,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    if (look == UiLook.GLASS) GlassScene(modifier, style, content) else GlassBackground(modifier, content)
+    when (look) {
+        UiLook.GLASS -> GlassScene(modifier, style, content)
+        UiLook.NEU -> NeuScene(modifier, content)
+        UiLook.CLASSIC -> GlassBackground(modifier, content)
+    }
 }
 
 /**

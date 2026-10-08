@@ -232,6 +232,24 @@ fs.mkdirSync(OUT, { recursive: true });
   await e.click('[data-choice="look"][data-value="classic"]');
   check('Switching to Classic in Settings', await e.evaluate(() => !document.documentElement.classList.contains('look-glass')));
 
+  // ---- Soft look (neumorphism) on every screen ----
+  const f = await mk('Farah', 'web-f', { code: 'TSTSFT', settings: JSON.stringify({ look: 'neu' }), noJoin: true });
+  check('Soft look on the join screen', await f.evaluate(() => document.documentElement.classList.contains('look-neu') &&
+    getComputedStyle(document.body).color === 'rgb(22, 26, 53)'));
+  await f.screenshot({ path: OUT + 'w44_join_soft.png' });
+  await f.click('#joinBtn');
+  await f.waitForSelector('#ride:not(.hidden)', { timeout: 10000 });
+  check('Soft look on the ride screen: blue mic', await f.evaluate(() => getComputedStyle(document.querySelector('.mic')).backgroundImage.includes('91, 140, 255')));
+  await f.waitForTimeout(400);
+  await f.screenshot({ path: OUT + 'w45_ride_soft.png' });
+  await f.click('[data-open-settings]:visible');
+  await f.waitForTimeout(300);
+  await f.screenshot({ path: OUT + 'w46_settings_soft.png' });
+  await f.click('#settingsClose');
+  await f.click('[data-rider="web-f"]');
+  await f.waitForTimeout(300);
+  await f.screenshot({ path: OUT + 'w47_sheet_soft.png' });
+
   console.log(errors.length ? 'PAGE ERRORS:\n' + errors.join('\n') : 'No page errors');
   await browser.close();
 })();

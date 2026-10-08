@@ -185,11 +185,7 @@ private fun TuneSlider(
             value = shown.coerceIn(range),
             onValueChange = { onChange(if (reversed) range.endInclusive + range.start - it else it) },
             valueRange = range,
-            colors = SliderDefaults.colors(
-                thumbColor = Color.White,
-                activeTrackColor = Palette.Orange,
-                inactiveTrackColor = Color.White.copy(alpha = 0.15f),
-            ),
+            colors = lookSliderColors(),
         )
         Row {
             Text(left, style = MaterialTheme.typography.labelSmall, color = Palette.TextTertiary, modifier = Modifier.weight(1f))
@@ -396,16 +392,19 @@ internal fun ClipView(clip: FloatArray, analysis: GateAnalysis, playhead: Float?
     val sentPeaks = remember(analysis) { peaks(analysis.filtered, analysis.frames.size) }
     val statuses = analysis.frames.map { it.status }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        val go = Palette.Go
+        val amber = Palette.Amber
+        val idle = Palette.TextTertiary
         Text("Your mic heard", style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
         Waveform(micPeaks, 64.dp, playhead) { i ->
             when (statuses.getOrNull(i)) {
-                GateStatus.VOICE -> Palette.Go
-                GateStatus.NOISE -> Palette.Amber
-                else -> Color.White.copy(alpha = 0.3f)
+                GateStatus.VOICE -> go
+                GateStatus.NOISE -> amber
+                else -> idle
             }
         }
         Text("The group hears", style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
-        Waveform(sentPeaks, 64.dp, playhead) { Palette.Go }
+        Waveform(sentPeaks, 64.dp, playhead) { go }
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Legend(Palette.Go, "Voice: sent")
             Legend(Palette.Amber, "Noise: blocked")
@@ -525,7 +524,7 @@ internal fun GateChips(value: GateSettings?, onChange: (GateSettings?) -> Unit) 
                     .height(44.dp)
                     .glass(
                         RoundedCornerShape(14.dp),
-                        tint = if (selected) Palette.Orange else Color.White,
+                        tint = if (selected) Palette.Accent else Color.White,
                         fillAlpha = if (selected) 0.32f else 0.06f,
                     )
                     .clickable(onClick = onClick),

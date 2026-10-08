@@ -104,6 +104,20 @@ How it's built:
 - Web: `html.look-glass` (from `SET.look`) plus `html.in-ride` while riding (ride background); all Glass
   CSS is under `html.look-glass`.
 
+## Soft look (neumorphism)
+
+Third look, asked for after Glass: Settings → Look → **Soft** (app + web). Light: pale lavender page with
+pastel corners, raised cards/buttons (white shadow top-left, lavender-grey bottom-right), pressed-in text
+fields, navy text, blue primary actions and mic. References: `design/soft/ride.jpg` (the owner's screenshot)
+and `design/soft/neukit.html` (NeuKit tokens). How it's built:
+- `ui/Neu.kt`: `NeuTokens`, `neuTypography`, `Modifier.neuRaised` / `neuInset` (blurred shadows, Android 9+;
+  a faint flat shadow below that), `NeuScene`, `lookSliderColors()` / `lookSwitchColors()`.
+- `Palette` text and accent colours are now `@Composable` getters that return dark/darker versions on Soft
+  (`Palette.XxxBright` are the fixed bright ones, for places outside a look). `Palette.OnSurface` and
+  `LocalCardInk` give the right icon/text colour on a card; `Palette.Accent` is a selected choice.
+- Components in `Glass.kt` branch on `UiLook.NEU`; ride-screen parts (stats tiles, dock, mic, SOS) too.
+- Web: `html.look-neu` CSS block (variables `--neu-out`, `--neu-in`…).
+
 ## Ideas not built yet (from the last "what next" list)
 
 - **Ride summary card**: route on a map, distance, time, top/average speed, stops; share as an image.
