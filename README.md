@@ -123,6 +123,33 @@ other over mobile internet through their helmet headset.
   the Messages app opens with the SOS text (with a maps link) to the emergency numbers set in Settings, ready to
   send with one tap (sending silently needs SEND_SMS, which Play Protect blocks for sideloaded apps). "I'm OK" stops everyone's
   alarm.
+- **Emergency info** (Settings): blood group, allergies / conditions and an emergency contact. Kept on the phone
+  and sent only with my SOS ("Send with my SOS" can turn that off). While my SOS is on, my screen shows a big
+  "For anyone helping" card (name, blood group, medical notes) with Call contact and Call 112 buttons, for a
+  passer-by or medic holding my phone. The group's SOS alert shows the same details and a Call button, and the
+  no-internet SOS text message includes them.
+- **Hazard alerts** (Settings, on by default): tap "Mark a road hazard" (or say "RideComm, pothole" / police /
+  speed breaker / slippery / accident / cows…) to mark Pothole, Speed breaker, Slippery road, Police check,
+  Accident or Animal on the road where you are. Riders ahead of it stay quiet; riders behind hear "Amit marked:
+  Pothole, 1.2 kilometers ahead" and then "Pothole in 300 meters" once, when it's 40–500 m ahead on their road
+  (within 45° of their direction). Hazards show on the ride screen (nearest first, with distance and age) and on
+  the group map, and expire by themselves (police after 30 min, animals 20, accidents an hour, the rest 2 hours).
+  Marking the same kind at the same spot (80 m) confirms it instead of adding another. Only the hazard's spot is
+  shared, so it works without the Group map.
+- **Lead & sweep:** tap any rider to make them the lead (rides first) or the sweep (rides last); everyone sees
+  LEAD / SWEEP badges, on the map too. With the Group map on, positions are compared along the lead's or
+  sweep's direction of travel: a rider 300 m ahead of the lead hears "You're ahead of the lead, Amit" (and the lead
+  hears "Rahul is ahead of you"); 500 m behind the sweep, the rider and the sweep hear it. Each alert is spoken
+  once until that rider is back in place. "Lead & sweep alerts" is switchable in Settings.
+- **Push to talk** (Settings → Talk mode: Open mic / Push to talk): the mic sends silence until you hold the
+  big button (green while talking). A quick tap keeps it open hands-free until the next tap (closes itself after
+  2 minutes); the headset button and the floating button start and stop talking too, with "Talk" / "Over"
+  spoken. Switching happens instantly, without re-connecting the mic. Voice commands still work.
+- **Rider volume:** tap a rider to set how loud you hear them (20–200%, only on your phone, remembered for the
+  next ride) or mute them for yourself, which also stops downloading their voice.
+- **Night mode** (Settings: Off / Auto / On): the whole app turns dim red (greyscale tinted red, so bright and
+  dark stay apart) with the screen dimmed, and spoken alerts play at about half volume. Auto works out sunset
+  and sunrise from the phone's location (or 6:30 pm–6 am without one).
 
 ## iPhone and browser riders
 
@@ -143,6 +170,14 @@ The gear button opens **Settings**, saved in the browser and changeable any time
   regroup point. Riders get "Navigate" directions, arrival counts and the "Everyone is at the regroup point" alert.
   Switching it off stops sharing straight away.
 - **Spoken alerts**, **Vibration** and **Keep screen on**, each on by default.
+- **Hazard alerts** and **Lead & sweep alerts** (on by default), the same as in the app: mark a hazard with one
+  tap, hear "Pothole in 300 meters", and tap a rider to make them lead or sweep. To warn about hazards the page
+  follows the iPhone's location only on the iPhone itself, and only once someone has marked one.
+- **Talk mode:** Open mic or Push to talk (hold the mic button, or tap to lock it open).
+- **Night mode:** Off / Auto / On, dim red screen and quieter alerts.
+- **Emergency info:** blood group, allergies and a contact, sent with your SOS and shown on your screen for helpers.
+- Tapping a rider also offers **Mute for me** and, in browsers that allow it, a volume slider (iPhone Safari
+  can't turn a single voice down, so there it's mute only).
 
 The ride screen's mic button glows with your voice level, so you can see the mic is working.
 

@@ -171,6 +171,48 @@
   .lchips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
   .lchips button { padding: 10px 14px; border-radius: 14px; border: 1px solid var(--rim); background: rgba(255,255,255,.06); color: var(--muted); font-weight: 600; }
   .lchips button.sel { background: rgba(255,138,31,.35); color: #fff; }
+
+  /* Hazards */
+  .hz { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; flex: none; color: #fff;
+    background: linear-gradient(135deg, #FF5E3A, #E5245E); }
+  .hz svg { width: 24px; height: 24px; }
+  .rsub.ahead { color: var(--amber); }
+  .x { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--rim); background: rgba(255,255,255,.08); display: grid; place-items: center; flex: none; }
+  .x svg { width: 18px; height: 18px; }
+  .hztile { min-height: 108px; border-radius: 22px; border: 1px solid rgba(255,94,58,.35); background: rgba(255,94,58,.1);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 16px; text-align: center; padding: 6px; }
+  .mkhz { position: relative; width: 34px; height: 34px; }
+  .mkhz .hz { width: 34px; height: 34px; border-radius: 11px; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
+  .mkhz .hz svg { width: 20px; height: 20px; }
+  .mkhz .tagname { position: absolute; top: 38px; left: 50%; transform: translateX(-50%); padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+    background: rgba(16,14,36,.9); color: #fff; font: 600 12px Outfit, sans-serif; }
+
+  /* Roles, rider sheet */
+  .role { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: .6px;
+    vertical-align: 2px; background: rgba(255,138,31,.32); border: 1px solid rgba(255,138,31,.55); }
+  .role.sweep { background: rgba(34,211,238,.25); border-color: rgba(34,211,238,.55); }
+  .rider[data-rider] { cursor: pointer; border-radius: 16px; }
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; margin-top: 10px; }
+  .seg button { min-height: 46px; border-radius: 14px; border: 1px solid var(--rim); background: rgba(255,255,255,.06); color: var(--muted); font-weight: 600; font-size: 16px; }
+  .seg button.sel { background: rgba(255,138,31,.38); color: #fff; }
+  .seg.blood button.sel { background: rgba(255,77,109,.42); }
+  input[type=range] { -webkit-appearance: none; appearance: none; height: 34px; padding: 0; margin: 8px 0 0; border: 0; background: none; }
+  input[type=range]::-webkit-slider-runnable-track { height: 8px; border-radius: 999px; background: linear-gradient(90deg, var(--orange) var(--fill, 50%), rgba(255,255,255,.15) var(--fill, 50%)); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; margin-top: -9px; border-radius: 50%; background: #fff; border: 0; }
+  .infoline .label { margin-top: 10px; } .infoline .v { font-size: 18px; font-weight: 600; }
+  .infoline .v.big { font-size: 30px; font-weight: 800; }
+  .helper { border-color: rgba(255,255,255,.3); }
+
+  /* Push to talk */
+  .mic.ptt { background: linear-gradient(135deg, #3A3F5C, #23263B); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  .mic.ptt.talking { background: linear-gradient(135deg, #34E89E, #0FB5A8); transform: scale(1.08); border-color: rgba(255,255,255,.8); }
+  .miclabel.idle { color: var(--muted); }
+
+  /* Night mode: grey first (keeps brightness), then tinted red, a little dimmer. */
+  .night-layer { position: fixed; inset: 0; pointer-events: none; z-index: 2147483646; display: none; }
+  html.night .night-layer { display: block; }
+  #nightGrey { -webkit-backdrop-filter: grayscale(1) brightness(.8); backdrop-filter: grayscale(1) brightness(.8); }
+  #nightRed { background: #FF2A1A; mix-blend-mode: multiply; z-index: 2147483647; }
 </style>
 </head>
 <body>
@@ -206,14 +248,17 @@
     <div class="pill" id="status"><span class="dot" id="statusDot"></span><span id="statusText">Joining…</span></div>
     <div id="alerts"></div>
     <div class="card hidden" id="mapCard"></div>
+    <div id="hazCard"></div>
     <div class="card hidden" id="mySos">
       <div class="rname">Your SOS was sent</div>
       <p id="mySosText">The group can see where you are.</p>
       <div class="field"><button class="btn go" id="okBtn">I'm OK</button></div>
     </div>
+    <div class="card helper hidden" id="helper"></div>
     <div class="card">
       <div class="label">Riders</div>
       <div id="riders" style="margin-top:6px"></div>
+      <div class="note" style="margin-top:6px;font-size:13px">Tap a rider for volume and lead / sweep</div>
       <div class="music hidden" id="music"></div>
     </div>
     <div class="card hidden" id="voteCard"></div>
@@ -257,8 +302,25 @@
     <div class="field"><div class="label">Your name</div><input id="nameSet" maxlength="20" placeholder="e.g. Rahul"></div>
     <p class="note" style="margin-top:6px">A new name shows from the next time you join.</p>
     <div style="margin-top:12px" id="toggles"></div>
+    <div id="choices"></div>
+    <div id="infoBox" style="border-top:1px solid rgba(255,255,255,.08);padding-top:14px;margin-top:4px"></div>
   </div>
 </div>
+
+<!-- Marking a hazard -->
+<div class="sheet hidden" id="hazPicker">
+  <div class="sheet-in">
+    <h1>Mark a hazard here</h1>
+    <p>Riders behind you hear it as they get close, like "Pothole in 300 meters".</p>
+    <div class="grid3" id="hazKinds" style="margin-top:16px"></div>
+    <div class="field"><button class="btn" id="hazCancel">Cancel</button></div>
+  </div>
+</div>
+
+<!-- A rider: volume, mute for me, lead / sweep -->
+<div class="sheet hidden" id="riderSheet"><div class="sheet-in" id="riderSheetIn"></div></div>
+
+<div class="night-layer" id="nightGrey"></div><div class="night-layer" id="nightRed"></div>
 
 <!-- Group map -->
 <div class="mapview hidden" id="mapView">
@@ -298,7 +360,7 @@
   const params = new URLSearchParams(location.search);
   const TOKEN_SERVER = params.get('ts') || 'ridecomm-xnnn94';
   const CODE_RE = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/;
-  const T = { vote: 'rc-vote', sos: 'rc-sos', rider: 'rc-rider', music: 'rc-music', avatar: 'rc-avatar', loc: 'rc-loc' };
+  const T = { vote: 'rc-vote', sos: 'rc-sos', rider: 'rc-rider', music: 'rc-music', avatar: 'rc-avatar', loc: 'rc-loc', hazard: 'rc-hazard', role: 'rc-role' };
   const VOTE_TIMEOUT_MS = 45000, RESULT_SHOWN_MS = 6000, BYE_VALID_MS = 30000;
   const P = {
     mic: 'M395-435q-35-35-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35q-50 0-85-35Zm45 275v-83q-92-13-157.5-78T203-479q-2-17 9-29t28-12q17 0 28.5 11.5T284-480q14 70 69.5 115T480-320q72 0 127-45.5T676-480q4-17 15.5-28.5T720-520q17 0 28 12t9 29q-14 91-79 157t-158 79v83q0 17-11.5 28.5T480-120q-17 0-28.5-11.5T440-160Z',
@@ -310,6 +372,18 @@
     hand: 'M259-139q-99-99-99-241v-380q0-17 11.5-28.5T200-800q17 0 28.5 11.5T240-760v240h80v-320q0-17 11.5-28.5T360-880q17 0 28.5 11.5T400-840v320h80v-360q0-17 11.5-28.5T520-920q17 0 28.5 11.5T560-880v360h80v-280q0-17 11.5-28.5T680-840q17 0 28.5 11.5T720-800v230q-29 21-44.5 53T660-450v50h-50q-63 0-106.5 43.5T460-250v50q0 13 8.5 21.5T490-170q13 0 21.5-8.5T520-200v-50q0-38 26-64t64-26h70q17 0 28.5-11.5T720-380v-70q0-38 26-64t64-26q13 0 21.5 8.5T840-510v130q0 142-99 241T500-40q-142 0-241-99Z',
     flag: 'M280-400v240q0 17-11.5 28.5T240-120q-17 0-28.5-11.5T200-160v-600q0-17 11.5-28.5T240-800h287q14 0 25 9t14 23l10 48h184q17 0 28.5 11.5T800-680v320q0 17-11.5 28.5T760-320H553q-14 0-25-9t-14-23l-10-48H280Z',
     pin: 'M452-112q-14-5-25-15-65-60-115-117t-83.5-110.5q-33.5-53.5-51-103T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 45-17.5 94.5t-51 103Q698-301 648-244T533-127q-11 10-25 15t-28 5q-14 0-28-5Zm84.5-391.5Q560-527 560-560t-23.5-56.5Q513-640 480-640t-56.5 23.5Q400-593 400-560t23.5 56.5Q447-480 480-480t56.5-23.5Z',
+    warning: 'M109-120q-11 0-20-5.5T75-140q-5-9-5.5-19.5T75-180l370-640q6-10 15.5-15t19.5-5q10 0 19.5 5t15.5 15l370 640q6 10 5.5 20.5T885-140q-5 9-14 14.5t-20 5.5H109Zm399.5-131.5Q520-263 520-280t-11.5-28.5Q497-320 480-320t-28.5 11.5Q440-297 440-280t11.5 28.5Q463-240 480-240t28.5-11.5Zm0-120Q520-383 520-400v-120q0-17-11.5-28.5T480-560q-17 0-28.5 11.5T440-520v120q0 17 11.5 28.5T480-360q17 0 28.5-11.5Z',
+    speedBump: 'M418-340q25 25 63 23.5t55-27.5l169-253q9-14-2.5-25.5T677-625L424-456q-26 18-28.5 54.5T418-340ZM204-160q-22 0-40.5-9.5T134-198q-26-47-40-97.5T80-400q0-83 31.5-156T197-683q54-54 127-85.5T480-800q82 0 154 31t126 84.5q54 53.5 86 125T879-406q1 55-12.5 107.5T825-198q-11 19-29.5 28.5T755-160H204Z',
+    drop: 'M480-80q-137 0-228.5-94T160-408q0-64 29-127t72.5-121q43.5-58 94-108.5T450-854q7-6 14.5-8.5T480-865q8 0 15.5 2.5T510-854q44 39 94.5 89.5t94 108.5Q742-598 771-535t29 127q0 140-91.5 234T480-80Zm-1-128q16 0 24.5-5.5T512-230q0-11-8.5-17t-25.5-6q-42 0-85.5-26.5T337-373q-2-9-9-14.5t-15-5.5q-11 0-17 8.5t-4 17.5q15 84 71 121.5T479-208Z',
+    police: 'm480-440 83 63q5 3 9.5 0t2.5-8l-35-103 87-62q5-3 3-8.5t-7-5.5H518l-31-101q-2-5-7-5t-7 5l-31 101H337q-5 0-7 5.5t3 8.5l85 62-36 103q-2 5 2.5 8.5t9.5.5l86-64Zm0 356q-5 0-9.5-1t-9.5-3q-139-47-220-168.5T160-523v-196q0-19 11-34.5t28-22.5l260-97q11-4 21-4t21 4l260 97q17 7 28 22.5t11 34.5v196q0 145-81 266.5T499-88q-5 2-9.5 3t-9.5 1Z',
+    crash: 'M694-646q6-6 6-14v-120q0-8-6-14t-14-6q-8 0-14 6t-6 14v120q0 8 6 14t14 6q8 0 14-6Zm-14 86q8 0 14-6t6-14q0-8-6-14t-14-6q-8 0-14 6t-6 14q0 8 6 14t14 6Zm-60 280q25 0 42.5-17.5T680-340q0-25-17.5-42.5T620-400q-25 0-42.5 17.5T560-340q0 25 17.5 42.5T620-280Zm-360 0q25 0 42.5-17.5T320-340q0-25-17.5-42.5T260-400q-25 0-42.5 17.5T200-340q0 25 17.5 42.5T260-280Zm420-200q-83 0-141.5-58.5T480-680q0-82 58-141t142-59q83 0 141.5 58.5T880-680q0 83-58.5 141.5T680-480ZM140-80q-25 0-42.5-17.5T80-140v-286q0-7 1-14t3-13l80-227q6-18 21.5-29t34.5-11h139q17 0 28.5 11.5T399-680q0 17-11.5 28.5T359-640H234l-42 120h239q9 0 17.5 4t14.5 12q40 49 96.5 76.5T680-400q19 0 37-2.5t36-7.5q17-5 32 5.5t15 27.5v237q0 25-17.5 42.5T740-80q-25 0-42.5-17.5T680-140v-20H200v20q0 25-17.5 42.5T140-80Z',
+    pets: 'M169.86-485Q132-485 106-511.14t-26-64Q80-613 106.14-639t64-26Q208-665 234-638.86t26 64Q260-537 233.86-511t-64 26Zm185-170Q317-655 291-681.14t-26-64Q265-783 291.14-809t64-26Q393-835 419-808.86t26 64Q445-707 418.86-681t-64 26Zm250 0Q567-655 541-681.14t-26-64Q515-783 541.14-809t64-26Q643-835 669-808.86t26 64Q695-707 668.86-681t-64 26Zm185 170Q752-485 726-511.14t-26-64Q700-613 726.14-639t64-26Q828-665 854-638.86t26 64Q880-537 853.86-511t-64 26ZM266-75q-42 0-69-31.53-27-31.52-27-74.47 0-42 25.5-74.5T250-318q22-22 41-46.5t36-50.5q29-44 65-82t88-38q52 0 88.5 38t65.5 83q17 26 35.5 50t40.5 46q29 30 54.5 62.5T790-181q0 42.95-27 74.47Q736-75 694-75q-54 0-107-9t-107-9q-54 0-107 9t-107 9Z',
+    call: 'M795-120q-116 0-236.5-56T335-335Q232-438 176-558.5T120-795q0-19 13-32t32-13h140q14 0 24 10t14 25l27 126q2 14-.5 25.5T359-634L259-533q26 44 55 82t64 72q37 38 78 69.5t86 55.5l95-98q10-11 23-15t26-2l119 26q15 4 25 16t10 27v135q0 19-13 32t-32 13Z',
+    shield: 'M480-84q-5 0-9.5-1t-9.5-3q-139-47-220-168.5T160-523v-196q0-19 11-34.5t28-22.5l260-97q11-4 21-4t21 4l260 97q17 7 28 22.5t11 34.5v196q0 145-81 266.5T499-88q-5 2-9.5 3t-9.5 1Z',
+    lead: 'm480-161-73 54q-9 7-17.5.5T384-124l28-90-73-54q-9-7-5.5-17t14.5-10h90l25-97-140-82q-20-12-31.5-31T280-547v-273q0-25 17.5-42.5T340-880h280q25 0 42.5 17.5T680-820v273q0 23-11.5 42T637-474l-141 82 26 97h89q11 0 14.5 10t-5.5 17l-73 54 28 90q3 11-5.5 17t-17.5-1l-72-53Zm-26-659v350l30 16 30-16v-350h-60Z',
+    touch: 'M445-80q-29 0-56-12t-45-35L143-383q-7-9-7-20t8-19l4-4q14-15 34.5-18.5T221-438l99 53v-365q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v230h299.86Q730-520 765-485t35 85v170q0 63-43.5 106.5T650-80H445Zm26.3-570q-13.3 0-21.8-8.63-8.5-8.62-8.5-21.37 0-1.5 4-15 7-12 11-26t4-29.48Q460-796 427.88-828q-32.12-32-78-32T272-827.92q-32 32.09-32 77.92 0 15 4 29t11 26q2 3 3 6.5t1 8.5q0 12.75-8.58 21.37-8.58 8.63-21.84 8.63-8.58 0-15.58-4t-11.17-11.84Q191-685 185.5-706.25q-5.5-21.25-5.5-44.2 0-70.55 49.73-120.05Q279.45-920 350-920t120.27 49.5Q520-821 520-750.31q0 22.99-5.7 44.28-5.71 21.29-16.3 40.03-4 8-11.04 12-7.05 4-15.66 4Z',
+    close: 'M480-424 284-228q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536-480l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480-424Z',
+    add: 'M440-440H240q-17 0-28.5-11.5T200-480q0-17 11.5-28.5T240-520h200v-200q0-17 11.5-28.5T480-760q17 0 28.5 11.5T520-720v200h200q17 0 28.5 11.5T760-480q0 17-11.5 28.5T720-440H520v200q0 17-11.5 28.5T480-200q-17 0-28.5-11.5T440-240v-200Z',
     note: 'M400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-382q0-17 11.5-28.5T520-840h160q17 0 28.5 11.5T720-800v80q0 17-11.5 28.5T680-680H560v400q0 66-47 113t-113 47Z',
   };
   const icon = (d) => '<svg class="i" viewBox="0 -960 960 960"><path d="' + d + '"/></svg>';
@@ -341,7 +415,7 @@
   };
 
   // ---- Settings: every extra can be switched on or off at any time, also mid-ride ----
-  const DEFAULTS = { map: false, voice: true, vibrate: true, awake: true, darkMap: true };
+  const DEFAULTS = { map: false, voice: true, vibrate: true, awake: true, darkMap: true, hazards: true, roles: true, talk: 'open', night: 'off', shareInfo: true };
   const SET = Object.assign({}, DEFAULTS, (() => { try { return JSON.parse(store.get('rc-web-settings') || '{}'); } catch (e) { return {}; } })());
   const saveSettings = () => store.set('rc-web-settings', JSON.stringify(SET));
   const TOGGLES = [
@@ -349,16 +423,34 @@
     ['voice', 'Spoken alerts', 'Votes, messages, riders joining and SOS read out loud.'],
     ['vibrate', 'Vibration', 'A buzz for votes, messages and SOS (on phones that support it).'],
     ['awake', 'Keep screen on', 'Stops the phone sleeping during a ride, so your mic keeps working on iPhone.'],
+    ['hazards', 'Hazard alerts', 'Mark potholes, police, accidents… for the riders behind, and hear "Pothole in 300 meters" for the ones ahead. Only the hazard\'s spot is shared.'],
+    ['roles', 'Lead & sweep alerts', 'Tap a rider to make them lead or sweep. The lead hears when someone gets ahead, the sweep when someone drops behind. Needs Group map on.'],
+  ];
+  const CHOICES = [
+    ['talk', 'Talk mode', [['open', 'Open mic'], ['ptt', 'Push to talk']], {
+      open: 'Just talk: your mic is always on.',
+      ptt: 'Silent until you hold the mic button. Tap it once to talk hands-free, tap again to stop.' }],
+    ['night', 'Night mode', [['off', 'Off'], ['auto', 'Auto'], ['on', 'On']], {
+      off: 'Normal colours, day and night.',
+      auto: 'Dim red screen and quieter alerts from sunset to sunrise.',
+      on: 'Dim red screen and quieter alerts. Red light keeps your eyes used to the dark road.' }],
   ];
   function setSetting(key, on) {
     SET[key] = on; saveSettings();
     if (key === 'map') {
       if (on) { startLocation(); banner('Group map on: the group can see where you are'); }
-      else { stopLocation(); closeMap(); }
+      else { if (!needLocation()) stopLocation(); closeMap(); }
       renderMapCard(); renderRiders();
     } else if (key === 'awake') {
       if (on) keepAwake(); else { try { S.wakeLock && S.wakeLock.release(); } catch (e) {} S.wakeLock = null; }
-    }
+    } else if (key === 'hazards') {
+      if (on) send(T.hazard, { t: 'sync' }); else { H.list.clear(); if (!needLocation()) stopLocation(); }
+      renderHazards(); renderMapView();
+    } else if (key === 'talk') {
+      PT.talking = false; PT.latched = false; applyTalk(); renderSettings();
+    } else if (key === 'night') {
+      applyNight(); renderSettings();
+    } else if (key === 'shareInfo') saveSettings();
   }
   function renderSettings() {
     $('nameSet').value = store.get('rc-web-name') || $('nameIn').value || '';
@@ -366,6 +458,11 @@
     $('toggles').innerHTML = TOGGLES.map(([k, t, d]) =>
       '<label class="setting"><div class="grow"><div class="t">' + t + '</div><div class="d">' + d + '</div></div>' +
       '<span class="switch"><input type="checkbox" data-setting="' + k + '"' + (SET[k] ? ' checked' : '') + '><span></span></span></label>').join('');
+    $('choices').innerHTML = CHOICES.map(([k, t, opts, desc]) =>
+      '<div class="setting" style="display:block"><div class="t">' + t + '</div><div class="d">' + desc[SET[k]] + '</div><div class="seg">' +
+      opts.map(([v, l]) => '<button class="' + (SET[k] === v ? 'sel' : '') + '" data-choice="' + k + '" data-value="' + v + '">' + l + '</button>').join('') +
+      '</div></div>').join('');
+    renderInfoBox();
   }
   function openSettings() { renderSettings(); $('settings').classList.remove('hidden'); }
 
@@ -375,6 +472,8 @@
     try {
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'en-IN'; u.rate = 1.0;
+      // Quieter at night, so alerts don't startle in a silent helmet.
+      u.volume = isNight() ? 0.55 : 1;
       speechSynthesis.speak(u);
     } catch (e) {}
   }
@@ -503,6 +602,7 @@
   function sosMsg(lat, lon) {
     const o = { t: 'sos', name: S.name, at: S.mySos.at, crash: false };
     if (lat != null) { o.lat = lat; o.lon = lon; }
+    if (SET.shareInfo && !infoEmpty(INFO)) o.info = infoJson(INFO);
     return o;
   }
   function startCountdown() {
@@ -542,7 +642,7 @@
   function onSos(o, from) {
     if (o.t === 'sos') {
       const isNew = !S.alerts.has(from);
-      S.alerts.set(from, { name: o.name, lat: o.lat, lon: o.lon, crash: !!o.crash, at: o.at });
+      S.alerts.set(from, { name: o.name, lat: o.lat, lon: o.lon, crash: !!o.crash, at: o.at, info: infoFrom(o.info) });
       if (isNew) {
         siren(5); vibrate([400, 200, 400, 200, 400]);
         setTimeout(() => speak('S O S. ' + o.name + (o.crash ? ' may have crashed.' : ' needs help.')), 300);
@@ -580,10 +680,12 @@
     send(T.music, { t: 'saving', on: true }, [id]);
     sendPhoto([id]);
     if (shouldShareRegroup()) sendRegroup([id]);
+    if (shouldShareRoles()) sendRoles([id]);
+    sendMyHazards([id]);
   }
   function onLeft(p) {
     const id = p.identity, name = p.name || 'A rider';
-    S.batteries.delete(id); S.onCall.delete(id);
+    S.batteries.delete(id); S.onCall.delete(id); RW.ahead.delete(id); RW.behind.delete(id);
     G.pos.delete(id); G.sep.delete(id);
     if (S.regroup) S.regroup.arrived.delete(id);
     recompute(false);
@@ -693,7 +795,7 @@
   function distText(t) { return !t ? '' : t.d < 150 ? 'with you' : shortDist(t.d) + (t.rel === 'near' ? '' : ' ' + t.rel); }
 
   function startLocation() {
-    if (G.watch != null || !SET.map || !S.room || !navigator.geolocation) return;
+    if (G.watch != null || !needLocation() || !S.room || !navigator.geolocation) return;
     G.watch = navigator.geolocation.watchPosition(onFix, (e) => {
       if (e.code === 1) { G.denied = true; renderMapCard(); renderMapBox(); banner('Location is blocked for this site. Allow it in your browser settings.'); }
     }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 30000 });
@@ -709,8 +811,11 @@
     if (c.heading != null && !isNaN(c.heading) && (c.speed || 0) >= 2) G.heading = c.heading;
     else if (prev && dist(prev.lat, prev.lon, G.me.lat, G.me.lon) > 30) G.heading = bearing(prev.lat, prev.lon, G.me.lat, G.me.lon);
     if (!prev) sendPosition();
+    checkHazards();
     recompute(true);
   }
+  /** Location is used for the group map, and (only on this phone) to warn about hazards others marked. */
+  function needLocation() { return SET.map || (SET.hazards && Array.from(H.list.values()).some((h) => h.by !== myId)); }
   function sendPosition() {
     if (!SET.map || !G.me || !S.room) return;
     G.lastSent = Date.now();
@@ -734,8 +839,9 @@
         else if (prev > 0 && t.d < 500) { G.sep.set(id, 0); sayMap(p.name + ' is back with the group'); }
       });
       checkArrival();
+      checkRoles();
     }
-    renderMapCard(); renderMapView(); renderRiders();
+    renderMapCard(); renderMapView(); renderRiders(); renderHazards();
   }
 
   function onLoc(o, from) {
@@ -869,10 +975,10 @@
       ? icon('M480-280q-83 0-141.5-58.5T280-480q0-83 58.5-141.5T480-680q83 0 141.5 58.5T680-480q0 83-58.5 141.5T480-280ZM200-440H80q-17 0-28.5-11.5T40-480q0-17 11.5-28.5T80-520h120q17 0 28.5 11.5T240-480q0 17-11.5 28.5T200-440Zm680 0H760q-17 0-28.5-11.5T720-480q0-17 11.5-28.5T760-520h120q17 0 28.5 11.5T920-480q0 17-11.5 28.5T880-440ZM480-760q-17 0-28.5-11.5T440-800v-120q0-17 11.5-28.5T480-960q17 0 28.5 11.5T520-920v120q0 17-11.5 28.5T480-760Zm0 720q-17 0-28.5-11.5T440-80v-120q0-17 11.5-28.5T480-240q17 0 28.5 11.5T520-200v120q0 17-11.5 28.5T480-40Z')
       : icon('M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q14 0 27.5 1t26.5 3q-41 29-65.5 75.5T444-660q0 90 63 153t153 63q55 0 101-24.5t75-65.5q2 13 3 26.5t1 27.5q0 150-105 255T480-120Z');
   }
-  function markerHtml(name, photo, talk, hdg, stale) {
+  function markerHtml(name, photo, talk, hdg, stale, role) {
     const face = '<div class="face"' + (photo ? ' style="background-image:url(' + photo + ')"' : '') + '>' + (photo ? '' : esc(name.charAt(0).toUpperCase())) + '</div>';
     const arrow = hdg != null ? '<div class="arrow" style="transform:rotate(' + hdg + 'deg)"></div>' : '';
-    return '<div class="mk' + (talk ? ' talk' : '') + (stale ? ' stale' : '') + '">' + arrow + face + '<div class="tagname">' + esc(name.split(' ')[0]) + '</div></div>';
+    return '<div class="mk' + (talk ? ' talk' : '') + (stale ? ' stale' : '') + '">' + arrow + face + '<div class="tagname">' + esc(name.split(' ')[0] + (role ? ' · ' + role : '')) + '</div></div>';
   }
   function renderMapView() {
     if (!G.map || $('mapView').classList.contains('hidden')) return;
@@ -880,12 +986,20 @@
     const seen = new Set();
     G.pos.forEach((p, id) => {
       seen.add(id);
-      const icn = L.divIcon({ html: markerHtml(p.name, S.photos.get(id), talking.has(id), (p.spd || 0) >= 8 ? p.hdg : null, Date.now() - p.at > 45000), iconSize: [44, 44], iconAnchor: [22, 22], className: '' });
+      const icn = L.divIcon({ html: markerHtml(p.name, S.photos.get(id), talking.has(id), (p.spd || 0) >= 8 ? p.hdg : null, Date.now() - p.at > 45000, roleOf(id)), iconSize: [44, 44], iconAnchor: [22, 22], className: '' });
       const m = G.marks.get(id);
       if (m) { m.setLatLng([p.lat, p.lon]); m.setIcon(icn); }
       else G.marks.set(id, L.marker([p.lat, p.lon], { icon: icn }).addTo(G.map).on('click', () => { G.follow = false; G.map.setView([p.lat, p.lon], 16); }));
     });
     G.marks.forEach((m, id) => { if (!seen.has(id)) { m.remove(); G.marks.delete(id); } });
+    const hzSeen = new Set();
+    if (SET.hazards) H.list.forEach((h, id) => {
+      hzSeen.add(id);
+      if (H.marks.has(id)) return;
+      const icn = L.divIcon({ html: '<div class="mkhz">' + hazIcon(h.kind) + '<div class="tagname">' + HAZ[h.kind].label + '</div></div>', iconSize: [34, 34], iconAnchor: [17, 17], className: '' });
+      H.marks.set(id, L.marker([h.lat, h.lon], { icon: icn, zIndexOffset: -200 }).addTo(G.map));
+    });
+    H.marks.forEach((m, id) => { if (!hzSeen.has(id)) { m.remove(); H.marks.delete(id); } });
     if (G.me) {
       const ll = [G.me.lat, G.me.lon];
       if (G.meMark) G.meMark.setLatLng(ll);
@@ -938,6 +1052,334 @@
     $('pinLabels').innerHTML = LABELS.map((l) => '<button class="' + (l === v ? 'sel' : '') + '" data-label="' + l + '">' + l + '</button>').join('');
   }
 
+  // ---- Hazards: marked by any rider, the riders behind hear them coming (same messages as the app) ----
+  const HAZ = {
+    POTHOLE: { label: 'Pothole', spoken: 'Pothole', keep: 120, icon: P.warning },
+    SPEED_BREAKER: { label: 'Speed breaker', spoken: 'Speed breaker', keep: 120, icon: P.speedBump },
+    SLIPPERY: { label: 'Slippery', spoken: 'Slippery road', keep: 120, icon: P.drop },
+    POLICE: { label: 'Police', spoken: 'Police check', keep: 30, icon: P.police },
+    ACCIDENT: { label: 'Accident', spoken: 'Accident', keep: 60, icon: P.crash },
+    ANIMAL: { label: 'Animal', spoken: 'Animal on the road', keep: 20, icon: P.pets },
+  };
+  const H = { list: new Map(), warned: new Set(), marks: new Map() };
+  const hazIcon = (k, cls) => '<div class="hz' + (cls || '') + '">' + icon(HAZ[k].icon) + '</div>';
+  const expired = (h) => Date.now() - h.at > HAZ[h.kind].keep * 60000;
+  function aheadOf(lat, lon, within) {
+    if (!G.me || G.heading == null) return null;
+    const diff = Math.abs(((bearing(G.me.lat, G.me.lon, lat, lon) - G.heading) % 360 + 540) % 360 - 180);
+    return diff <= within;
+  }
+  function hazJson(h) { return { t: 'hazard', id: h.id, kind: h.kind, lat: h.lat, lon: h.lon, by: h.by, name: h.name, at: h.at }; }
+  function markHazard(kind) {
+    if (!SET.hazards) return;
+    const place = (lat, lon) => {
+      const now = Date.now();
+      const same = Array.from(H.list.values()).find((h) => h.kind === kind && dist(h.lat, h.lon, lat, lon) < 80);
+      const h = same ? Object.assign({}, same, { at: now }) : { id: newId(), kind, lat, lon, by: myId, name: S.name, at: now };
+      H.list.set(h.id, h); H.warned.add(h.id);
+      send(T.hazard, hazJson(h));
+      speak(HAZ[kind].spoken + ' marked for the group'); vibrate(80);
+      renderHazards(); renderMapView();
+    };
+    if (G.me) { place(G.me.lat, G.me.lon); return; }
+    if (!navigator.geolocation) { banner('This browser has no location'); return; }
+    banner('Finding where you are…');
+    navigator.geolocation.getCurrentPosition((p) => place(p.coords.latitude, p.coords.longitude),
+      () => { speak('Allow location to mark hazards'); banner('Allow location for this site to mark hazards'); },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 20000 });
+  }
+  function removeHazard(id) {
+    if (!H.list.delete(id)) return;
+    send(T.hazard, { t: 'hazard-clear', id });
+    renderHazards(); renderMapView();
+  }
+  function sendMyHazards(to) {
+    const mine = Array.from(H.list.values()).filter((h) => h.by === myId);
+    if (mine.length) send(T.hazard, { t: 'hazards', list: mine.map(hazJson) }, to);
+  }
+  function receiveHazard(o, from, announce) {
+    if (!HAZ[o.kind]) return;
+    const h = { id: o.id, kind: o.kind, lat: o.lat, lon: o.lon, by: o.by || from, name: o.name || 'A rider', at: o.at };
+    if (expired(h)) return;
+    const known = H.list.has(h.id);
+    H.list.set(h.id, h);
+    startLocation(); // to warn me as I get close (stays on this phone)
+    renderHazards(); renderMapView();
+    if (known || !announce) return;
+    if (!G.me) { speak(h.name + ' marked: ' + HAZ[h.kind].spoken); return; }
+    const d = dist(G.me.lat, G.me.lon, h.lat, h.lon), ahead = aheadOf(h.lat, h.lon, 60);
+    if (d > 30000) return;
+    if (ahead === true) speak(h.name + ' marked: ' + HAZ[h.kind].spoken + ', ' + spokenDist(d) + ' ahead');
+    else if (ahead === null) speak(h.name + ' marked: ' + HAZ[h.kind].spoken);
+  }
+  function onHazard(o, from) {
+    if (!SET.hazards) return;
+    if (o.t === 'hazard') receiveHazard(o, from, true);
+    else if (o.t === 'hazards') (o.list || []).forEach((h) => receiveHazard(h, from, false));
+    else if (o.t === 'hazard-clear') { if (H.list.delete(o.id)) { renderHazards(); renderMapView(); } }
+    else if (o.t === 'sync') sendMyHazards([from]);
+  }
+  /** "Pothole in 300 meters" once, when it's 40–500 m ahead on my road. */
+  function checkHazards() {
+    if (!SET.hazards || !G.me) return;
+    H.list.forEach((h) => {
+      if (H.warned.has(h.id)) return;
+      const d = dist(G.me.lat, G.me.lon, h.lat, h.lon);
+      if (d >= 40 && d <= 500 && aheadOf(h.lat, h.lon, 45) === true) {
+        H.warned.add(h.id);
+        speak(HAZ[h.kind].spoken + ' in ' + spokenDist(d)); vibrate([120, 80, 120]);
+      }
+    });
+    renderHazards();
+  }
+  setInterval(() => {
+    let gone = false;
+    H.list.forEach((h, id) => { if (expired(h)) { H.list.delete(id); gone = true; } });
+    if (gone) { renderHazards(); renderMapView(); }
+  }, 30000);
+  function renderHazards() {
+    const box = $('hazCard');
+    if (!SET.hazards || !S.room) { box.innerHTML = ''; return; }
+    const list = Array.from(H.list.values()).map((h) => [h, G.me ? dist(G.me.lat, G.me.lon, h.lat, h.lon) : null])
+      .sort((a, b) => (a[1] == null ? 1e12 : a[1]) - (b[1] == null ? 1e12 : b[1]));
+    if (!list.length) {
+      box.innerHTML = '<button class="btn" style="margin-top:14px" data-open-hazards>' + icon(P.warning) + 'Mark a road hazard</button>';
+      return;
+    }
+    box.innerHTML = '<div class="card"><div class="label">Road hazards</div>' + list.slice(0, 3).map(([h, d]) => {
+      const ahead = d != null ? aheadOf(h.lat, h.lon, 60) : null;
+      const at = d == null ? null : shortDist(d) + (d < 150 ? ' · here' : ahead === true ? ' ahead' : ahead === false ? ' behind' : ' away');
+      const mins = Math.max(0, Math.floor((Date.now() - h.at) / 60000));
+      const sub = [at, esc(h.name), mins < 1 ? 'just now' : mins + ' min ago'].filter(Boolean).join(' · ');
+      return '<div class="rider">' + hazIcon(h.kind) + '<div class="grow"><div class="rname">' + HAZ[h.kind].spoken + '</div><div class="rsub' +
+        (ahead === true ? ' ahead' : '') + '">' + sub + '</div></div><button class="x" aria-label="Remove" data-unhazard="' + esc(h.id) + '">' + icon(P.close) + '</button></div>';
+    }).join('') + (list.length > 3 ? '<p style="font-size:14px">+' + (list.length - 3) + ' more on the map</p>' : '') +
+      '<button class="btn" style="margin-top:10px;min-height:50px" data-open-hazards>' + icon(P.add) + 'Mark a hazard</button></div>';
+  }
+  function openHazards() {
+    $('hazKinds').innerHTML = Object.entries(HAZ).map(([k, v]) => '<button class="hztile" data-hazard="' + k + '">' + hazIcon(k) + v.label + '</button>').join('');
+    $('hazPicker').classList.remove('hidden');
+  }
+
+  // ---- Lead & sweep (shared by everyone; same messages as the app) ----
+  let ROLES = { lead: null, sweep: null, at: 0, by: '' };
+  const RW = { ahead: new Set(), behind: new Set() };
+  const roleOf = (id) => (id === ROLES.lead ? 'Lead' : id === ROLES.sweep ? 'Sweep' : null);
+  const roleTag = (id) => { const r = roleOf(id); return r ? '<span class="role' + (r === 'Sweep' ? ' sweep' : '') + '">' + r.toUpperCase() + '</span>' : ''; };
+  function shouldShareRoles() {
+    if (!ROLES.at || !S.room) return false;
+    if (ROLES.by === myId) return true;
+    const present = Array.from(S.room.remoteParticipants.keys());
+    if (present.includes(ROLES.by)) return false;
+    return present.concat(myId).sort()[0] === myId;
+  }
+  function sendRoles(to) {
+    const o = { t: 'roles', at: ROLES.at, by: ROLES.by, name: S.name };
+    if (ROLES.lead) o.lead = ROLES.lead;
+    if (ROLES.sweep) o.sweep = ROLES.sweep;
+    send(T.role, o, to);
+  }
+  function setRole(role, id, name) {
+    const other = role === 'lead' ? 'sweep' : 'lead';
+    ROLES = Object.assign({}, ROLES, { [role]: id, at: Date.now(), by: myId });
+    if (id && ROLES[other] === id) ROLES[other] = null;
+    RW.ahead.clear(); RW.behind.clear();
+    sendRoles();
+    speak(!id ? 'No ' + role + ' now' : id === myId ? "You're the " + role : name + ' is the ' + role);
+    renderRiders(); renderMapView();
+  }
+  function onRole(o, from) {
+    if (o.t === 'roles') {
+      const inc = { lead: o.lead || null, sweep: o.sweep || null, at: o.at, by: o.by || from };
+      if (!(inc.at > ROLES.at || (inc.at === ROLES.at && inc.by > ROLES.by))) return;
+      const before = ROLES; ROLES = inc; RW.ahead.clear(); RW.behind.clear();
+      const by = o.name || 'A rider';
+      if (inc.lead === myId && before.lead !== myId) speak(by + ' made you the lead');
+      else if (inc.sweep === myId && before.sweep !== myId) speak(by + ' made you the sweep');
+      renderRiders(); renderMapView();
+    } else if (o.t === 'sync') { if (shouldShareRoles()) sendRoles([from]); }
+  }
+  /** How far "to" is ahead (+) or behind (−) "from" along from's direction of travel. */
+  function alongM(from, to) {
+    const d = dist(from.lat, from.lon, to.lat, to.lon);
+    return d < 1 ? 0 : d * Math.cos((bearing(from.lat, from.lon, to.lat, to.lon) - from.hdg) * Math.PI / 180);
+  }
+  /** Only the riders involved hear it: the lead, the sweep, and the rider out of place. */
+  function checkRoles() {
+    if (!SET.map || !SET.roles || !G.me || (!ROLES.lead && !ROLES.sweep)) return;
+    const all = new Map();
+    G.pos.forEach((p, id) => all.set(id, { lat: p.lat, lon: p.lon, hdg: (p.spd || 0) >= 10 && p.hdg != null ? p.hdg : null, name: p.name }));
+    all.set(myId, { lat: G.me.lat, lon: G.me.lon, hdg: G.heading, name: S.name });
+    const lead = all.get(ROLES.lead), sweep = all.get(ROLES.sweep);
+    all.forEach((p, id) => {
+      if (id === ROLES.lead || id === ROLES.sweep) return;
+      if (lead && lead.hdg != null) {
+        const a = alongM(lead, p);
+        if (a > 300 && !RW.ahead.has(id)) {
+          RW.ahead.add(id);
+          if (id === myId) speak("You're ahead of the lead, " + lead.name); else if (ROLES.lead === myId) speak(p.name + ' is ahead of you');
+        }
+        if (a < 100) RW.ahead.delete(id);
+      }
+      if (sweep && sweep.hdg != null) {
+        const a = alongM(sweep, p);
+        if (a < -500 && !RW.behind.has(id)) {
+          RW.behind.add(id);
+          if (id === myId) speak("You're behind the sweep, " + sweep.name); else if (ROLES.sweep === myId) speak(p.name + ' dropped behind you');
+        }
+        if (a > -100) RW.behind.delete(id);
+      }
+    });
+  }
+
+  // ---- Per-rider volume (only on this phone) ----
+  const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const VOL = (() => { try { return JSON.parse(store.get('rc-web-vol') || '{}'); } catch (e) { return {}; } })();
+  const volOf = (id) => VOL[id] || { v: 1, m: false };
+  function setVol(id, v) {
+    if (v.v === 1 && !v.m) delete VOL[id]; else VOL[id] = v;
+    store.set('rc-web-vol', JSON.stringify(VOL)); applyVolumes(); renderRiders();
+  }
+  function applyVolumes() {
+    const r = S.room; if (!r) return;
+    r.remoteParticipants.forEach((p, id) => {
+      const v = volOf(id);
+      try { if (typeof p.setVolume === 'function') p.setVolume(v.v); } catch (e) {}
+      try {
+        const pub = typeof p.getTrackPublication === 'function' && p.getTrackPublication('microphone');
+        // Muting for me stops downloading their voice too.
+        if (pub && typeof pub.setSubscribed === 'function' && pub.isSubscribed === v.m) pub.setSubscribed(!v.m);
+      } catch (e) {}
+    });
+  }
+  let sheetFor = null;
+  function openRider(id) { sheetFor = id; renderRiderSheet(); $('riderSheet').classList.remove('hidden'); }
+  function renderRiderSheet() {
+    const r = S.room, id = sheetFor; if (!r || !id) return;
+    const me = id === myId, p = me ? r.localParticipant : r.remoteParticipants.get(id);
+    if (!p) { $('riderSheet').classList.add('hidden'); return; }
+    const v = volOf(id), photo = me ? myPhoto : S.photos.get(id), name = p.name || 'Rider';
+    let html = '<div class="row"><div class="avatar' + (me ? ' me' : '') + ' photo-big"' + (photo ? ' style="background-image:url(' + photo + ')"' : '') + '>' +
+      (photo ? '' : esc(name.charAt(0).toUpperCase())) + '</div><div class="grow"><h1>' + esc(name) + (me ? ' (you)' : '') + '</h1>' + roleTag(id).replace('class="role', 'style="margin-left:0" class="role') + '</div></div>';
+    if (!me) {
+      if (!IOS) {
+        const pct = Math.round(v.v * 100);
+        html += '<div class="setting" style="display:block;margin-top:14px"><div class="row"><div class="t grow">Volume for me</div><div class="t" style="color:' +
+          (v.m ? 'var(--stop)' : 'var(--orange)') + '" id="volPct">' + (v.m ? 'Muted' : pct + '%') + '</div></div>' +
+          '<input type="range" min="10" max="100" step="5" value="' + pct + '" id="volRange" style="--fill:' + ((pct - 10) / 0.9) + '%">' +
+          '<div class="d">Only changes what you hear.</div></div>';
+      }
+      html += '<label class="setting"><div class="grow"><div class="t">Mute for me</div><div class="d">You stop hearing them; they still hear you. Also saves data.' +
+        (IOS ? ' (iPhone browsers can\'t turn one rider down, only mute them.)' : '') + '</div></div><span class="switch"><input type="checkbox" id="volMute"' + (v.m ? ' checked' : '') + '><span></span></span></label>';
+    }
+    html += '<div class="setting" style="display:block"><div class="t">Group role</div><div class="d">The lead rides first, the sweep rides last. With the Group map on, ' +
+      'they hear when someone gets ahead of the lead or drops behind the sweep.</div><div class="seg">' +
+      '<button class="' + (ROLES.lead === id ? 'sel' : '') + '" data-role="lead">' + (ROLES.lead === id ? 'Lead ✓' : 'Lead') + '</button>' +
+      '<button class="' + (ROLES.sweep === id ? 'sel' : '') + '" data-role="sweep">' + (ROLES.sweep === id ? 'Sweep ✓' : 'Sweep') + '</button></div></div>' +
+      '<div class="field"><button class="btn primary" id="sheetDone">Done</button></div>';
+    $('riderSheetIn').innerHTML = html;
+  }
+
+  // ---- Push to talk: hold to talk, or tap to talk hands-free and tap again to stop ----
+  const PT = { talking: false, latched: false, downAt: 0, latchedAt: 0 };
+  const ptt = () => SET.talk === 'ptt';
+  /** The mic sends silence unless talking (instant, no re-publishing). */
+  function applyTalk() {
+    const r = S.room;
+    const on = !ptt() || PT.talking;
+    try {
+      const pub = r && r.localParticipant.getTrackPublication && r.localParticipant.getTrackPublication('microphone');
+      const t = pub && pub.track && pub.track.mediaStreamTrack;
+      if (t) t.enabled = on;
+    } catch (e) {}
+    renderRiders();
+  }
+  function talkDown() {
+    if (!ptt() || !S.room) return;
+    if (!S.room.localParticipant.isMicrophoneEnabled) { S.mutedWanted = false; S.room.localParticipant.setMicrophoneEnabled(true).then(applyTalk).catch(() => {}); }
+    PT.downAt = Date.now(); PT.talking = true; vibrate(30); applyTalk();
+  }
+  function talkUp() {
+    if (!ptt() || !PT.talking) return;
+    if (PT.latched) { PT.talking = false; PT.latched = false; }
+    else if (Date.now() - PT.downAt < 350) { PT.latched = true; PT.latchedAt = Date.now(); }
+    else PT.talking = false;
+    applyTalk();
+  }
+  // A forgotten hands-free mic closes itself after 2 minutes.
+  setInterval(() => {
+    if (PT.latched && Date.now() - PT.latchedAt > 120000) { PT.latched = false; PT.talking = false; applyTalk(); speak('Mic closed'); }
+  }, 5000);
+
+  // ---- Night mode: dim red screen and quieter alerts; Auto follows sunset where you are ----
+  function sunDark(now, lat, lon) {
+    const rad = Math.PI / 180, day = 86400000;
+    const ev = (dayStart, rising) => {
+      const doy = Math.floor((dayStart - Date.UTC(new Date(dayStart).getUTCFullYear(), 0, 0)) / day);
+      const lngHour = lon / 15, t = doy + ((rising ? 6 : 18) - lngHour) / 24, m = 0.9856 * t - 3.289;
+      const l = ((m + 1.916 * Math.sin(m * rad) + 0.02 * Math.sin(2 * m * rad) + 282.634) % 360 + 360) % 360;
+      let ra = ((Math.atan(0.91764 * Math.tan(l * rad)) / rad) % 360 + 360) % 360;
+      ra = (ra + Math.floor(l / 90) * 90 - Math.floor(ra / 90) * 90) / 15;
+      const sinDec = 0.39782 * Math.sin(l * rad), cosDec = Math.cos(Math.asin(sinDec));
+      const cosH = (Math.cos(90.833 * rad) - sinDec * Math.sin(lat * rad)) / (cosDec * Math.cos(lat * rad));
+      if (cosH > 1) return 'dark';
+      if (cosH < -1) return 'light';
+      const h = (rising ? 360 - Math.acos(cosH) / rad : Math.acos(cosH) / rad) / 15;
+      return dayStart + ((((h + ra - 0.06571 * t - 6.622 - lngHour) % 24) + 24) % 24) * 3600000;
+    };
+    const today = now - (now % day), events = [];
+    for (let d = -1; d <= 1; d++) {
+      const start = today + d * day, rise = ev(start, true), set = ev(start, false);
+      if (typeof rise !== 'number' || typeof set !== 'number') { if (d === 0) return rise === 'dark' || set === 'dark'; continue; }
+      events.push([rise, true], [set, false]);
+    }
+    const past = events.filter((e) => e[0] <= now).sort((a, b) => b[0] - a[0])[0];
+    return past ? !past[1] : false;
+  }
+  function isNight() {
+    if (SET.night === 'on') return true;
+    if (SET.night !== 'auto') return false;
+    if (G.me) return sunDark(Date.now(), G.me.lat, G.me.lon);
+    const d = new Date(), min = d.getHours() * 60 + d.getMinutes();
+    return min >= 18 * 60 + 30 || min < 6 * 60;
+  }
+  function applyNight() {
+    const on = isNight();
+    document.documentElement.classList.toggle('night', on);
+    document.querySelector('meta[name=theme-color]').setAttribute('content', on ? '#140000' : '#070A14');
+  }
+  setInterval(applyNight, 60000);
+
+  // ---- Emergency info: only on this phone, sent with my SOS if allowed ----
+  const BLOOD = ['A+', 'A−', 'B+', 'B−', 'AB+', 'AB−', 'O+', 'O−'];
+  let INFO = (() => { try { return JSON.parse(store.get('rc-web-info') || '{}'); } catch (e) { return {}; } })();
+  const infoEmpty = (i) => !i || !(i.blood || i.medical || i.contact || i.phone);
+  function infoJson(i) { const o = {}; ['blood', 'medical', 'contact', 'phone'].forEach((k) => { if (i[k]) o[k] = String(i[k]).trim(); }); return o; }
+  function infoFrom(o) {
+    if (!o || typeof o !== 'object') return null;
+    const i = { blood: String(o.blood || '').slice(0, 40), medical: String(o.medical || '').slice(0, 200), contact: String(o.contact || '').slice(0, 40), phone: String(o.phone || '').slice(0, 40) };
+    return infoEmpty(i) ? null : i;
+  }
+  function saveInfo() { store.set('rc-web-info', JSON.stringify(INFO)); renderMySos(); }
+  const tel = (n) => 'tel:' + String(n).replace(/[^\d+]/g, '');
+  function renderInfoBox() {
+    $('infoBox').innerHTML = '<div class="t" style="font-weight:600;font-size:17px">Emergency info</div><div class="d" style="color:var(--muted);font-size:14px;margin-top:2px">' +
+      'Shown on your screen when your SOS is on, for anyone helping you, and sent to the group with your SOS.</div>' +
+      '<div class="label" style="margin-top:12px">Blood group</div><div class="seg blood" style="grid-template-columns:repeat(4,1fr);grid-auto-flow:row">' +
+      BLOOD.map((b) => '<button class="' + (INFO.blood === b ? 'sel' : '') + '" data-blood="' + b + '">' + b + '</button>').join('') + '</div>' +
+      '<div class="field"><div class="label">Allergies, conditions, medicines</div><input id="infoMedical" maxlength="200" placeholder="e.g. Allergic to penicillin" value="' + esc(INFO.medical || '') + '"></div>' +
+      '<div class="grid2" style="margin-top:0"><div class="field"><div class="label">Contact name</div><input id="infoContact" maxlength="40" placeholder="e.g. Ammi" value="' + esc(INFO.contact || '') + '"></div>' +
+      '<div class="field"><div class="label">Phone</div><input id="infoPhone" type="tel" maxlength="40" placeholder="+91 98…" value="' + esc(INFO.phone || '') + '"></div></div>' +
+      '<label class="setting" style="margin-top:12px"><div class="grow"><div class="t">Send with my SOS</div><div class="d">Off: it only shows on your own screen</div></div>' +
+      '<span class="switch"><input type="checkbox" data-setting="shareInfo"' + (SET.shareInfo ? ' checked' : '') + '><span></span></span></label>';
+  }
+  function infoLines(i, big) {
+    let h = '';
+    if (i.blood) h += '<div class="infoline"><div class="label">Blood group</div><div class="v' + (big ? ' big' : '') + '">' + esc(i.blood) + '</div></div>';
+    if (i.medical) h += '<div class="infoline"><div class="label">Medical</div><div class="v">' + esc(i.medical) + '</div></div>';
+    return h;
+  }
+
   // ---- Rendering ----
   function renderRiders() {
     const r = S.room; if (!r) return;
@@ -951,17 +1393,26 @@
       const bat = S.batteries.get(p.identity);
       const gp = !me && SET.map ? G.pos.get(p.identity) : null;
       const away = gp ? toMe(gp.lat, gp.lon) : null;
-      const sub = (call ? 'On a phone call' : muted ? 'Mic off' : talking ? 'Talking' : 'Listening') + (away ? ' · ' + distText(away) : '');
+      const vol = me ? null : VOL[p.identity];
+      const heard = !vol ? '' : vol.m ? ' · muted for you' : ' · ' + Math.round(vol.v * 100) + '%';
+      const sub = (call ? 'On a phone call' : muted ? 'Mic off' : talking ? 'Talking' : 'Listening') + heard + (away ? ' · ' + distText(away) : '');
       const subCls = call ? 'call' : talking ? 'talking' : '';
       const batTag = bat && !bat.charging && bat.level <= 30 ? '<span class="tag' + (bat.level <= 10 ? ' low' : '') + '">' + bat.level + '%</span>' : '';
       const name = esc(p.name || 'Rider') + (me ? ' (you)' : '');
       const avatar = '<div class="avatar' + (me ? ' me' : '') + (talking ? ' talking' : '') + '"' +
         (photo ? ' style="background-image:url(' + photo + ')"' : '') + '>' + (photo ? '' : esc((p.name || 'R').charAt(0).toUpperCase())) + '</div>';
-      return '<div class="rider">' + avatar + '<div class="grow"><div class="rname">' + name + '</div><div class="rsub ' + subCls + '">' + sub +
+      return '<div class="rider" data-rider="' + esc(p.identity) + '">' + avatar + '<div class="grow"><div class="rname">' + name + roleTag(p.identity) + '</div><div class="rsub ' + subCls + '">' + sub +
         '</div></div>' + batTag + (muted ? '<span style="color:var(--stop)">' + icon(P.micOff) + '</span>' : '') + '</div>';
     }).join('');
     const me = r.localParticipant;
     const muted = !me.isMicrophoneEnabled;
+    if (ptt()) {
+      $('micBtn').className = 'mic ptt' + (PT.talking ? ' talking' : '');
+      $('micBtn').innerHTML = icon(PT.talking ? P.mic : P.touch);
+      $('micLabel').className = 'miclabel' + (PT.talking ? '' : muted ? ' off' : ' idle');
+      $('micLabel').textContent = PT.talking ? (PT.latched ? 'Talking · tap to stop' : 'Talking · let go to stop') : muted ? 'Hold to talk · mic off' : 'Hold to talk · tap to lock';
+      return;
+    }
     $('micBtn').className = 'mic' + (muted ? ' off' : '') + (me.isSpeaking && !muted ? ' talking' : '');
     $('micBtn').innerHTML = icon(muted ? P.micOff : P.mic);
     $('micLabel').className = 'miclabel' + (muted ? ' off' : '');
@@ -1000,13 +1451,22 @@
     $('alerts').innerHTML = Array.from(S.alerts.entries()).map(([id, a]) => {
       const map = a.lat != null ? '<a class="btn" style="margin-top:12px;text-decoration:none" target="_blank" rel="noopener" href="https://maps.google.com/?q=' +
         a.lat + ',' + a.lon + '">' + icon(P.pin) + 'Open map</a>' : '<p>Getting their location…</p>';
-      return '<div class="card alert"><div class="rname">SOS · ' + esc(a.name) + (a.crash ? ' may have crashed' : ' needs help') + '</div>' + map +
+      const info = a.info ? '<div class="grid2" style="margin-top:4px">' + infoLines(a.info) + '</div>' +
+        (a.info.phone ? '<a class="btn" style="margin-top:12px;text-decoration:none" href="' + tel(a.info.phone) + '">' + icon(P.call) + 'Call ' + esc(a.info.contact || 'their contact') + ' · ' + esc(a.info.phone) + '</a>' : '') : '';
+      return '<div class="card alert"><div class="rname">SOS · ' + esc(a.name) + (a.crash ? ' may have crashed' : ' needs help') + '</div>' + info + map +
         '<button class="btn" style="margin-top:10px" data-dismiss="' + esc(id) + '">Dismiss</button></div>';
     }).join('');
   }
   function renderMySos() {
     $('mySos').classList.toggle('hidden', !S.mySos);
     if (S.mySos) $('mySosText').textContent = S.mySosDelivered ? 'Sent to the group. They can see where you are.' : 'Waiting for internet: it goes out as soon as you are back online.';
+    // Big and plain, for a passer-by or medic holding my phone.
+    $('helper').classList.toggle('hidden', !S.mySos);
+    if (!S.mySos) return;
+    $('helper').innerHTML = '<div class="label">For anyone helping</div><h1 style="font-size:30px;margin-top:6px">' + esc(S.name) + '</h1>' +
+      (infoEmpty(INFO) ? '<p>Add blood group, allergies and an emergency contact in Settings.</p>' : infoLines(INFO, true)) +
+      '<div class="grid2">' + (INFO.phone ? '<a class="btn go" style="text-decoration:none" href="' + tel(INFO.phone) + '">' + icon(P.call) + 'Call ' + esc(INFO.contact || 'contact') + '</a>' : '') +
+      '<a class="btn" style="text-decoration:none" href="tel:112">' + icon(P.call) + 'Call 112</a></div>';
   }
   function setStatus(text, color) { $('statusText').textContent = text; $('statusDot').style.background = color; }
   function renderStatus() {
@@ -1044,6 +1504,7 @@
       if (o.t === 'now') { S.music = o; $('music').classList.remove('hidden'); $('music').innerHTML = icon(P.note) + esc(o.dj + ' is playing ' + o.title + ' (in the app)'); }
       else if (o.t === 'stop') { S.music = null; $('music').classList.add('hidden'); }
     });
+    text(T.hazard, onHazard); text(T.role, onRole);
     room.registerByteStreamHandler(T.avatar, async (reader, info) => {
       try {
         const chunks = await reader.readAll();
@@ -1056,13 +1517,14 @@
       .on(RoomEvent.TrackSubscribed, (track) => {
         if (track.kind !== Track.Kind.Audio) return;
         const el = track.attach(); el.setAttribute('playsinline', ''); $('audio').appendChild(el);
+        applyVolumes();
       })
       .on(RoomEvent.TrackUnsubscribed, (track) => track.detach().forEach((el) => el.remove()))
       .on(RoomEvent.ParticipantConnected, (p) => { onJoined(p); renderAll(); })
       .on(RoomEvent.ParticipantDisconnected, (p) => { onLeft(p); renderAll(); })
       .on(RoomEvent.ActiveSpeakersChanged, renderRiders)
       .on(RoomEvent.TrackMuted, renderRiders).on(RoomEvent.TrackUnmuted, renderRiders)
-      .on(RoomEvent.TrackPublished, renderRiders).on(RoomEvent.LocalTrackPublished, renderRiders)
+      .on(RoomEvent.TrackPublished, () => { applyVolumes(); renderRiders(); }).on(RoomEvent.LocalTrackPublished, applyTalk)
       .on(RoomEvent.Reconnecting, () => { if (!S.offlineSince) S.offlineSince = Date.now(); renderStatus(); })
       .on(RoomEvent.Reconnected, () => { renderStatus(); catchUp(); })
       .on(RoomEvent.AudioPlaybackStatusChanged, () => $('unlockBtn').classList.toggle('hidden', room.canPlaybackAudio))
@@ -1082,10 +1544,15 @@
     try { await room.startAudio(); } catch (e) {}
     $('unlockBtn').classList.toggle('hidden', room.canPlaybackAudio);
     await room.localParticipant.setMicrophoneEnabled(!S.mutedWanted);
+    applyTalk();
     startMeter();
     sendPhoto();
     startLocation();
     renderMapCard();
+    applyVolumes();
+    send(T.role, { t: 'sync' });
+    if (SET.hazards) send(T.hazard, { t: 'sync' });
+    renderHazards();
     // Song files are for the Android app; this browser doesn't download them.
     send(T.music, { t: 'saving', on: true });
     renderAll();
@@ -1108,6 +1575,8 @@
     send(T.vote, { t: 'catchup', since: from });
     send(T.sos, { t: 'catchup', since: from });
     send(T.loc, { t: 'sync' });
+    send(T.role, { t: 'sync' });
+    if (SET.hazards) send(T.hazard, { t: 'sync' });
     if (S.mySos && !S.mySosDelivered) {
       send(T.sos, sosMsg(S.mySos.lat, S.mySos.lon)).then((ok) => {
         if (ok) { S.mySosDelivered = true; renderMySos(); speak('Back online. SOS sent to the group.'); }
@@ -1169,6 +1638,9 @@
     }
     S.room = null; S.vote = null; S.result = null; S.alerts.clear(); S.mySos = null; S.regroup = null;
     stopMeter(); stopLocation(); G.pos.clear(); G.sep.clear(); closeMap(); renderMapCard();
+    H.list.clear(); H.warned.clear(); H.marks.forEach((m) => m.remove()); H.marks.clear(); renderHazards();
+    ROLES = { lead: null, sweep: null, at: 0, by: '' }; RW.ahead.clear(); RW.behind.clear();
+    PT.talking = false; PT.latched = false; $('riderSheet').classList.add('hidden');
     try { S.wakeLock && S.wakeLock.release(); } catch (e) {}
     $('ride').classList.add('hidden'); $('dock').classList.add('hidden'); $('join').classList.remove('hidden');
     $('audio').innerHTML = ''; renderAlerts(); renderMySos();
@@ -1197,10 +1669,47 @@
     if (e.target.closest('#pinClear')) clearRegroup();
     const lab = e.target.closest('[data-label]');
     if (lab) { $('pinName').value = lab.dataset.label; renderPinLabels(); }
+    // Hazards
+    if (e.target.closest('[data-open-hazards]')) openHazards();
+    const hz = e.target.closest('[data-hazard]');
+    if (hz) { $('hazPicker').classList.add('hidden'); markHazard(hz.dataset.hazard); }
+    const unhz = e.target.closest('[data-unhazard]');
+    if (unhz) { removeHazard(unhz.dataset.unhazard); return; }
+    // Riders: volume and lead / sweep
+    const rider = e.target.closest('[data-rider]');
+    if (rider) openRider(rider.dataset.rider);
+    const role = e.target.closest('[data-role]');
+    if (role && sheetFor && S.room) {
+      const id = sheetFor, p = id === myId ? S.room.localParticipant : S.room.remoteParticipants.get(id);
+      setRole(role.dataset.role, ROLES[role.dataset.role] === id ? null : id, (p && p.name) || 'Rider');
+      renderRiderSheet();
+    }
+    if (e.target.closest('#sheetDone')) $('riderSheet').classList.add('hidden');
+    // Settings choices and emergency info
+    const ch = e.target.closest('[data-choice]');
+    if (ch) setSetting(ch.dataset.choice, ch.dataset.value);
+    const bl = e.target.closest('[data-blood]');
+    if (bl) { INFO.blood = INFO.blood === bl.dataset.blood ? '' : bl.dataset.blood; saveInfo(); renderInfoBox(); }
+  });
+  $('hazCancel').addEventListener('click', () => $('hazPicker').classList.add('hidden'));
+  ['hazPicker', 'riderSheet'].forEach((id) => $(id).addEventListener('click', (e) => { if (e.target.id === id) $(id).classList.add('hidden'); }));
+  $('riderSheet').addEventListener('input', (e) => {
+    if (e.target.id !== 'volRange' || !sheetFor) return;
+    const v = Number(e.target.value) / 100;
+    e.target.style.setProperty('--fill', ((v * 100 - 10) / 0.9) + '%');
+    $('volPct').textContent = Math.round(v * 100) + '%'; $('volPct').style.color = 'var(--orange)';
+    setVol(sheetFor, { v, m: false });
+  });
+  $('riderSheet').addEventListener('change', (e) => {
+    if (e.target.id === 'volMute' && sheetFor) { setVol(sheetFor, Object.assign({}, volOf(sheetFor), { m: e.target.checked })); renderRiderSheet(); }
+  });
+  $('infoBox').addEventListener('input', (e) => {
+    const k = { infoMedical: 'medical', infoContact: 'contact', infoPhone: 'phone' }[e.target.id];
+    if (k) { INFO[k] = e.target.value; saveInfo(); }
   });
   $('settingsClose').addEventListener('click', () => $('settings').classList.add('hidden'));
   $('settings').addEventListener('click', (e) => { if (e.target.id === 'settings') $('settings').classList.add('hidden'); });
-  $('toggles').addEventListener('change', (e) => { const k = e.target.dataset.setting; if (k) setSetting(k, e.target.checked); });
+  $('settings').addEventListener('change', (e) => { const k = e.target.dataset.setting; if (k) setSetting(k, e.target.checked); });
   $('photoPick').addEventListener('click', () => $('photoFile').click());
   $('photoFile').addEventListener('change', (e) => { pickPhoto(e.target.files[0]); e.target.value = ''; });
   $('photoRemove').addEventListener('click', removePhoto);
@@ -1222,8 +1731,12 @@
     $('pinDialog').classList.add('hidden');
   });
   $('leaveBtn').addEventListener('click', leave);
+  // Push to talk: press and hold (touch, mouse or pen).
+  $('micBtn').addEventListener('pointerdown', (e) => { if (!ptt()) return; e.preventDefault(); try { $('micBtn').setPointerCapture(e.pointerId); } catch (x) {} talkDown(); });
+  ['pointerup', 'pointercancel'].forEach((ev) => $('micBtn').addEventListener(ev, () => talkUp()));
+  $('micBtn').addEventListener('contextmenu', (e) => { if (ptt()) e.preventDefault(); });
   $('micBtn').addEventListener('click', async () => {
-    const r = S.room; if (!r) return;
+    const r = S.room; if (!r || ptt()) return;
     const on = !r.localParticipant.isMicrophoneEnabled;
     S.mutedWanted = !on;
     try { await r.localParticipant.setMicrophoneEnabled(on); } catch (e) {}
@@ -1243,6 +1756,7 @@
   // Closing the tab counts as leaving (not dropping out); a page kept for "back" doesn't.
   window.addEventListener('pagehide', (e) => { if (S.room && !e.persisted) send(T.rider, { t: 'bye' }); });
 
+  applyNight();
   const preset = (params.get('code') || location.hash.slice(1) || '').toUpperCase();
   if (CODE_RE.test(preset)) $('codeIn').value = preset;
   $('nameIn').value = store.get('rc-web-name') || '';
