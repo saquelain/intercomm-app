@@ -3,6 +3,10 @@
 Group intercom app for bike riders (Android). Riders join a ride with a 6-letter code and talk to each
 other over mobile internet through their helmet headset.
 
+Working on the code (or picking up in a new Claude chat)? Start with [CLAUDE.md](CLAUDE.md),
+[HANDOFF.md](HANDOFF.md) (status, what's next, how to ask) and [PROTOCOL.md](PROTOCOL.md) (messages
+between phones).
+
 ## Status
 
 | Step | Feature | State |

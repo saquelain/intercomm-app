@@ -7,3 +7,8 @@ local.properties
 captures/
 .kotlin/
 app/screenshots/
+
+# Local test output and tools
+*.log
+tools/webtest/out/
+tools/webtest/vendor/
