@@ -161,6 +161,8 @@ fs.mkdirSync(OUT, { recursive: true });
   await a.waitForTimeout(200);
   check('A sees Bilal mic off', (await a.textContent('#riders')).includes('Mic off'));
   await b.click('#leaveBtn');
+  // With Home safe on, leaving asks first: plain Leave here.
+  await b.click('#leaveGo');
   await a.waitForTimeout(500);
   check('A hears Bilal left (not dropped)', (await spoken(a)).includes('Bilal left the ride'));
   await a.screenshot({ path: OUT + 'w6_after.png' });

@@ -1,11 +1,15 @@
 package com.ridecomm.app.sos
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.ridecomm.app.MainActivity
@@ -31,7 +35,9 @@ object LockScreenInfo {
             return
         }
         createChannel(app)
-        if (!manager.areNotificationsEnabled()) return
+        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(app, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        if (!allowed || !manager.areNotificationsEnabled()) return
         val name = Prefs.riderName(app).ifBlank { "this rider" }
         val title = "In an emergency: $name"
         val text = lines(info).joinToString(" · ")
@@ -50,7 +56,11 @@ object LockScreenInfo {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
         // The same text even when the phone hides notification details on the lock screen.
         val notification = build().setPublicVersion(build().build()).build()
-        runCatching { manager.notify(NOTIFICATION_ID, notification) }
+        try {
+            manager.notify(NOTIFICATION_ID, notification)
+        } catch (e: SecurityException) {
+            // Notifications were turned off in between: nothing to show.
+        }
     }
 
     /** "Blood group O+", "Allergic to penicillin", "Call Ammi: +91 98…". */

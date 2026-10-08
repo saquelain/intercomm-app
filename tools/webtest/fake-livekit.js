@@ -8,7 +8,8 @@ window.LivekitClient = (() => {
   };
   const Track = { Kind: { Audio: 'audio' }, Source: { Microphone: 'microphone' } };
   class Participant {
-    constructor(identity, name) { this.identity = identity; this.name = name; this.isMicrophoneEnabled = true; this.isSpeaking = false; }
+    constructor(identity, name) { this.identity = identity; this.name = name; this.isMicrophoneEnabled = true; this.isSpeaking = false; this.volume = 1; }
+    setVolume(v) { this.volume = v; }
   }
   class LocalP extends Participant {
     constructor(room, id, name) { super(id, name); this.room = room; }
@@ -72,7 +73,7 @@ window.LivekitClient = (() => {
     // Test hooks: a short signal loss and recovery.
     goOffline() { this.offline = true; this.state = 'reconnecting'; this.emit(RoomEvent.Reconnecting); }
     goOnline() { this.offline = false; this.state = 'connected'; this.emit(RoomEvent.Reconnected); }
-    disconnect() { this.ch.postMessage({ type: 'bye', identity: this.localParticipant.identity }); this.state = 'disconnected'; this.emit(RoomEvent.Disconnected); }
+    disconnect() { this.ch.postMessage({ type: 'bye', identity: this.localParticipant.identity }); this.ch.close(); this.state = 'disconnected'; this.emit(RoomEvent.Disconnected); }
     async startAudio() {}
   }
   return { Room, RoomEvent, Track };

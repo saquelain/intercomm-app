@@ -1,6 +1,7 @@
 # RideComm handoff: where we are, how to carry on
 
-Last updated 8 Oct 2026, after CI build #36. Read `CLAUDE.md` first (how to build, test and work with
+Last updated 8 Oct 2026, after the "talk to one rider / destination / home safe / break / lock screen /
+locked rides" round (second chat). Read `CLAUDE.md` first (how to build, test and work with
 the owner); this file is the project's story so far and what's next.
 
 ## Starting a new chat (for the owner)
@@ -67,13 +68,20 @@ fake-LiveKit web tests but has not been confirmed on a ride yet.
 | Per-rider volume 20–200% and Mute for me | app (web: mute; slider not on iPhone) | built |
 | Night mode Off / Auto / On (red screen, quieter voice; Auto from sunset) | app + web | built |
 | Emergency info (blood group, medical, contact) with SOS + helper card with Call 112 | app + web | built |
+| Talk to one rider (hold a rider; others' phones silence you; hold to reply) | app + web | built, needs a ride test |
+| Shared destination (search / paste link / map long-press, Navigate, "You've reached") | app + web | built |
+| Home safe check-in (button, Leave dialog, auto at saved home, later check-in, "Getting home" card) | app + web | built |
+| Break reminder (Off / 1–3 h, Ask for a break vote, reset by a passed Break vote or 10-min stop) | app + web | built |
+| Emergency info on the lock screen (notification, off by default) | app only (iPhone: Medical ID) | built |
+| Lock rides to my group (switch, key in invite links, worker CORS for the web page) | app + web | ready; server not deployed |
 
 Chronology (git log): step 1 voice call → music → floating button → votes → SOS → glass redesign →
 group tracking → Spotify ducking → crash detection, photos → invite links → private ride server →
 headset button → wind gate → R8 + split APKs → rejoin → rider alerts → voice commands → visual wind test →
 fine-tune + drag-to-hide → speed & trip → data saver, catch-up, phone calls → web version for iPhone →
 group map + regroup → web photo/map/settings → hazards, lead & sweep, PTT, volume, night, emergency info
-(app, then web) → own photo on the map.
+(app, then web) → own photo on the map → talk to one rider, shared destination, home safe, break
+reminder, lock-screen emergency info, lock rides to the group (app and web together).
 
 ## Ideas not built yet (from the last "what next" list)
 
@@ -81,9 +89,10 @@ group map + regroup → web photo/map/settings → hazards, lead & sweep, PTT, v
 - **Fuel range reminder**: set the bike's range; warn at 80% and offer a Fuel vote.
 - **Ride planner**: start time, meeting point and planned stops shared before the ride, with reminders.
 - **Rider chat log**: scrollable history of the ride's messages, votes and alerts.
-- **Private ride server** (`server/token-worker`, deploy workflow ready): locks rides to the group with a
-  group key. Important before sharing the app widely, because the sandbox token server lets anyone with
-  the ID join. Needs the owner's Cloudflare and LiveKit keys as repo secrets.
+- **Private ride server**: everything is ready (app switch, web settings, keys in invite links, CORS); the
+  owner still has to add the Cloudflare/LiveKit secrets, run "Deploy ride server", put the address in
+  `RIDE_SERVER_URL` (APK) and `RIDE_SERVER` (web page), and switch off the LiveKit sandbox token server.
+  Important before sharing the app widely: the sandbox token server lets anyone with the ID join.
 - Smaller: a "Hazard" option on the floating button, voice commands on the web page, emergency info on
   the lock screen, night mode for the floating overlays, Play Store release (needs a signing setup and
   privacy policy).
@@ -100,6 +109,8 @@ phones can't do a mesh group call; voice is only ~10 MB an hour anyway).
   Play Protect blocks for sideloaded apps).
 - The web page only follows location for hazards after someone marks one (to avoid a location prompt
   for everyone), and only on the phone itself.
+- Talk to one rider is enforced by the listeners' phones (they silence the talker), not by the server: fine
+  for a group of friends, not a secret channel. Riders on an old app version still hear everything.
 - Nothing can be tested against real LiveKit from the cloud container; every feature is tested with unit
   tests, screenshots and the fake-LiveKit web tests (`tools/webtest/`), then by the owner on a ride.
 
@@ -118,6 +129,10 @@ phones can't do a mesh group call; voice is only ~10 MB an hour anyway).
        buildscript.repositories { maven(mirror) }
    }
    ```
-2. `./gradlew testDebugUnitTest` should pass (about 150 tests).
-3. Web tests: see `tools/webtest/README.md`.
-4. GitHub access goes through the GitHub MCP tools (no `gh` CLI in the container).
+2. Android SDK: a fresh container may have none. Install command-line tools into `~/android-sdk`
+   (`commandlinetools-linux-*_latest.zip` from dl.google.com), then
+   `sdkmanager "platforms;android-36" "platform-tools" "build-tools;35.0.0"` and write
+   `sdk.dir=$HOME/android-sdk` to `local.properties` (gitignored).
+3. `./gradlew testDebugUnitTest` should pass (about 170 tests).
+4. Web tests: see `tools/webtest/README.md`.
+5. GitHub access goes through the GitHub MCP tools (no `gh` CLI in the container).

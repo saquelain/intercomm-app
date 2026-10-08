@@ -78,6 +78,40 @@ every field optional; receivers cut `blood`/`contact`/`phone` to 40 and `medical
 | `roles` | `lead`?, `sweep`? (identities), `at`, `by`, `name` | the current roles; newest `at` wins, ties by highest `by` |
 | `sync` | – | asks for the roles (the setter, or the lowest id present, answers) |
 
+## `rc-whisper`: talk to one rider
+
+| `t` | Fields | Meaning |
+|---|---|---|
+| `whisper` | `to`, `toName`, `name`, `on`, `at` | `on: true` every 2 s while I talk only to `to`; `on: false` when I let go |
+
+Sent to everyone. Every phone except `to`'s sets the sender's voice to silent while it's on, then 0.7 s more
+(the last words are still arriving); without a repeat for 5 s it ends by itself. The sender's mic opens 0.4 s
+after the first message. Phones always honour others' whispers, whatever their own setting.
+
+## `rc-dest`: shared destination (only with Shared destination on)
+
+| `t` | Fields | Meaning |
+|---|---|---|
+| `dest` | `id`, `lat`, `lon`, `label`, `name`, `by`, `at` | where the group is heading (newest `at` wins, then highest `id`) |
+| `dest-clear` | `id`, `name` | cleared |
+| `sync` | – | asks for it (the setter, or the lowest id present, answers; also sent to joiners) |
+
+## `rc-home`: home safe
+
+| `t` | Fields | Meaning |
+|---|---|---|
+| `home` | `name` | I got home |
+
+A rider who already left can join for a moment as `<their id>~home` to send `home`; identities ending in
+`~home` are never shown as riders or announced as joining or leaving, and their `home` counts for `<id>`.
+
+## Private ride server and invite links
+
+With rides locked to the group, invite links carry the group key after the hash:
+`…/join/?code=ABCDEF#k=<url-encoded key>`. The invite page passes it on to the app (`ridecomm://join/ABCDEF?k=…`)
+or the web page (`…/ride/?code=ABCDEF#k=…`), which save it. The server answers CORS preflights so the web page
+can use it.
+
 ## `rc-music` (text) and `rc-song` (bytes): shared music
 
 | `t` | Fields | Meaning |

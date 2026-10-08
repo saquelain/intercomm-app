@@ -65,6 +65,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -216,7 +217,7 @@ fun RideContent(
                 }
 
                 StatusLine(state, dataUsed)
-                if (trip != null) TripRow(trip)
+                trip?.let { TripRow(it) }
                 SosCards(sos)
                 breakDue?.let { BreakCard(it, onAsk = BreakReminder::askGroup, onNotNow = BreakReminder::notNow) }
                 if (destination.enabled) DestinationCard(destination, onPick = { pickDestination = true }, onClear = RideDestination::clear)
@@ -434,16 +435,19 @@ private fun RiderRow(
         },
         label = "ring",
     )
-    // Tap: the rider's sheet. Hold: talk only to them until you let go.
+    // Tap: the rider's sheet. Hold: talk only to them until you let go. The gesture must survive
+    // recompositions (riders' talking state changes all the time), so it reads the latest callbacks.
+    val tap by rememberUpdatedState(onClick)
+    val hold by rememberUpdatedState(onHold)
     val gestures = if (onHold == null) {
         Modifier.clickable(onClick = onClick)
     } else {
-        Modifier.pointerInput(onHold) {
+        Modifier.pointerInput(Unit) {
             detectTapGestures(
-                onTap = { onClick() },
+                onTap = { tap() },
                 onLongPress = {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onHold()
+                    hold?.invoke()
                 },
                 onPress = {
                     tryAwaitRelease()

@@ -215,6 +215,33 @@
   html.night .night-layer { display: block; }
   #nightGrey { -webkit-backdrop-filter: grayscale(1) brightness(.8); backdrop-filter: grayscale(1) brightness(.8); }
   #nightRed { background: #FF2A1A; mix-blend-mode: multiply; z-index: 2147483647; }
+
+  /* Talk to one rider (violet, never green like talking to everyone) */
+  .wbar { position: fixed; left: 16px; right: 16px; z-index: 6; bottom: calc(150px + env(safe-area-inset-bottom)); max-width: 488px; margin: 0 auto;
+    padding: 14px 16px; border-radius: 24px; background: linear-gradient(135deg, rgba(42,31,82,.96), rgba(22,18,48,.96)); border: 1px solid rgba(124,92,255,.7); }
+  .wbar .t { font-weight: 600; font-size: 18px; } .wbar .d { color: var(--muted); font-size: 14px; }
+  .hold { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 54px; margin-top: 12px; border-radius: 999px;
+    font-weight: 600; font-size: 17px; color: #fff; border: 1px solid rgba(255,255,255,.3); background: linear-gradient(135deg, rgba(124,92,255,.38), rgba(124,92,255,.18));
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  .hold.on { background: linear-gradient(90deg, var(--violet), var(--pink)); border-color: rgba(255,255,255,.7); }
+  .avatar.whisper { border-color: var(--violet); box-shadow: 0 0 0 3px rgba(124,92,255,.3); animation: none; }
+  .rsub.whisper { color: #A08BFF; }
+  .rider[data-rider] { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+
+  /* Destination, break, home safe */
+  .card.dest { border-color: rgba(52,232,158,.55); background: linear-gradient(135deg, rgba(52,232,158,.16), rgba(52,232,158,.04)); }
+  .card.brk { border-color: rgba(255,201,60,.6); background: linear-gradient(135deg, rgba(255,201,60,.18), rgba(255,201,60,.05)); }
+  .card.home { border-color: rgba(52,232,158,.45); }
+  .grid2.wide { grid-template-columns: 1.6fr 1fr; } .grid2.wide .btn { white-space: nowrap; font-size: 17px; padding: 0 10px; }
+  .ic { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  .ok-text { color: var(--go); font-size: 15px; } .road-text { color: var(--amber); font-size: 15px; }
+  .row3 { display: grid; grid-template-columns: 1fr 58px 58px; gap: 10px; margin-top: 12px; }
+  .row3 .btn { min-height: 54px; }
+  .place { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 12px 14px; margin-top: 8px; border-radius: 16px;
+    border: 1px solid var(--rim); background: rgba(255,255,255,.06); }
+  .place .n { font-weight: 600; font-size: 17px; } .place .dd { color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pin.dest .head, .pin.dest .stem, .pin.dest .tip { background: var(--go); }
+  .pin.dest .head { color: #042A1B; }
 </style>
 </head>
 <body>
@@ -233,6 +260,7 @@
       <div class="field"><div class="label">Your name</div><input id="nameIn" maxlength="20" autocomplete="nickname" placeholder="e.g. Rahul"></div>
       <div class="field"><button class="btn primary" id="joinBtn">Join ride</button></div>
       <div class="error hidden" id="joinErr"></div>
+      <div id="checkIn"></div>
       <p class="note">Use earphones or your helmet headset. Keep this page open while riding: on iPhone, locking the screen or switching apps can pause your mic. Shared music plays in the Android app only.</p>
     </div>
   </section>
@@ -249,6 +277,8 @@
     </div>
     <div class="pill" id="status"><span class="dot" id="statusDot"></span><span id="statusText">Joining…</span></div>
     <div id="alerts"></div>
+    <div id="breakCard"></div>
+    <div id="destCard"></div>
     <div class="card hidden" id="mapCard"></div>
     <div id="hazCard"></div>
     <div class="card hidden" id="mySos">
@@ -264,6 +294,7 @@
       <div class="music hidden" id="music"></div>
     </div>
     <div class="card hidden" id="voteCard"></div>
+    <div id="homeCard"></div>
     <div class="card">
       <div class="label">Ask the group</div>
       <div class="grid3" id="votes"></div>
@@ -281,6 +312,7 @@
   </div>
 </div>
 
+<div class="wbar hidden" id="whisperBar"></div>
 <button class="btn primary unlock hidden" id="unlockBtn">Tap to turn on sound</button>
 <div class="banner gone" id="banner"></div>
 <div class="overlay hidden" id="countdown"><div class="label" style="color:#fff">Sending SOS in</div><div class="n" id="countN">5</div><div style="font-size:20px">Tap anywhere to cancel</div></div>
@@ -305,7 +337,9 @@
     <p class="note" style="margin-top:6px">A new name shows from the next time you join.</p>
     <div style="margin-top:12px" id="toggles"></div>
     <div id="choices"></div>
+    <div id="homeBox"></div>
     <div id="infoBox" style="border-top:1px solid rgba(255,255,255,.08);padding-top:14px;margin-top:4px"></div>
+    <div id="serverBox" style="margin-top:12px"></div>
   </div>
 </div>
 
@@ -349,6 +383,30 @@
     <div class="lchips" id="pinLabels"></div>
     <div class="field"><div class="label">Name</div><input id="pinName" maxlength="24" placeholder="e.g. Shell pump"></div>
     <div class="grid2" style="margin-top:16px"><button class="btn" id="pinCancel">Cancel</button><button class="btn primary" id="pinSet">Set for everyone</button></div>
+    <div class="field" id="pinDestWrap"><button class="btn" id="pinDest">Make it the destination instead</button></div>
+  </div>
+</div>
+
+<!-- Where the group is heading -->
+<div class="sheet hidden" id="destDialog">
+  <div class="sheet-in">
+    <h1>Where are we heading?</h1>
+    <p>Everyone hears it, sees how far it is and gets a Navigate button. Type a place, or paste coordinates or a Google Maps link.</p>
+    <div class="field"><div class="label">Place</div><input id="destQuery" maxlength="200" placeholder="e.g. Lonavala" enterkeyhint="search" autocomplete="off"></div>
+    <div class="field"><button class="btn primary" id="destSearch">Search</button></div>
+    <div id="destResults"></div>
+    <p class="note" style="font-size:12px">Search by OpenStreetMap.</p>
+    <div class="field"><button class="btn" id="destCancel">Cancel</button></div>
+  </div>
+</div>
+
+<!-- Leaving: offer "I'm home safe" too -->
+<div class="sheet hidden" id="leaveSheet">
+  <div class="sheet-in">
+    <h1>Leave the ride?</h1>
+    <p>You'll stop hearing the group. You can rejoin with the same code.</p>
+    <div class="field"><button class="btn go" id="leaveHome">I'm home safe · leave</button></div>
+    <div class="grid2"><button class="btn" id="leaveStay">Stay</button><button class="btn stop" id="leaveGo">Leave</button></div>
   </div>
 </div>
 
@@ -362,7 +420,12 @@
   const params = new URLSearchParams(location.search);
   const TOKEN_SERVER = params.get('ts') || 'ridecomm-xnnn94';
   const CODE_RE = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/;
-  const T = { vote: 'rc-vote', sos: 'rc-sos', rider: 'rc-rider', music: 'rc-music', avatar: 'rc-avatar', loc: 'rc-loc', hazard: 'rc-hazard', role: 'rc-role' };
+  const T = { vote: 'rc-vote', sos: 'rc-sos', rider: 'rc-rider', music: 'rc-music', avatar: 'rc-avatar', loc: 'rc-loc', hazard: 'rc-hazard', role: 'rc-role',
+    whisper: 'rc-whisper', dest: 'rc-dest', home: 'rc-home' };
+  // The group's private ride server (Cloudflare Worker), once it's deployed. Riders can also type it in Settings.
+  const RIDE_SERVER = '';
+  /** A rider who already left, checking in "home safe" for a moment: not shown or announced as a rider. */
+  const isCheckIn = (id) => /~home$/.test(id || '');
   const VOTE_TIMEOUT_MS = 45000, RESULT_SHOWN_MS = 6000, BYE_VALID_MS = 30000;
   const P = {
     mic: 'M395-435q-35-35-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35q-50 0-85-35Zm45 275v-83q-92-13-157.5-78T203-479q-2-17 9-29t28-12q17 0 28.5 11.5T284-480q14 70 69.5 115T480-320q72 0 127-45.5T676-480q4-17 15.5-28.5T720-520q17 0 28 12t9 29q-14 91-79 157t-158 79v83q0 17-11.5 28.5T480-120q-17 0-28.5-11.5T440-160Z',
@@ -386,6 +449,11 @@
     touch: 'M445-80q-29 0-56-12t-45-35L143-383q-7-9-7-20t8-19l4-4q14-15 34.5-18.5T221-438l99 53v-365q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v230h299.86Q730-520 765-485t35 85v170q0 63-43.5 106.5T650-80H445Zm26.3-570q-13.3 0-21.8-8.63-8.5-8.62-8.5-21.37 0-1.5 4-15 7-12 11-26t4-29.48Q460-796 427.88-828q-32.12-32-78-32T272-827.92q-32 32.09-32 77.92 0 15 4 29t11 26q2 3 3 6.5t1 8.5q0 12.75-8.58 21.37-8.58 8.63-21.84 8.63-8.58 0-15.58-4t-11.17-11.84Q191-685 185.5-706.25q-5.5-21.25-5.5-44.2 0-70.55 49.73-120.05Q279.45-920 350-920t120.27 49.5Q520-821 520-750.31q0 22.99-5.7 44.28-5.71 21.29-16.3 40.03-4 8-11.04 12-7.05 4-15.66 4Z',
     close: 'M480-424 284-228q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536-480l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480-424Z',
     add: 'M440-440H240q-17 0-28.5-11.5T200-480q0-17 11.5-28.5T240-520h200v-200q0-17 11.5-28.5T480-760q17 0 28.5 11.5T520-720v200h200q17 0 28.5 11.5T760-480q0 17-11.5 28.5T720-440H520v200q0 17-11.5 28.5T480-200q-17 0-28.5-11.5T440-240v-200Z',
+    voice: 'M920-591q0 80-24.5 142T826-333q-10 12-24.5 13T776-330q-11-11-10.5-26t10.5-27q36-44 55-92.5T850-591q0-67-19-115.5T776-799q-10-12-10.5-27t10.5-26q11-11 25.5-10t24.5 13q45 54 69.5 116T920-591Zm-200 0q0 32-9.5 61T684-475q-8 12-22 13t-25-10q-11-11-12-25t7-27q8-14 13-31t5-36q0-19-5-36t-13-31q-8-13-7-27t12-25q11-11 25-10t22 13q17 26 26.5 55t9.5 61ZM360-441q-66 0-108-42t-42-108q0-66 42-108t108-42q66 0 108 42t42 108q0 66-42 108t-108 42ZM40-180v-34q0-38 19-64.5t49-41.5q51-26 120.5-43T360-380q62 0 131 17t120 43q30 15 49.5 41.5T680-214v34q0 25-17.5 42.5T620-120H100q-25 0-42.5-17.5T40-180Z',
+    home: 'M160-180v-390q0-14.25 6.38-27 6.37-12.75 17.62-21l260-195q15.68-12 35.84-12Q500-825 516-813l260 195q11.25 8.25 17.63 21 6.37 12.75 6.37 27v390q0 24.75-17.62 42.37Q764.75-120 740-120H590q-12.75 0-21.37-8.63Q560-137.25 560-150v-220q0-12.75-8.62-21.38Q542.75-400 530-400H430q-12.75 0-21.37 8.62Q400-382.75 400-370v220q0 12.75-8.62 21.37Q382.75-120 370-120H220q-24.75 0-42.37-17.63Q160-155.25 160-180Z',
+    finish: 'M390-740h60v-60h-60v60Zm120 0v-60h60v60h-60ZM390-500v-60h60v60h-60Zm240-120v-60h60v60h-60Zm0 120v-60h60v60h-60Zm-120 0v-60h60v60h-60Zm120-240v-60h60v60h-60Zm-180 60v-60h60v60h-60ZM299.82-160q-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37v-580q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.42 8.62 8.59 8.63 8.59 21.38v30H390v60h-60v60h60v60h-60v370q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63ZM570-560v-60h60v60h-60Zm-120 0v-60h60v60h-60Zm-60-60v-60h60v60h-60Zm120 0v-60h60v60h-60Zm60-60v-60h60v60h-60Z',
+    search: 'M378-329q-108.16 0-183.08-75Q120-479 120-585t75-181q75-75 181.5-75t181 75Q632-691 632-584.85 632-542 618-502q-14 40-42 75l242 240q9 8.56 9 21.78T818-143q-9 9-22.22 9-13.22 0-21.78-9L533-384q-30 26-69.96 40.5Q423.08-329 378-329Zm-1-60q81.25 0 138.13-57.5Q572-504 572-585t-56.87-138.5Q458.25-781 377-781q-82.08 0-139.54 57.5Q180-666 180-585t57.46 138.5Q294.92-389 377-389Z',
+    edit: 'M160-120q-17 0-28.5-11.5T120-160v-97q0-16 6-30.5t17-25.5l505-504q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L313-143q-11 11-25.5 17t-30.5 6h-97Zm544-528 56-56-56-56-56 56 56 56Z',
     note: 'M400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-382q0-17 11.5-28.5T520-840h160q17 0 28.5 11.5T720-800v80q0 17-11.5 28.5T680-680H560v400q0 66-47 113t-113 47Z',
   };
   const icon = (d) => '<svg class="i" viewBox="0 -960 960 960"><path d="' + d + '"/></svg>';
@@ -417,7 +485,8 @@
   };
 
   // ---- Settings: every extra can be switched on or off at any time, also mid-ride ----
-  const DEFAULTS = { map: false, voice: true, vibrate: true, awake: true, darkMap: true, hazards: true, roles: true, talk: 'open', night: 'off', shareInfo: true };
+  const DEFAULTS = { map: false, voice: true, vibrate: true, awake: true, darkMap: true, hazards: true, roles: true, talk: 'open', night: 'off', shareInfo: true,
+    whisper: true, dest: true, home: true, breakEvery: '120', locked: !!RIDE_SERVER, server: RIDE_SERVER };
   const SET = Object.assign({}, DEFAULTS, (() => { try { return JSON.parse(store.get('rc-web-settings') || '{}'); } catch (e) { return {}; } })());
   const saveSettings = () => store.set('rc-web-settings', JSON.stringify(SET));
   const TOGGLES = [
@@ -427,6 +496,9 @@
     ['awake', 'Keep screen on', 'Stops the phone sleeping during a ride, so your mic keeps working on iPhone.'],
     ['hazards', 'Hazard alerts', 'Mark potholes, police, accidents… for the riders behind, and hear "Pothole in 300 meters" for the ones ahead. Only the hazard\'s spot is shared.'],
     ['roles', 'Lead & sweep alerts', 'Tap a rider to make them lead or sweep. The lead hears when someone gets ahead, the sweep when someone drops behind. Needs Group map on.'],
+    ['whisper', 'Talk to one rider', 'Hold a rider\'s name to talk only to them (lead to sweep, say). The others don\'t hear you while you hold. Private between RideComm phones, not encrypted.'],
+    ['dest', 'Shared destination', 'Set where the group is heading: everyone hears it, sees how far it is, and gets one Navigate button. Search uses OpenStreetMap. Your own location isn\'t shared.'],
+    ['home', 'Home safe check-in', 'At the end of the ride tap "I\'m home safe" and the riders still on the road hear it. With home saved, it happens by itself when you get there (keep this page open).'],
   ];
   const CHOICES = [
     ['talk', 'Talk mode', [['open', 'Open mic'], ['ptt', 'Push to talk']], {
@@ -436,6 +508,12 @@
       off: 'Normal colours, day and night.',
       auto: 'Dim red screen and quieter alerts from sunset to sunrise.',
       on: 'Dim red screen and quieter alerts. Red light keeps your eyes used to the dark road.' }],
+    ['breakEvery', 'Break reminder', [['0', 'Off'], ['60', '1 h'], ['90', '1½ h'], ['120', '2 h'], ['180', '3 h']], {
+      0: 'No reminders.',
+      60: 'After 1 hour in the ride: "Time for a break?" One tap asks the group. A passed Break vote starts the count again.',
+      90: 'After 1½ hours in the ride: "Time for a break?" One tap asks the group. A passed Break vote starts the count again.',
+      120: 'After 2 hours in the ride: "Time for a break?" One tap asks the group. A passed Break vote starts the count again.',
+      180: 'After 3 hours in the ride: "Time for a break?" One tap asks the group. A passed Break vote starts the count again.' }],
   ];
   function setSetting(key, on) {
     SET[key] = on; saveSettings();
@@ -453,6 +531,11 @@
     } else if (key === 'night') {
       applyNight(); renderSettings();
     } else if (key === 'shareInfo') saveSettings();
+    else if (key === 'whisper') { if (!on) stopWhisper(); renderRiders(); }
+    else if (key === 'dest') { if (on) send(T.dest, { t: 'sync' }); else { D.dest = null; if (!needLocation()) stopLocation(); } renderDest(); renderMapView(); }
+    else if (key === 'home') { renderHome(); renderSettings(); if (!needLocation()) stopLocation(); else startLocation(); }
+    else if (key === 'breakEvery') { BW.remindedAt = null; renderBreak(); renderSettings(); }
+    else if (key === 'locked') renderSettings();
   }
   function renderSettings() {
     $('nameSet').value = store.get('rc-web-name') || $('nameIn').value || '';
@@ -464,7 +547,7 @@
       '<div class="setting" style="display:block"><div class="t">' + t + '</div><div class="d">' + desc[SET[k]] + '</div><div class="seg">' +
       opts.map(([v, l]) => '<button class="' + (SET[k] === v ? 'sel' : '') + '" data-choice="' + k + '" data-value="' + v + '">' + l + '</button>').join('') +
       '</div></div>').join('');
-    renderInfoBox();
+    renderInfoBox(); renderHomeBox(); renderServerBox();
   }
   function openSettings() { renderSettings(); $('settings').classList.remove('hidden'); }
 
@@ -509,7 +592,7 @@
     const p = S.room && S.room.remoteParticipants.get(identity);
     return (p && p.name) || 'A rider';
   };
-  const riderCount = () => (S.room ? S.room.remoteParticipants.size + 1 : 1);
+  const riderCount = () => (S.room ? Array.from(S.room.remoteParticipants.keys()).filter((id) => !isCheckIn(id)).length + 1 : 1);
 
   // ---- Votes (same rules as the app) ----
   function outcome(yes, no, riders, timedOut) {
@@ -535,6 +618,7 @@
     clearTimeout(S.voteTimer);
     S.vote = null; S.myVote = null;
     S.result = { kind: v.kind, approved: ok, yes: y, no: n };
+    if (ok && v.kind === 'BREAK') tookBreak();
     speak(KINDS[v.kind].stop + (ok ? ' approved. ' : ' not approved. ') + y + ' yes, ' + n + ' no.');
     clearTimeout(S.resultTimer); S.resultTimer = setTimeout(() => { S.result = null; renderVote(); }, RESULT_SHOWN_MS);
     renderVote();
@@ -674,6 +758,9 @@
   }
   function onJoined(p) {
     const id = p.identity;
+    if (isCheckIn(id)) return;
+    HS.seen.set(id, p.name || 'A rider'); HS.leftNot.delete(id); renderHome();
+    if (shouldShareDest()) sendDest([id]);
     S.byes.delete(id);
     const back = S.dropped.delete(id);
     S.seen.add(id);
@@ -687,6 +774,9 @@
   }
   function onLeft(p) {
     const id = p.identity, name = p.name || 'A rider';
+    if (isCheckIn(id)) return;
+    W.board.delete(id); if (W.to === id) stopWhisper(); refreshWhisper();
+    if (SET.home && !HS.home.has(id)) { HS.leftNot.set(id, HS.seen.get(id) || name); renderHome(); }
     S.batteries.delete(id); S.onCall.delete(id); RW.ahead.delete(id); RW.behind.delete(id);
     G.pos.delete(id); G.sep.delete(id);
     if (S.regroup) S.regroup.arrived.delete(id);
@@ -788,7 +878,7 @@
   const spokenDist = (m) => (m < 1000 ? Math.round(m / 10) * 10 + ' meters' : (m / 1000).toFixed(1) + ' kilometers');
   const where = (rel) => (rel === 'ahead' ? ' ahead' : rel === 'behind' ? ' behind' : ' away');
   function sayMap(t) { if (SET.map) speak(t); }
-  function riderIds() { return (S.room ? Array.from(S.room.remoteParticipants.keys()) : []).concat(myId); }
+  function riderIds() { return (S.room ? Array.from(S.room.remoteParticipants.keys()).filter((id) => !isCheckIn(id)) : []).concat(myId); }
   function toMe(lat, lon) {
     if (!G.me) return null;
     const d = dist(G.me.lat, G.me.lon, lat, lon);
@@ -813,11 +903,13 @@
     if (c.heading != null && !isNaN(c.heading) && (c.speed || 0) >= 2) G.heading = c.heading;
     else if (prev && dist(prev.lat, prev.lon, G.me.lat, G.me.lon) > 30) G.heading = bearing(prev.lat, prev.lon, G.me.lat, G.me.lon);
     if (!prev) sendPosition();
-    checkHazards();
+    checkHazards(); checkDest(); checkHomeArrival();
     recompute(true);
   }
   /** Location is used for the group map, and (only on this phone) to warn about hazards others marked. */
-  function needLocation() { return SET.map || (SET.hazards && Array.from(H.list.values()).some((h) => h.by !== myId)); }
+  function needLocation() {
+    return SET.map || (SET.hazards && Array.from(H.list.values()).some((h) => h.by !== myId)) || (SET.dest && !!D.dest) || (SET.home && !!HOMESPOT);
+  }
   function sendPosition() {
     if (!SET.map || !G.me || !S.room) return;
     G.lastSent = Date.now();
@@ -843,7 +935,7 @@
       checkArrival();
       checkRoles();
     }
-    renderMapCard(); renderMapView(); renderRiders(); renderHazards();
+    renderMapCard(); renderMapView(); renderRiders(); renderHazards(); renderDest();
   }
 
   function onLoc(o, from) {
@@ -1019,6 +1111,11 @@
       const icn = L.divIcon({ html: '<div class="pin"><div class="tagname">' + esc(g.label) + '<br><span style="opacity:.75">' + g.arrived.size + ' of ' + riderIds().length + ' here</span></div><div class="head">' + icon(P.flag) + '</div><div class="stem"></div><div class="tip"></div></div>', iconSize: [46, 76], iconAnchor: [23, 73], className: '' });
       if (G.pinMark) { G.pinMark.setLatLng([g.lat, g.lon]); G.pinMark.setIcon(icn); } else G.pinMark = L.marker([g.lat, g.lon], { icon: icn, zIndexOffset: -100 }).addTo(G.map);
     } else if (G.pinMark) { G.pinMark.remove(); G.pinMark = null; }
+    const d = SET.dest ? D.dest : null;
+    if (d) {
+      const icn = L.divIcon({ html: '<div class="pin dest"><div class="tagname">' + esc(d.label) + '<br><span style="opacity:.75">Destination</span></div><div class="head">' + icon(P.finish) + '</div><div class="stem"></div><div class="tip"></div></div>', iconSize: [46, 76], iconAnchor: [23, 73], className: '' });
+      if (D.mark) { D.mark.setLatLng([d.lat, d.lon]); D.mark.setIcon(icn); } else D.mark = L.marker([d.lat, d.lon], { icon: icn, zIndexOffset: -150 }).addTo(G.map);
+    } else if (D.mark) { D.mark.remove(); D.mark = null; }
     if (G.follow && G.me) G.map.panTo([G.me.lat, G.me.lon]);
     else if (!G.fitted) fitAll();
     renderMapBar(); renderMapBox();
@@ -1054,6 +1151,7 @@
     G.pinAt = [lat, lon];
     $('pinName').value = LABELS[0];
     renderPinLabels();
+    $('pinDestWrap').classList.toggle('hidden', !SET.dest);
     $('pinDialog').classList.remove('hidden');
   }
   function renderPinLabels() {
@@ -1252,8 +1350,14 @@
   function applyVolumes() {
     const r = S.room; if (!r) return;
     r.remoteParticipants.forEach((p, id) => {
-      const v = volOf(id);
-      try { if (typeof p.setVolume === 'function') p.setVolume(v.v); } catch (e) {}
+      const v = volOf(id), hushed = W.hushed.has(id);
+      try { if (typeof p.setVolume === 'function') p.setVolume(hushed ? 0 : v.v); } catch (e) {}
+      // Talking only to someone else: silent here. Muting the element works on iPhone too (volume doesn't).
+      try {
+        (p.audioTrackPublications ? Array.from(p.audioTrackPublications.values()) : []).forEach((pub) => {
+          (pub.track && pub.track.attachedElements || []).forEach((el) => { el.muted = hushed; });
+        });
+      } catch (e) {}
       try {
         const pub = typeof p.getTrackPublication === 'function' && p.getTrackPublication('microphone');
         // Muting for me stops downloading their voice too.
@@ -1270,6 +1374,10 @@
     const v = volOf(id), photo = me ? myPhoto : S.photos.get(id), name = p.name || 'Rider';
     let html = '<div class="row"><div class="avatar' + (me ? ' me' : '') + ' photo-big"' + (photo ? ' style="background-image:url(' + photo + ')"' : '') + '>' +
       (photo ? '' : esc(name.charAt(0).toUpperCase())) + '</div><div class="grow"><h1>' + esc(name) + (me ? ' (you)' : '') + '</h1>' + roleTag(id).replace('class="role', 'style="margin-left:0" class="role') + '</div></div>';
+    if (!me && SET.whisper) {
+      html += '<button class="hold' + (W.to === id ? ' on' : '') + '" data-hold="' + esc(id) + '" data-hold-name="' + esc(name) + '">' + icon(P.voice) +
+        (W.to === id ? 'Only ' + esc(name) + ' hears you' : 'Hold to talk only to ' + esc(name)) + '</button><div class="d" style="color:var(--muted);font-size:14px;margin-top:6px">The others don\'t hear you while you hold.</div>';
+    }
     if (!me) {
       if (!IOS) {
         const pct = Math.round(v.v * 100);
@@ -1295,7 +1403,8 @@
   /** The mic sends silence unless talking (instant, no re-publishing). */
   function applyTalk() {
     const r = S.room;
-    const on = !ptt() || PT.talking;
+    // Talking to one rider: silent for a moment (while the others silence me), then open whatever the talk mode.
+    const on = W.to ? W.live : (!ptt() || PT.talking);
     try {
       const pub = r && r.localParticipant.getTrackPublication && r.localParticipant.getTrackPublication('microphone');
       const t = pub && pub.track && pub.track.mediaStreamTrack;
@@ -1380,7 +1489,8 @@
       '<div class="grid2" style="margin-top:0"><div class="field"><div class="label">Contact name</div><input id="infoContact" maxlength="40" placeholder="e.g. Ammi" value="' + esc(INFO.contact || '') + '"></div>' +
       '<div class="field"><div class="label">Phone</div><input id="infoPhone" type="tel" maxlength="40" placeholder="+91 98…" value="' + esc(INFO.phone || '') + '"></div></div>' +
       '<label class="setting" style="margin-top:12px"><div class="grow"><div class="t">Send with my SOS</div><div class="d">Off: it only shows on your own screen</div></div>' +
-      '<span class="switch"><input type="checkbox" data-setting="shareInfo"' + (SET.shareInfo ? ' checked' : '') + '><span></span></span></label>';
+      '<span class="switch"><input type="checkbox" data-setting="shareInfo"' + (SET.shareInfo ? ' checked' : '') + '><span></span></span></label>' +
+      '<p class="note" style="margin-top:4px">On the lock screen: a web page can\'t put it there. On iPhone use Medical ID instead (Health app → your photo → Medical ID → Show When Locked).</p>';
   }
   function infoLines(i, big) {
     let h = '';
@@ -1389,10 +1499,310 @@
     return h;
   }
 
+
+  // ---- Talk to one rider: hold a rider to speak only to them (same messages as the app) ----
+  // Everyone gets "Asha is talking to Bilal"; every phone except Bilal's silences Asha until she lets go.
+  const W = { board: new Map(), to: null, toName: '', live: false, warm: null, repeat: null, tick: null, lastToMe: 0, fromMe: null, unmuted: false, hushed: new Set() };
+  const W_TIMEOUT = 5000, W_TAIL = 700, W_REPEAT = 2000, W_WARM = 400, W_REPLY = 8000;
+  function sendWhisper(on) { return send(T.whisper, { t: 'whisper', to: W.to, toName: W.toName, name: S.name, on, at: Date.now() }); }
+  function startWhisper(id, name) {
+    if (!SET.whisper || !S.room || id === myId || W.to === id) return;
+    stopWhisper();
+    W.to = id; W.toName = name; W.live = false;
+    // Talking needs the mic itself on.
+    if (!S.room.localParticipant.isMicrophoneEnabled) { W.unmuted = true; S.room.localParticipant.setMicrophoneEnabled(true).then(applyTalk).catch(() => {}); }
+    vibrate(40); applyTalk(); sendWhisper(true);
+    // The mic opens a moment later, once the others have silenced me.
+    W.warm = setTimeout(() => { if (W.to !== id) return; W.live = true; applyTalk(); renderWhisper(); }, W_WARM);
+    W.repeat = setInterval(() => sendWhisper(true), W_REPEAT);
+    renderWhisper(); renderRiders();
+  }
+  function stopWhisper() {
+    if (!W.to) return;
+    sendWhisper(false);
+    clearTimeout(W.warm); clearInterval(W.repeat);
+    W.to = null; W.toName = ''; W.live = false;
+    if (W.unmuted && S.room && !(ptt() && PT.talking)) S.room.localParticipant.setMicrophoneEnabled(false).catch(() => {});
+    W.unmuted = false;
+    applyTalk(); renderWhisper(); renderRiders();
+  }
+  const wLive = (e, now) => !e.ended && now - e.last <= W_TIMEOUT;
+  const wTail = (e, now) => { const end = e.ended || e.last + W_TIMEOUT; return now - end >= 0 && now - end < W_TAIL; };
+  function onWhisper(o, from) {
+    if (o.t !== 'whisper') return;
+    const now = Date.now(), cur = W.board.get(from);
+    if (o.on !== false) {
+      if (o.to === myId && !(cur && wLive(cur, now) && cur.to === myId)) vibrate([60, 40, 60]);
+      W.board.set(from, { fromName: o.name || 'A rider', to: o.to, toName: o.toName || '', last: now, ended: 0 });
+    } else if (cur) cur.ended = now;
+    refreshWhisper();
+    if (!W.tick) W.tick = setInterval(refreshWhisper, 250);
+  }
+  /** Silences whoever is talking only to someone else, and updates what's shown. */
+  function refreshWhisper() {
+    const now = Date.now(), hushed = new Set();
+    let toMe = null;
+    W.board.forEach((e, id) => {
+      if (!wLive(e, now) && !wTail(e, now)) { W.board.delete(id); return; }
+      if (e.to !== myId) hushed.add(id); else if (wLive(e, now)) toMe = { id, name: e.fromName };
+    });
+    if (toMe) { W.lastToMe = now; W.fromMe = toMe; } else if (W.fromMe && now - W.lastToMe > W_REPLY) W.fromMe = null;
+    W.fromMeNow = !!toMe;
+    const changed = hushed.size !== W.hushed.size || Array.from(hushed).some((id) => !W.hushed.has(id));
+    W.hushed = hushed;
+    if (changed) { applyVolumes(); renderRiders(); }
+    renderWhisper();
+    if (!W.board.size && !W.fromMe) { clearInterval(W.tick); W.tick = null; renderRiders(); }
+  }
+  function whisperingTo(id) { const e = W.board.get(id); return e && wLive(e, Date.now()) && e.to !== myId ? e.toName : null; }
+  function renderWhisper() {
+    const bar = $('whisperBar');
+    if (W.to) {
+      bar.innerHTML = '<div class="row"><span style="color:var(--violet)">' + icon(P.voice) + '</span><div class="grow"><div class="d">' +
+        (W.live ? 'Only ' + esc(W.toName) + ' hears you' : 'Connecting…') + '</div><div class="t">Talking to ' + esc(W.toName) + '</div></div></div>';
+    } else if (W.fromMe) {
+      bar.innerHTML = '<div class="row"><span style="color:var(--violet)">' + icon(P.voice) + '</span><div class="grow"><div class="d">' +
+        (W.fromMeNow ? 'Only you can hear this' : 'Private talk ended') + '</div><div class="t">' + esc(W.fromMe.name) + (W.fromMeNow ? ' is talking to you' : ' talked only to you') + '</div></div></div>' +
+        (SET.whisper ? '<button class="hold" data-hold="' + esc(W.fromMe.id) + '" data-hold-name="' + esc(W.fromMe.name) + '">' + icon(P.voice) + 'Hold to reply to ' + esc(W.fromMe.name) + '</button>' : '');
+    }
+    bar.classList.toggle('hidden', !(W.to || W.fromMe) || !S.room);
+  }
+
+  // ---- Shared destination: where the group is heading (same messages as the app) ----
+  const D = { dest: null, arrived: false, mark: null, results: [] };
+  function shouldShareDest() {
+    const d = D.dest; if (!d || !S.room) return false;
+    if (d.by === myId) return true;
+    const present = Array.from(S.room.remoteParticipants.keys()).filter((id) => !isCheckIn(id));
+    if (present.includes(d.by)) return false;
+    return present.concat(myId).sort()[0] === myId;
+  }
+  function sendDest(to) {
+    const d = D.dest; if (!d) return;
+    send(T.dest, { t: 'dest', id: d.id, lat: d.lat, lon: d.lon, label: d.label, name: d.name, by: d.by, at: d.at }, to);
+  }
+  const destWhere = (d) => { const t = toMe(d.lat, d.lon); return d.label + (t ? ', ' + spokenDist(t.d) + ' away' : ''); };
+  function adoptDest(d) {
+    D.dest = d;
+    const t = toMe(d.lat, d.lon);
+    D.arrived = !!(t && t.d < 300);
+    startLocation(); // for the distance and "You've reached …" (stays on this phone)
+    renderDest(); renderMapView();
+  }
+  function setDest(lat, lon, label) {
+    if (!SET.dest || !S.room) return;
+    adoptDest({ id: newId(), lat, lon, label: String(label || '').trim().slice(0, 40) || 'Destination', name: S.name, by: myId, at: Date.now() });
+    sendDest();
+    speak('Destination set: ' + destWhere(D.dest));
+  }
+  function clearDest() {
+    const d = D.dest; if (!d) return;
+    D.dest = null; renderDest(); renderMapView();
+    send(T.dest, { t: 'dest-clear', id: d.id, name: S.name });
+    speak('Destination cleared');
+  }
+  function onDest(o, from) {
+    if (!SET.dest) return;
+    if (o.t === 'dest') {
+      const cur = D.dest;
+      if (cur && (cur.id === o.id || o.at < cur.at || (o.at === cur.at && o.id < cur.id))) return;
+      adoptDest({ id: o.id, lat: o.lat, lon: o.lon, label: String(o.label || 'Destination').slice(0, 40), name: o.name || 'A rider', by: o.by || from, at: o.at });
+      vibrate([80, 60, 80]);
+      // Location may only just be starting: give it a moment so the distance can be said too.
+      const d = D.dest, say = () => { if (D.dest === d) speak(d.name + ' set the destination: ' + destWhere(d)); };
+      if (G.me || G.watch == null) say(); else setTimeout(say, 1500);
+    } else if (o.t === 'dest-clear') {
+      if (!D.dest || D.dest.id !== o.id) return;
+      D.dest = null; renderDest(); renderMapView();
+      speak((o.name || 'A rider') + ' cleared the destination');
+    } else if (o.t === 'sync') { if (shouldShareDest()) sendDest([from]); }
+  }
+  function checkDest() {
+    const d = D.dest; if (!SET.dest || !d || D.arrived || !G.me) return;
+    if (dist(G.me.lat, G.me.lon, d.lat, d.lon) < 300) { D.arrived = true; speak("You've reached " + d.label); }
+  }
+  function renderDest() {
+    const box = $('destCard');
+    if (!SET.dest || !S.room) { box.innerHTML = ''; return; }
+    const d = D.dest;
+    if (!d) { box.innerHTML = '<button class="btn" style="margin-top:14px" data-open-dest>' + icon(P.finish) + 'Where are we heading?</button>'; return; }
+    const t = toMe(d.lat, d.lon);
+    const sub = [D.arrived ? "You're here" : t ? shortDist(t.d) + ' away' : null, 'set by ' + esc(d.name)].filter(Boolean).join(' · ');
+    box.innerHTML = '<div class="card dest"><div class="row"><div class="ic" style="background:var(--go);color:#042A1B">' + icon(P.finish) + '</div>' +
+      '<div class="grow"><div class="rname">Heading to ' + esc(d.label) + '</div><div class="rsub">' + sub + '</div></div></div>' +
+      '<div class="row3"><a class="btn primary" target="_blank" rel="noopener" href="' + directions(d.lat, d.lon) + '">' + icon(P.pin) + 'Navigate</a>' +
+      '<button class="btn" data-open-dest aria-label="Change destination">' + icon(P.edit) + '</button><button class="btn" id="destClear" aria-label="Clear destination">' + icon(P.close) + '</button></div></div>';
+  }
+  /** "18.75, 73.40", a Google Maps link with coordinates in it, or geo:… (null for short links, which hide them). */
+  function parseCoords(text) {
+    const m = /!3d(-?\d{1,2}\.\d+)!4d(-?\d{1,3}\.\d+)/.exec(text) || /(-?\d{1,2}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})/.exec(text);
+    if (!m) return null;
+    const lat = Number(m[1]), lon = Number(m[2]);
+    return Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? [lat, lon] : null;
+  }
+  function openDest() { $('destQuery').value = ''; $('destResults').innerHTML = ''; $('destDialog').classList.remove('hidden'); setTimeout(() => $('destQuery').focus(), 50); }
+  async function searchDest() {
+    const q = $('destQuery').value.trim(); if (!q) return;
+    const out = $('destResults'), btn = $('destSearch');
+    const c = parseCoords(q);
+    let places = [];
+    if (c) places = [{ name: 'Pinned place', detail: c[0].toFixed(5) + ', ' + c[1].toFixed(5), lat: c[0], lon: c[1] }];
+    else {
+      btn.disabled = true; btn.textContent = 'Searching…';
+      try {
+        const res = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=en&q=' + encodeURIComponent(q));
+        if (!res.ok) throw new Error('search');
+        places = (await res.json()).map((o) => {
+          const parts = String(o.display_name || '').split(',').map((x) => x.trim()).filter(Boolean);
+          const name = o.name || parts[0] || '';
+          return { name: name.slice(0, 40), detail: parts.filter((x) => x !== name).slice(0, 3).join(', '), lat: Number(o.lat), lon: Number(o.lon) };
+        }).filter((p) => p.name && isFinite(p.lat) && isFinite(p.lon));
+      } catch (e) { out.innerHTML = '<p style="color:var(--amber)">Couldn\'t search. Check your internet.</p>'; return; }
+      finally { btn.disabled = false; btn.textContent = 'Search'; }
+    }
+    D.results = places;
+    out.innerHTML = places.length ? places.map((p, i) => '<button class="place" data-place="' + i + '"><span style="color:var(--go)">' + icon(P.pin) + '</span><span class="grow"><div class="n">' +
+      esc(p.name) + '</div>' + (p.detail ? '<div class="dd">' + esc(p.detail) + '</div>' : '') + '</span></button>').join('')
+      : '<p style="color:var(--amber)">Nothing found. Try a town or landmark name.</p>';
+  }
+
+  // ---- Home safe: who got home after the ride (same messages as the app) ----
+  const HS = { meHome: false, home: new Map(), leftNot: new Map(), seen: new Map(), unsent: false, away: false };
+  let HOMESPOT = (() => { try { return JSON.parse(store.get('rc-web-home') || 'null'); } catch (e) { return null; } })();
+  function imHome(auto) {
+    if (!SET.home || HS.meHome) return;
+    HS.meHome = true; HS.unsent = true;
+    store.set('rc-web-checkin', '');
+    send(T.home, { t: 'home', name: S.name }).then((ok) => { if (ok) HS.unsent = false; });
+    speak(auto ? "You're home. Told the group you're home safe." : "Told the group you're home safe");
+    renderHome();
+  }
+  function onHome(o, from) {
+    if (o.t !== 'home' || !SET.home) return;
+    const id = from.replace(/~home$/, '');
+    if (HS.home.has(id)) return;
+    const name = o.name || HS.seen.get(id) || 'A rider';
+    HS.home.set(id, name); HS.leftNot.delete(id);
+    speak(name + ' is home safe'); vibrate(60);
+    renderHome();
+  }
+  /** Arriving at the saved home during the ride (only after being 1 km or more away). */
+  function checkHomeArrival() {
+    if (!SET.home || !HOMESPOT || HS.meHome || !G.me) return;
+    const d = dist(G.me.lat, G.me.lon, HOMESPOT[0], HOMESPOT[1]);
+    if (d >= 1000) HS.away = true;
+    if (HS.away && d <= 200) imHome(true);
+  }
+  function renderHome() {
+    const box = $('homeCard');
+    if (!SET.home || !S.room) { box.innerHTML = ''; return; }
+    if (!HS.meHome && !HS.home.size && !HS.leftNot.size) {
+      box.innerHTML = '<button class="btn" style="margin-top:14px" id="homeBtn">' + icon(P.home) + "I'm home safe</button>";
+      return;
+    }
+    const homeNames = (HS.meHome ? ['You'] : []).concat(Array.from(HS.home.values()));
+    const onRoad = Array.from(S.room.remoteParticipants.values()).filter((p) => !isCheckIn(p.identity) && !HS.home.has(p.identity)).map((p) => p.name || 'Rider')
+      .concat(Array.from(HS.leftNot.entries()).filter(([id]) => !HS.home.has(id)).map(([, n]) => n + ' (left the ride)'));
+    box.innerHTML = '<div class="card home"><div class="row"><div class="ic" style="background:var(--go);color:#042A1B">' + icon(P.home) + '</div><div class="grow">' +
+      '<div class="rname">Getting home</div>' +
+      (homeNames.length ? '<div class="ok-text">Home safe: ' + homeNames.map(esc).join(', ') + '</div>' : '') +
+      (onRoad.length ? '<div class="road-text">On the road: ' + onRoad.map(esc).join(', ') + '</div>' : '') +
+      (!onRoad.length && HS.meHome ? '<div class="rsub">Everyone is home</div>' : '') + '</div></div>' +
+      (HS.meHome ? '<div class="field"><button class="btn" id="homeLeave">Leave the ride</button></div>'
+        : '<div class="field"><button class="btn go" id="homeBtn">' + icon(P.home) + "I'm home safe</button></div>") + '</div>';
+  }
+  function renderHomeBox() {
+    $('homeBox').innerHTML = !SET.home ? '' : '<div class="setting" style="display:block"><div class="t">Home</div><div class="d">' +
+      (HOMESPOT ? 'Saved on this phone. Arriving there says "home safe" for you.' : 'Save home (while you\'re there) to check in by itself when you arrive. It stays on this phone.') +
+      '</div><div class="row" style="margin-top:10px;gap:8px"><button class="btn" style="min-height:46px;font-size:16px" id="homeSave">' + icon(P.home) +
+      (HOMESPOT ? 'Home saved · update' : "I'm home: save this spot") + '</button>' +
+      (HOMESPOT ? '<button class="btn" style="min-height:46px;font-size:16px;width:auto;padding:0 16px" id="homeForget">Forget</button>' : '') + '</div></div>';
+  }
+  function saveHomeHere() {
+    if (!navigator.geolocation) { banner('This browser has no location'); return; }
+    banner('Finding where you are…');
+    navigator.geolocation.getCurrentPosition((p) => {
+      HOMESPOT = [p.coords.latitude, p.coords.longitude]; store.set('rc-web-home', JSON.stringify(HOMESPOT));
+      banner('Home saved (it stays on this phone)'); renderHomeBox(); startLocation();
+    }, () => banner('Allow location for this site to save home'), { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 });
+  }
+  /** After leaving without saying "home": offered on the join screen for 12 hours. */
+  function pendingCheckIn() {
+    try { const c = JSON.parse(store.get('rc-web-checkin') || 'null'); return c && Date.now() - c.at < 12 * 3600000 ? c : null; } catch (e) { return null; }
+  }
+  function renderCheckIn(result) {
+    const c = SET.home ? pendingCheckIn() : null, box = $('checkIn');
+    if (!c) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="card home" style="margin-top:16px"><div class="row"><span style="color:var(--go)">' + icon(P.home) + '</span><div class="grow"><div class="rname">Home safe?</div>' +
+      '<div class="rsub">' + esc(result || 'Tell the riders still in ride ' + c.code + ' that you got home.') + '</div></div>' +
+      '<button class="x" id="checkInX" aria-label="Dismiss">' + icon(P.close) + '</button></div><div class="grid2' + (result ? '' : ' wide') + '">' +
+      (result ? '' : '<button class="btn go" id="checkInGo">' + icon(P.home) + "I'm home safe</button>") +
+      '<button class="btn" id="checkInShare">Share</button></div></div>';
+  }
+  /** Joins the ride for a moment (no mic) under a second identity, says "home", and leaves. */
+  async function checkInLater() {
+    const c = pendingCheckIn(); if (!c) return;
+    const btn = $('checkInGo'); if (btn) { btn.disabled = true; btn.textContent = 'Telling them…'; }
+    const name = $('nameIn').value.trim() || store.get('rc-web-name') || 'Rider';
+    let heard = null, room = null;
+    try {
+      await liveKitReady();
+      const pass = await getPass(c.code, name, myId + '~home');
+      room = new LivekitClient.Room();
+      await room.connect(pass.url, pass.token);
+      await new Promise((ok) => setTimeout(ok, 1000));
+      await room.localParticipant.sendText(JSON.stringify({ t: 'home', name }), { topic: T.home });
+      await new Promise((ok) => setTimeout(ok, 500));
+      heard = Array.from(room.remoteParticipants.keys()).filter((id) => !isCheckIn(id)).length;
+      store.set('rc-web-checkin', '');
+    } catch (e) { heard = null; }
+    finally { try { room && room.disconnect(); } catch (e) {} }
+    const msg = heard == null ? "Couldn't reach the ride. Share it with your group instead."
+      : heard === 0 ? 'Nobody is in the ride any more. Share it with your group instead.'
+      : 'Told the ' + (heard === 1 ? '1 rider' : heard + ' riders') + ' still in the ride.';
+    store.set('rc-web-checkin', heard == null ? JSON.stringify(c) : JSON.stringify(Object.assign({}, c, { done: msg })));
+    renderCheckIn(msg);
+  }
+
+  // ---- Break reminder: "Time for a break?" after a set time in the ride (only on this phone) ----
+  const BW = { joinedAt: 0, breakAt: 0, remindedAt: null, due: false };
+  function breakTick() {
+    const every = Number(SET.breakEvery) * 60000;
+    if (!S.room || !every) { if (BW.due) { BW.due = false; renderBreak(); } return; }
+    const riding = Date.now() - BW.joinedAt;
+    const due = BW.remindedAt != null ? BW.remindedAt + 30 * 60000 : BW.breakAt + every;
+    if (riding < due) return;
+    BW.remindedAt = riding; BW.due = true;
+    const mins = Math.round((riding - BW.breakAt) / 60000), h = Math.floor(mins / 60), m = mins % 60;
+    BW.text = (h ? h + (h === 1 ? ' hour' : ' hours') : '') + (h && m ? ' ' : '') + (m || !h ? m + (m === 1 ? ' minute' : ' minutes') : '');
+    speak("You've been riding for " + BW.text + '. Time for a break?');
+    vibrate([80, 60, 80]);
+    renderBreak();
+  }
+  setInterval(breakTick, 5000);
+  function tookBreak() { BW.breakAt = Date.now() - BW.joinedAt; BW.remindedAt = null; BW.due = false; renderBreak(); }
+  function renderBreak() {
+    const box = $('breakCard');
+    if (!BW.due || !S.room || SET.breakEvery === '0') { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="card brk"><div class="row"><div class="ic" style="background:var(--amber);color:#2A1E05">' + icon(P.coffee) + '</div>' +
+      '<div class="grow"><div class="rname">Time for a break?</div><div class="rsub">' + esc(BW.text.charAt(0).toUpperCase() + BW.text.slice(1)) + ' of riding since the last stop</div></div></div>' +
+      '<div class="grid2 wide"><button class="btn primary" id="breakAsk">' + icon(P.coffee) + 'Ask for a break</button><button class="btn" id="breakLater">Not now</button></div></div>';
+  }
+
+  // ---- Lock rides to my group: passes from the private ride server, which checks the group key ----
+  function renderServerBox() {
+    $('serverBox').innerHTML = '<label class="setting"><div class="grow"><div class="t">Lock rides to my group</div><div class="d">Only riders with your group key can join. ' +
+      'Needs your group\'s private ride server; invite links then carry the key.</div></div><span class="switch"><input type="checkbox" data-setting="locked"' +
+      (SET.locked ? ' checked' : '') + '><span></span></span></label>' + (!SET.locked ? '' :
+      '<div class="field" style="margin-top:4px"><div class="label">Private ride server</div><input id="serverIn" inputmode="url" placeholder="https://ridecomm-token.….workers.dev" value="' + esc(SET.server || '') + '"></div>' +
+      '<div class="field"><div class="label">Group key</div><input id="keyIn" placeholder="Ask your group admin" value="' + esc(store.get('rc-web-key') || '') + '"></div>' +
+      '<p class="note" style="margin-top:6px">Changes apply the next time you join.</p>');
+  }
+
   // ---- Rendering ----
   function renderRiders() {
     const r = S.room; if (!r) return;
-    const list = [r.localParticipant, ...Array.from(r.remoteParticipants.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''))];
+    const list = [r.localParticipant, ...Array.from(r.remoteParticipants.values()).filter((p) => !isCheckIn(p.identity)).sort((a, b) => (a.name || '').localeCompare(b.name || ''))];
     $('riders').innerHTML = list.map((p) => {
       const me = p === r.localParticipant;
       const muted = !p.isMicrophoneEnabled;
@@ -1404,11 +1814,12 @@
       const away = gp ? toMe(gp.lat, gp.lon) : null;
       const vol = me ? null : VOL[p.identity];
       const heard = !vol ? '' : vol.m ? ' · muted for you' : ' · ' + Math.round(vol.v * 100) + '%';
-      const sub = (call ? 'On a phone call' : muted ? 'Mic off' : talking ? 'Talking' : 'Listening') + heard + (away ? ' · ' + distText(away) : '');
-      const subCls = call ? 'call' : talking ? 'talking' : '';
+      const privateTo = me ? (W.to ? W.toName : null) : whisperingTo(p.identity);
+      const sub = privateTo ? 'Talking only to ' + esc(privateTo) : (call ? 'On a phone call' : muted ? 'Mic off' : talking ? 'Talking' : 'Listening') + heard + (away ? ' · ' + distText(away) : '');
+      const subCls = privateTo ? 'whisper' : call ? 'call' : talking ? 'talking' : '';
       const batTag = bat && !bat.charging && bat.level <= 30 ? '<span class="tag' + (bat.level <= 10 ? ' low' : '') + '">' + bat.level + '%</span>' : '';
       const name = esc(p.name || 'Rider') + (me ? ' (you)' : '');
-      const avatar = '<div class="avatar' + (me ? ' me' : '') + (talking ? ' talking' : '') + '"' +
+      const avatar = '<div class="avatar' + (me ? ' me' : '') + (privateTo ? ' whisper' : talking ? ' talking' : '') + '"' +
         (photo ? ' style="background-image:url(' + photo + ')"' : '') + '>' + (photo ? '' : esc((p.name || 'R').charAt(0).toUpperCase())) + '</div>';
       return '<div class="rider" data-rider="' + esc(p.identity) + '">' + avatar + '<div class="grow"><div class="rname">' + name + roleTag(p.identity) + '</div><div class="rsub ' + subCls + '">' + sub +
         '</div></div>' + batTag + (muted ? '<span style="color:var(--stop)">' + icon(P.micOff) + '</span>' : '') + '</div>';
@@ -1486,12 +1897,19 @@
   function renderAll() { renderRiders(); renderStatus(); }
 
   // ---- Joining ----
-  async function getPass(code, name) {
-    const res = await fetch('https://cloud-api.livekit.io/api/v2/sandbox/connection-details', {
+  /** The ride pass: from the group's private ride server when rides are locked, else the open sandbox server. */
+  async function getPass(code, name, identity) {
+    const body = JSON.stringify({ room_name: 'ride-' + code, participant_name: name, participant_identity: identity || myId });
+    const locked = SET.locked && SET.server;
+    if (SET.locked && !SET.server) throw new Error('Enter your private ride server in Settings, or switch off "Lock rides to my group".');
+    const key = store.get('rc-web-key') || '';
+    if (locked && !key) throw new Error('Enter your group key in Settings to join your group\'s rides.');
+    const res = await fetch(locked ? SET.server : 'https://cloud-api.livekit.io/api/v2/sandbox/connection-details', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Sandbox-ID': TOKEN_SERVER },
-      body: JSON.stringify({ room_name: 'ride-' + code, participant_name: name, participant_identity: myId }),
+      headers: locked ? { 'Content-Type': 'application/json', 'X-RideComm-Key': key } : { 'Content-Type': 'application/json', 'X-Sandbox-ID': TOKEN_SERVER },
+      body,
     });
+    if (locked && res.status === 401) throw new Error('Wrong group key. Check it in Settings.');
     if (!res.ok) throw new Error('Could not get into the ride (' + res.status + '). Check the code and your internet.');
     const d = await res.json();
     return { url: d.server_url || d.serverUrl, token: d.participant_token || d.participantToken };
@@ -1514,6 +1932,7 @@
       else if (o.t === 'stop') { S.music = null; $('music').classList.add('hidden'); }
     });
     text(T.hazard, onHazard); text(T.role, onRole);
+    text(T.whisper, onWhisper); text(T.dest, onDest); text(T.home, onHome);
     room.registerByteStreamHandler(T.avatar, async (reader, info) => {
       try {
         const chunks = await reader.readAll();
@@ -1549,7 +1968,7 @@
 
     await room.connect(pass.url, pass.token);
     S.room = room;
-    room.remoteParticipants.forEach((p) => S.seen.add(p.identity));
+    room.remoteParticipants.forEach((p) => { S.seen.add(p.identity); if (!isCheckIn(p.identity)) HS.seen.set(p.identity, p.name || 'A rider'); });
     try { await room.startAudio(); } catch (e) {}
     $('unlockBtn').classList.toggle('hidden', room.canPlaybackAudio);
     await room.localParticipant.setMicrophoneEnabled(!S.mutedWanted);
@@ -1561,7 +1980,9 @@
     applyVolumes();
     send(T.role, { t: 'sync' });
     if (SET.hazards) send(T.hazard, { t: 'sync' });
-    renderHazards();
+    if (SET.dest) send(T.dest, { t: 'sync' });
+    if (HS.unsent) send(T.home, { t: 'home', name: S.name }).then((ok) => { if (ok) HS.unsent = false; });
+    renderHazards(); renderDest(); renderHome(); renderBreak();
     // Song files are for the Android app; this browser doesn't download them.
     send(T.music, { t: 'saving', on: true });
     renderAll();
@@ -1586,6 +2007,7 @@
     send(T.loc, { t: 'sync' });
     send(T.role, { t: 'sync' });
     if (SET.hazards) send(T.hazard, { t: 'sync' });
+    if (SET.dest) send(T.dest, { t: 'sync' });
     if (S.mySos && !S.mySosDelivered) {
       send(T.sos, sosMsg(S.mySos.lat, S.mySos.lon)).then((ok) => {
         if (ok) { S.mySosDelivered = true; renderMySos(); speak('Back online. SOS sent to the group.'); }
@@ -1617,6 +2039,9 @@
     try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); } catch (e) {}
     store.set('rc-web-name', name);
     S.code = code; S.name = name; S.leaving = false; S.mutedWanted = false;
+    BW.joinedAt = Date.now(); BW.breakAt = 0; BW.remindedAt = null; BW.due = false;
+    HS.meHome = false; HS.home.clear(); HS.leftNot.clear(); HS.seen.clear(); HS.unsent = false; HS.away = false;
+    D.dest = null; D.arrived = false; W.board.clear(); W.fromMe = null; W.hushed = new Set();
     const btn = $('joinBtn'); btn.disabled = true; btn.textContent = 'Joining…';
     try {
       await liveKitReady();
@@ -1637,8 +2062,16 @@
     }
   }
 
+  /** Leave: with Home safe on, also offer "I'm home safe · leave". */
+  function askLeave() {
+    if (SET.home && !HS.meHome && S.room) { $('leaveSheet').classList.remove('hidden'); return; }
+    if (confirm('Leave the ride? You can rejoin with the same code.')) leave();
+  }
   async function leave() {
-    if (!confirm('Leave the ride? You can rejoin with the same code.')) return;
+    $('leaveSheet').classList.add('hidden');
+    stopWhisper();
+    // Left without saying "home": offer a check-in on the join screen later.
+    store.set('rc-web-checkin', SET.home && !HS.meHome && S.code ? JSON.stringify({ code: S.code, at: Date.now() }) : '');
     S.leaving = true; clearTimeout(S.retry);
     const r = S.room;
     if (r) {
@@ -1650,6 +2083,9 @@
     H.list.clear(); H.warned.clear(); H.marks.forEach((m) => m.remove()); H.marks.clear(); renderHazards();
     ROLES = { lead: null, sweep: null, at: 0, by: '' }; RW.ahead.clear(); RW.behind.clear();
     PT.talking = false; PT.latched = false; $('riderSheet').classList.add('hidden');
+    W.board.clear(); W.fromMe = null; W.hushed = new Set(); clearInterval(W.tick); W.tick = null; renderWhisper();
+    D.dest = null; if (D.mark) { D.mark.remove(); D.mark = null; } renderDest();
+    HS.home.clear(); HS.leftNot.clear(); renderHome(); BW.due = false; renderBreak(); renderCheckIn();
     try { S.wakeLock && S.wakeLock.release(); } catch (e) {}
     $('ride').classList.add('hidden'); $('dock').classList.add('hidden'); $('join').classList.remove('hidden');
     $('audio').innerHTML = ''; renderAlerts(); renderMySos();
@@ -1686,7 +2122,8 @@
     if (unhz) { removeHazard(unhz.dataset.unhazard); return; }
     // Riders: volume and lead / sweep
     const rider = e.target.closest('[data-rider]');
-    if (rider) openRider(rider.dataset.rider);
+    if (rider && !held) openRider(rider.dataset.rider);
+    held = false;
     const role = e.target.closest('[data-role]');
     if (role && sheetFor && S.room) {
       const id = sheetFor, p = id === myId ? S.room.localParticipant : S.room.remoteParticipants.get(id);
@@ -1694,6 +2131,23 @@
       renderRiderSheet();
     }
     if (e.target.closest('#sheetDone')) $('riderSheet').classList.add('hidden');
+    // Destination, home safe, break reminder, check-in
+    if (e.target.closest('[data-open-dest]')) openDest();
+    if (e.target.closest('#destClear')) clearDest();
+    const place = e.target.closest('[data-place]');
+    if (place) { const p = D.results[Number(place.dataset.place)]; if (p) setDest(p.lat, p.lon, p.name); $('destDialog').classList.add('hidden'); }
+    if (e.target.closest('#homeBtn')) imHome(false);
+    if (e.target.closest('#homeLeave')) leave();
+    if (e.target.closest('#homeSave')) saveHomeHere();
+    if (e.target.closest('#homeForget')) { HOMESPOT = null; store.set('rc-web-home', 'null'); renderHomeBox(); if (!needLocation()) stopLocation(); }
+    if (e.target.closest('#breakAsk')) { BW.due = false; renderBreak(); startVote('BREAK'); }
+    if (e.target.closest('#breakLater')) { BW.due = false; renderBreak(); }
+    if (e.target.closest('#checkInGo')) checkInLater();
+    if (e.target.closest('#checkInX')) { store.set('rc-web-checkin', ''); renderCheckIn(); }
+    if (e.target.closest('#checkInShare')) {
+      const c = pendingCheckIn(), text = 'Reached home safe \u{1F3E0} ' + ($('nameIn').value.trim() || '') + (c ? ' (RideComm ride ' + c.code + ')' : '');
+      (navigator.share ? navigator.share({ text }) : navigator.clipboard.writeText(text).then(() => banner('Copied: paste it in your group chat'))).catch(() => {});
+    }
     // Settings choices and emergency info
     const ch = e.target.closest('[data-choice]');
     if (ch) setSetting(ch.dataset.choice, ch.dataset.value);
@@ -1701,6 +2155,30 @@
     if (bl) { INFO.blood = INFO.blood === bl.dataset.blood ? '' : bl.dataset.blood; saveInfo(); renderInfoBox(); }
   });
   $('hazCancel').addEventListener('click', () => $('hazPicker').classList.add('hidden'));
+  $('destCancel').addEventListener('click', () => $('destDialog').classList.add('hidden'));
+  $('destSearch').addEventListener('click', searchDest);
+  $('destQuery').addEventListener('keydown', (e) => { if (e.key === 'Enter') searchDest(); });
+  ['destDialog', 'leaveSheet'].forEach((id) => $(id).addEventListener('click', (e) => { if (e.target.id === id) $(id).classList.add('hidden'); }));
+  // Talk to one rider: hold a "Hold to talk / reply" button, or hold a rider's row for half a second.
+  let held = false, holdTimer = null;
+  document.addEventListener('pointerdown', (e) => {
+    held = false;
+    const h = e.target.closest('[data-hold]');
+    if (h) { e.preventDefault(); try { h.setPointerCapture(e.pointerId); } catch (x) {} startWhisper(h.dataset.hold, h.dataset.holdName); h.classList.add('on'); return; }
+    const row = e.target.closest('[data-rider]');
+    if (!row || !SET.whisper || row.dataset.rider === myId) return;
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(() => {
+      const p = S.room && S.room.remoteParticipants.get(row.dataset.rider);
+      if (p) { held = true; startWhisper(p.identity, p.name || 'Rider'); }
+    }, 500);
+  });
+  ['pointerup', 'pointercancel'].forEach((ev) => document.addEventListener(ev, () => {
+    clearTimeout(holdTimer);
+    if (W.to) stopWhisper();
+    document.querySelectorAll('.hold.on').forEach((b) => b.classList.remove('on'));
+  }));
+  document.addEventListener('contextmenu', (e) => { if (e.target.closest('[data-rider],[data-hold]')) e.preventDefault(); });
   ['hazPicker', 'riderSheet'].forEach((id) => $(id).addEventListener('click', (e) => { if (e.target.id === id) $(id).classList.add('hidden'); }));
   $('riderSheet').addEventListener('input', (e) => {
     if (e.target.id !== 'volRange' || !sheetFor) return;
@@ -1719,6 +2197,10 @@
   $('settingsClose').addEventListener('click', () => $('settings').classList.add('hidden'));
   $('settings').addEventListener('click', (e) => { if (e.target.id === 'settings') $('settings').classList.add('hidden'); });
   $('settings').addEventListener('change', (e) => { const k = e.target.dataset.setting; if (k) setSetting(k, e.target.checked); });
+  $('serverBox').addEventListener('input', (e) => {
+    if (e.target.id === 'serverIn') { SET.server = e.target.value.trim(); saveSettings(); }
+    if (e.target.id === 'keyIn') store.set('rc-web-key', e.target.value.trim());
+  });
   $('photoPick').addEventListener('click', () => $('photoFile').click());
   $('photoFile').addEventListener('change', (e) => { pickPhoto(e.target.files[0]); e.target.value = ''; });
   $('photoRemove').addEventListener('click', removePhoto);
@@ -1735,11 +2217,19 @@
   $('mapFollow').addEventListener('click', () => { G.follow = !G.follow; if (G.follow && G.me && G.map) G.map.setView([G.me.lat, G.me.lon], Math.max(G.map.getZoom(), 15)); renderMapBar(); });
   $('pinCancel').addEventListener('click', () => $('pinDialog').classList.add('hidden'));
   $('pinName').addEventListener('input', renderPinLabels);
+  $('pinDest').addEventListener('click', () => {
+    const label = $('pinName').value.trim();
+    if (G.pinAt) setDest(G.pinAt[0], G.pinAt[1], LABELS.includes(label) ? 'Destination' : label);
+    $('pinDialog').classList.add('hidden');
+  });
   $('pinSet').addEventListener('click', () => {
     if (G.pinAt) setRegroup(G.pinAt[0], G.pinAt[1], $('pinName').value);
     $('pinDialog').classList.add('hidden');
   });
-  $('leaveBtn').addEventListener('click', leave);
+  $('leaveBtn').addEventListener('click', askLeave);
+  $('leaveStay').addEventListener('click', () => $('leaveSheet').classList.add('hidden'));
+  $('leaveGo').addEventListener('click', leave);
+  $('leaveHome').addEventListener('click', () => { imHome(false); leave(); });
   // Push to talk: press and hold (touch, mouse or pen).
   $('micBtn').addEventListener('pointerdown', (e) => { if (!ptt()) return; e.preventDefault(); try { $('micBtn').setPointerCapture(e.pointerId); } catch (x) {} talkDown(); });
   ['pointerup', 'pointercancel'].forEach((ev) => $('micBtn').addEventListener(ev, () => talkUp()));
@@ -1753,7 +2243,9 @@
     speak(on ? 'Mic on' : 'Mic off'); renderRiders();
   });
   $('shareBtn').addEventListener('click', async () => {
-    const url = 'https://saquelain.github.io/intercomm-app/join/?code=' + S.code;
+    // With rides locked to the group, the invite carries the group key after "#" (never sent to the web server).
+    const key = SET.locked && SET.server ? store.get('rc-web-key') || '' : '';
+    const url = 'https://saquelain.github.io/intercomm-app/join/?code=' + S.code + (key ? '#k=' + encodeURIComponent(key) : '');
     const text = 'Join my RideComm ride! Code: ' + S.code;
     try { if (navigator.share) await navigator.share({ title: 'RideComm', text, url }); else { await navigator.clipboard.writeText(text + ' ' + url); banner('Invite link copied'); } } catch (e) {}
   });
@@ -1766,9 +2258,17 @@
   window.addEventListener('pagehide', (e) => { if (S.room && !e.persisted) send(T.rider, { t: 'bye' }); });
 
   applyNight();
-  const preset = (params.get('code') || location.hash.slice(1) || '').toUpperCase();
+  // An invite to a locked ride carries the group key after "#k=".
+  const hashParams = new URLSearchParams(location.hash.slice(1));
+  if (hashParams.get('k')) {
+    store.set('rc-web-key', hashParams.get('k'));
+    if (SET.server) { SET.locked = true; saveSettings(); }
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+  const preset = (params.get('code') || (location.hash.indexOf('=') < 0 ? location.hash.slice(1) : '') || '').toUpperCase();
   if (CODE_RE.test(preset)) $('codeIn').value = preset;
   $('nameIn').value = store.get('rc-web-name') || '';
+  renderCheckIn();
 })();
 </script>
 </body>

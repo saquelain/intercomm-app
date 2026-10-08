@@ -60,7 +60,7 @@ Links the owner uses:
   `https://maven-central.storage-download.googleapis.com/maven2/` (recreate it in a new container; the
   content is in HANDOFF.md).
 - Compile: `./gradlew compileDebugKotlin`
-- Unit tests (about 150, all must pass): `./gradlew testDebugUnitTest`
+- Unit tests (about 170, all must pass): `./gradlew testDebugUnitTest`
 - Same as CI: `./gradlew testReleaseUnitTest assembleRelease`
 - Lint: `./gradlew lintDebug`
 - Screenshots of screens (Robolectric + Roborazzi, real OSM tiles from `app/src/test/resources/maptiles`):
@@ -81,11 +81,14 @@ Links the owner uses:
 - `ride/RideService.kt`: foreground service, notification, floating button and overlays.
 - `Prefs.kt`: every setting (SharedPreferences). `ui/HomeScreen.kt` → `SettingsDialog` shows them.
 - `ui/RideScreen.kt` (`RideContent` takes plain state so screenshots can render any situation),
-  `ui/Glass.kt` (shared glass components), `ui/Theme.kt` (`Palette`), `ui/NightFilter.kt`.
+  `ui/Glass.kt` (shared glass components), `ui/Theme.kt` (`Palette`), `ui/NightFilter.kt`,
+  `ui/RideExtras.kt` (destination, break, home safe cards), `ui/WhisperUi.kt`.
 - Features: `audio/` (wind noise gate, MicGate), `vote/`, `sos/` (SOS, SMS fallback, emergency info),
   `music/` (shared songs), `group/` (positions, map logic, regroup, lead & sweep), `ui/map/` (osmdroid
   map, MarkerPainter), `hazard/`, `trip/` (speed, distance), `alerts/` (joins, batteries, calls),
-  `voice/` (voice commands), `headset/`, `crash/`, `night/`, `overlay/` (floating button), `profile/`.
+  `voice/` (voice commands), `headset/`, `crash/`, `night/`, `overlay/` (floating button), `profile/`,
+  `whisper/` (talk to one rider), `home/` (home safe), `group/RideDestination` (shared destination),
+  `trip/BreakReminder`, `sos/LockScreenInfo`.
 - Pattern: pure logic in a plain-Kotlin class/object (unit-tested, e.g. `HazardLogic`, `RoleWatch`,
   `SunTimes`, `TalkButton`), and a manager object with `attach(room)` / `detach()` / `release()` /
   `requestSync()` / `onRiderJoined()` that sends JSON over a LiveKit text-stream topic.

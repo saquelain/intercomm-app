@@ -9,6 +9,9 @@ mute, a fake signal drop with `goOffline()` / `goOnline()`). GPS is faked too: `
   regroup points, mute, leaving.
 - `features.test.js`: emergency info with SOS, hazards and the "Pothole in 300 meters" warning, lead &
   sweep (and the ahead-of-lead alert), per-rider volume / mute for me, push to talk, night mode.
+- `more.test.js` (three riders): talk to one rider (hold in the sheet, hold to reply, hold a rider's row),
+  shared destination (search, pasted maps link, arrival, clear), break reminder (clock moved forward), home
+  safe (card, leave dialog, later check-in under `~home`), and rides locked with a group key from the link.
 
 Each prints `PASS` / `FAIL` lines and ends with "No page errors". Screenshots go to `out/`.
 
@@ -19,6 +22,7 @@ mkdir -p tools/webtest/vendor && cd tools/webtest/vendor && \
   curl -sSO https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css   # optional, faster map
 node tools/webtest/rides.test.js
 node tools/webtest/features.test.js
+node tools/webtest/more.test.js
 ```
 
 In the Claude cloud container Playwright lives at `/opt/node22/lib/node_modules/playwright` (set

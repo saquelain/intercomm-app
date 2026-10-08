@@ -154,6 +154,30 @@ between phones).
 - **Night mode** (Settings: Off / Auto / On): the whole app turns dim red (greyscale tinted red, so bright and
   dark stay apart) with the screen dimmed, and spoken alerts play at about half volume. Auto works out sunset
   and sunrise from the phone's location (or 6:30 pm–6 am without one).
+- **Talk to one rider** (Settings, on by default): hold a rider's name (or "Hold to talk only to …" in their
+  sheet) to talk only to them, say lead to sweep. Everyone else's phone silences you while you hold (a short
+  "Asha is talking to Bilal" message goes to all phones, repeated every 2 s; if it stops coming, the others hear
+  you again after 5 s). Your mic opens 0.4 s after you press, once the others have silenced you. Bilal sees "Asha is
+  talking to you" with a "Hold to reply" button; the others see "Talking only to Bilal" on your card. Private
+  between RideComm phones, not encrypted.
+- **Shared destination** (Settings, on by default): "Where are we heading?" searches a place by name
+  (OpenStreetMap search, only when you tap Search) or takes pasted coordinates or a Google Maps link with
+  coordinates in it; long-pressing the group map offers it too. Everyone hears "Amit set the destination:
+  Lonavala, 42 kilometers away", sees the distance on a card with one Navigate button and the green finish flag
+  on the map, and hears "You've reached Lonavala" on arrival (300 m). Your own location stays on your phone.
+- **Home safe check-in** (Settings, on by default): "I'm home safe" on the ride screen or in the Leave dialog
+  tells the riders still in the ride ("Bilal is home safe"); a "Getting home" card lists who's home and who's
+  still on the road (including riders who left without saying). Save home in Settings and it happens by itself
+  on arrival (only after being 1 km or more away; home's position never leaves the phone). Riders who left
+  without checking in get a "Home safe?" card on the home screen for 12 hours: it joins the ride for a moment
+  under a second identity (`<id>~home`, not shown as a rider) to tell whoever is still in it, or shares a
+  message to the group's chat.
+- **Break reminder** (Settings: Off / 1 h / 1½ h / 2 h (default) / 3 h): "You've been riding for 2 hours. Time
+  for a break?" with one tap to start a Break vote; again every 30 minutes of riding if nobody stops. Counts
+  time actually moving (with GPS); a passed Break vote or a 10-minute stop starts again.
+- **Emergency info on lock screen** (Settings, off by default): a quiet notification anyone can read without
+  unlocking the phone (blood group, allergies, who to call), put back after a restart. iPhone: use the Health
+  app's Medical ID instead (web pages can't reach the lock screen).
 
 ## iPhone and browser riders
 
@@ -180,6 +204,11 @@ The gear button opens **Settings**, saved in the browser and changeable any time
 - **Talk mode:** Open mic or Push to talk (hold the mic button, or tap to lock it open).
 - **Night mode:** Off / Auto / On, dim red screen and quieter alerts.
 - **Emergency info:** blood group, allergies and a contact, sent with your SOS and shown on your screen for helpers.
+- **Talk to one rider**, **Shared destination**, **Home safe check-in** and **Break reminder**, the same as in
+  the app (on iPhone "talk to one rider" mutes the talker's voice element, which Safari allows). The break
+  reminder counts time in the ride, as the web page doesn't track speed.
+- **Lock rides to my group:** private ride server address and group key (an invite link to a locked ride fills
+  the key in).
 - Tapping a rider also offers **Mute for me** and, in browsers that allow it, a volume slider (iPhone Safari
   can't turn a single voice down, so there it's mute only).
 
@@ -197,7 +226,7 @@ The ride screen's mic button glows with your voice level, so you can see the mic
 > The development token server is fine for a private group but lets anyone with the ID join rooms.
 > Before sharing the app publicly we'll switch to our own token endpoint.
 
-## Private ride server (optional, not set up)
+## Private ride server: lock rides to your group (optional, not set up yet)
 
 The LiveKit development token server lets anyone who has its ID join any ride. The private ride server
 (`server/token-worker`, a Cloudflare Worker) only gives a ride pass to riders who send the **group key**, and only
@@ -214,7 +243,11 @@ One-time setup:
 5. Run **Actions → Deploy ride server → Run workflow**. The log prints the worker address
    (`https://ridecomm-token.<you>.workers.dev`). Add it as the `RIDE_SERVER_URL` secret and rebuild the APK
    (or paste it in the app's Settings).
-6. Each rider enters the group key in Settings. Then switch off the development token server in LiveKit Cloud.
+6. Put the same address in `RIDE_SERVER` at the top of the script in `docs/ride/index.html` (or each iPhone
+   rider types it in the web page's Settings → Lock rides to my group).
+7. Each rider turns on Settings → **Lock rides to my group** and enters the group key, or simply taps an invite
+   link from a locked ride: the key travels after `#k=` in the link (never sent to the web server). Then switch
+   off the development token server in LiveKit Cloud, otherwise its ID still opens every ride.
 
 ## Getting the APK
 

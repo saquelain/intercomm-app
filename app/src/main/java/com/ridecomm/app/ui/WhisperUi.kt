@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +36,8 @@ val WhisperColor = Palette.Violet
 @Composable
 fun HoldToTalkButton(text: String, active: Boolean, modifier: Modifier = Modifier, height: Dp = 60.dp, onStart: () -> Unit, onStop: () -> Unit) {
     val haptics = LocalHapticFeedback.current
+    val start by rememberUpdatedState(onStart)
+    val stop by rememberUpdatedState(onStop)
     Row(
         modifier
             .height(height)
@@ -50,9 +54,9 @@ fun HoldToTalkButton(text: String, active: Boolean, modifier: Modifier = Modifie
                 detectTapGestures(
                     onPress = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onStart()
+                        start()
                         tryAwaitRelease()
-                        onStop()
+                        stop()
                     },
                 )
             }
