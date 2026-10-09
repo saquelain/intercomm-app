@@ -65,10 +65,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.ridecomm.app.CrashLog
 import com.ridecomm.app.BuildConfig
 import com.ridecomm.app.Prefs
+import com.ridecomm.app.score.Score
 import com.ridecomm.app.trip.RideHistory
 import com.ridecomm.app.trip.RideSummary
 import com.ridecomm.app.plan.RidePlans
@@ -117,6 +120,10 @@ fun HomeScreen(state: RideState) {
         value = if (historyOn) RideHistory.listAsync(context, 3) else emptyList()
     }
     var openRide by remember { mutableStateOf<Long?>(null) }
+    var pointsOn by remember { mutableStateOf(Prefs.points(context)) }
+    var showPoints by remember { mutableStateOf(false) }
+    val scores by Score.entries.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { withContext(Dispatchers.IO) { Score.load(context) } }
     var allRides by remember { mutableStateOf(false) }
     // Just left a ride: its summary opens by itself.
     val finished by RideHistory.justFinished.collectAsStateWithLifecycle()
@@ -301,6 +308,7 @@ fun HomeScreen(state: RideState) {
         }
 
         if (plannerOn) PlannerCard(plans, joinEnabled = name.isNotBlank(), onPlan = { planning = true }) { startRide(it) }
+        if (pointsOn) PointsCard(scores, now) { showPoints = true }
         if (historyOn) HistoryCard(rides, onOpen = { openRide = it }, onAll = { allRides = true })
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -314,6 +322,7 @@ fun HomeScreen(state: RideState) {
     if (planning) PlanDialog(onCancel = { planning = false }) { planning = false }
     if (allRides) RideListScreen(onClose = { allRides = false }) { openRide = it }
     openRide?.let { RideSummaryScreen(it) { openRide = null } }
+    if (showPoints) PointsScreen { showPoints = false }
 
     if (showSettings) {
         SettingsDialog(
@@ -321,6 +330,7 @@ fun HomeScreen(state: RideState) {
             onSaved = {
                 plannerOn = Prefs.planner(context)
                 historyOn = Prefs.rideHistory(context)
+                pointsOn = Prefs.points(context)
                 serverReady = Prefs.serverConfigured(context)
                 savedName = Prefs.riderName(context)
                 name = savedName
@@ -567,6 +577,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var planner by remember { mutableStateOf(Prefs.planner(context)) }
     var finder by remember { mutableStateOf(Prefs.finder(context)) }
     var rainAlerts by remember { mutableStateOf(Prefs.rainAlerts(context)) }
+    var points by remember { mutableStateOf(Prefs.points(context)) }
     val googleMaps = remember { GoogleMapSetup.available(context) }
     // Android 13+: the lock screen note is a notification, which needs permission.
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -804,6 +815,13 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             }
         }
         SettingSwitch(
+            "Points & badges",
+            "Earn points for each ride: distance, riding together, breaks, marking hazards, leading or sweeping and " +
+                "getting home safe. Never for speed. Levels, badges and your year are kept on this phone; riders in " +
+                "the ride see each other's ride points.",
+            points,
+        ) { points = it }
+        SettingSwitch(
             "Ride planner",
             "Plan a ride ahead: start time, meeting point and stops travel in the invite link, with reminders " +
                 "before it starts.",
@@ -831,6 +849,8 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setFinder(context, finder)
                 if (!finder) LowFuel.stop(filled = false)
                 Prefs.setRainAlerts(context, rainAlerts)
+                Prefs.setPoints(context, points)
+                Score.applySettings(context)
                 RidePlans.applySettings(context)
                 Prefs.setKeepOtherMusic(context, keepMusic)
                 if (riderName.isNotBlank()) Prefs.setRiderName(context, riderName.trim())

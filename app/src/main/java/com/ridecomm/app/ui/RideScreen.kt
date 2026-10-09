@@ -121,6 +121,8 @@ import com.ridecomm.app.home.HomeSafe
 import com.ridecomm.app.home.HomeSafeState
 import com.ridecomm.app.trip.BreakDue
 import com.ridecomm.app.trip.BreakReminder
+import com.ridecomm.app.score.RideScoreState
+import com.ridecomm.app.score.Score
 
 private val OthersGradient = Brush.linearGradient(listOf(Palette.VioletBright, Palette.CyanBright))
 
@@ -143,6 +145,7 @@ fun RideScreen(state: RideState) {
     val destination by RideDestination.state.collectAsStateWithLifecycle()
     val homeSafe by HomeSafe.state.collectAsStateWithLifecycle()
     val breakDue by BreakReminder.due.collectAsStateWithLifecycle()
+    val points by Score.state.collectAsStateWithLifecycle()
     val filterStatus by remember { MicGate.live.map { it?.status }.distinctUntilChanged() }.collectAsStateWithLifecycle(null)
     val dataUsed by produceState(DataUsage.usedBytes()) {
         while (true) {
@@ -150,7 +153,7 @@ fun RideScreen(state: RideState) {
             value = DataUsage.usedBytes()
         }
     }
-    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed, batteries, filterStatus, trip, onCall, roles, hazards, volumes, whisper, destination, homeSafe, breakDue)
+    RideContent(state, music, vote, sos, group, sent, photos, myPhoto, dataUsed, batteries, filterStatus, trip, onCall, roles, hazards, volumes, whisper, destination, homeSafe, breakDue, points)
 }
 
 /** The ride screen for given states (split out so screenshots can render any situation). */
@@ -176,6 +179,7 @@ fun RideContent(
     destination: DestinationState = DestinationState(),
     homeSafe: HomeSafeState = HomeSafeState(),
     breakDue: BreakDue? = null,
+    points: RideScoreState = RideScoreState(),
 ) {
     val context = LocalContext.current
     // Read on every recomposition, so switching it in Settings mid-ride applies at once.
@@ -261,6 +265,7 @@ fun RideContent(
                 ) { sheetFor = it.id }
                 VoteCard(vote)
                 MusicCard(music)
+                RidePointsCard(points)
                 if (homeSafe.enabled) HomeSafeCard(homeSafe, state.riders, onImHome = HomeSafe::imHome, onLeave = { confirmLeave = true })
                 OverlayPermissionCard()
             }

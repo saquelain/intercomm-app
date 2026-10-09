@@ -199,6 +199,13 @@ between phones).
 - **Rain alerts** (Settings, off): every 15 minutes in a ride, the forecast for here and 25 km ahead (or the
   destination) from Open-Meteo, with a rough location: "Rain expected here in about 30 minutes", and a pill on
   the ride screen.
+- **Points & badges** (Settings, on): every ride earns points for riding well and looking after the group, never
+  for speed: 1 a km, +10 for each rider with you, +15 for each 10-minute break on long rides, +10 for each hazard you
+  mark, +25 for leading or riding sweep, +15 for "I'm home safe". Seven levels (Rookie to Legend), 16 badges
+  (Century, Pack ride, Hazard spotter, Every week…) and "This year" (km, rides, hours, longest ride, km per month,
+  who you rode with most, week streak). In the ride a "Ride points" card shows everyone's points for that ride; the
+  summary shows how the ride scored and any new badge ("New badge: Century"). Kept only on the phone, apart from the
+  ride history, so deleting rides keeps the points.
 - **Family can watch** (Settings, off): Share → "Family link" gives family at home a page
   (`…/watch/?code=ABCDEF`) with a live map of the riders, the regroup point, destination and any SOS (with an
   alarm). Each rider decides: with the switch off, their position and SOS never reach the family page. Family
@@ -249,6 +256,8 @@ The gear button opens **Settings**, saved in the browser and changeable any time
 - **Talk to one rider**, **Shared destination**, **Home safe check-in** and **Break reminder**, the same as in
   the app (on iPhone "talk to one rider" mutes the talker's voice element, which Safari allows). The break
   reminder counts time in the ride, as the web page doesn't track speed.
+- **Points & badges** (on by default), the same rules, levels, badges and "Ride points" card as the app; it counts
+  distance from the page's ride recording, also with Ride history off.
 - **Lock rides to my group:** private ride server address and group key (an invite link to a locked ride fills
   the key in).
 - Tapping a rider also offers **Mute for me** and, in browsers that allow it, a volume slider (iPhone Safari

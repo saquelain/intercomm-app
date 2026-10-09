@@ -23,6 +23,7 @@ so far and what's next.
      (all in `PLAY_STORE.md`). Claude offered to generate the upload key file and send it.
 - **Play Store:** on 9 Oct the owner asked how to put the app on the Play Store; they got the steps
   from `PLAY_STORE.md` in plain words. Next step is theirs (developer account, upload key).
+- **Points & badges** built on 9 Oct (fourth chat, app + web). The web part needs "publish the web".
 - **Owner's last feedback:** Google Maps group map "working fine"; small-screen fixes, history, planner,
   family, finder, rain not yet reported on from a real ride. The owner's phone uses big text: check
   `app/screenshots/small/` for every new screen.
@@ -109,6 +110,7 @@ fake-LiveKit web tests but has not been confirmed on a ride yet.
 | Low fuel guide (button or "RideComm, low fuel"; rc-fuel; warns at 2 km / 500 m; ends at the pump) | app + web | built, needs a road test |
 | Rain alerts (Open-Meteo here + 25 km ahead, off by default) | app + web | built |
 | Play Store groundwork (targetSdk 36, `play` build + CI bundle, privacy page, store pictures, guide) | app | ready; owner's steps pending |
+| Points & badges (points never for speed, 7 levels, 16 badges, This year, Ride points leaderboard, `rc-score`) | app + web | built (4th chat); web not published |
 
 Chronology (git log): step 1 voice call → music → floating button → votes → SOS → glass redesign →
 group tracking → Spotify ducking → crash detection, photos → invite links → private ride server →
@@ -214,6 +216,19 @@ The owner asked where data would live: **only on each phone** (their choice over
   signed with the upload key from secrets, CI artifact `RideComm-play-N.aab`. targetSdk is 36; Robolectric
   runs tests on SDK 35 (`app/src/test/resources/robolectric.properties`) because SDK 36 needs JDK changes.
 
+## Points & badges (Oct 2026, fourth chat)
+
+The owner picked "Badges & yearly stats" and asked to "gamify it, points system and all". Rules in PROTOCOL.md
+"Points & badges" (app and web must agree; the web test `points.test.js` checks the app's own test numbers).
+- App: `score/ScoreLogic.kt` (pure: `ScoreEntry` facts, `ScoreRules` points, `Levels`, `Badge`, `ScoreBook` badges /
+  year / week streak, `BreakCounter`), `score/Score.kt` (score book `files/score.json`, the ride going on, `rc-score`),
+  `ui/PointsUi.kt` (home card, Points & badges page, Ride points card, the summary's Points card). Hooks: `RideManager`
+  (begin/finish/attach/…), `Hazards.mark` (a new spot), `HomeSafe.imHome` / `checkInLater`. Distance and riding time
+  come from `TripTracker`, so points work with Ride history off. Linked to a history ride by its start (within a minute).
+- Web: the `SC` block in `docs/ride/index.html` (`rc-web-score`), counting from the ride recording `REC`, which now
+  runs when Ride history *or* Points is on (rides are only written with history on).
+- Points never reward speed on purpose; caps (5 riders, 3 breaks, 5 hazards) stop farming.
+
 ## Ideas not built yet (from the last "what next" list)
 
 - **Hindi language**: app, web page and spoken alerts in Hindi (a Settings choice).
@@ -269,6 +284,6 @@ phones can't do a mesh group call; voice is only ~10 MB an hour anyway).
    `sdk.dir=$HOME/android-sdk` to `local.properties` (gitignored).
 3. `./gradlew testDebugUnitTest` should pass (about 385 tests).
 4. Store pictures (only when needed): `STORE_SHOTS=1 ./gradlew recordRoborazziDebug --tests '*StoreShotTest*'`.
-5. Web tests: see `tools/webtest/README.md` (7 suites: rides, features, more, gmap, plans, watch, road;
+5. Web tests: see `tools/webtest/README.md` (8 suites: rides, features, more, gmap, plans, watch, road, points;
    all print "No page errors").
 6. GitHub access goes through the GitHub MCP tools (no `gh` CLI in the container).

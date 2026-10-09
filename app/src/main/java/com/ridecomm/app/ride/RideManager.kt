@@ -22,6 +22,7 @@ import com.ridecomm.app.home.HomeLogic
 import com.ridecomm.app.home.HomeSafe
 import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.profile.ProfileSync
+import com.ridecomm.app.score.Score
 import com.ridecomm.app.sos.SosManager
 import com.ridecomm.app.vote.VoteManager
 import com.ridecomm.app.whisper.Whisper
@@ -102,6 +103,7 @@ object RideManager {
         MicGate.resetTotals()
         RiderAlerts.start(appContext)
         RideHistory.begin(appContext, code)
+        Score.begin(appContext)
         TripTracker.start(appContext)
         BreakReminder.start(appContext)
         RainWatch.start(appContext)
@@ -180,6 +182,7 @@ object RideManager {
         talkButton.stop()
         MicGate.closed = false
         RideHistory.finish()
+        Score.finish()
         TripTracker.stop()
         BreakReminder.stop()
         RainWatch.stop()
@@ -381,6 +384,7 @@ object RideManager {
         RiderAlerts.attach(r)
         Whisper.attach(appContext, r)
         HomeSafe.attach(r)
+        Score.attach(appContext, r)
         val ended = CompletableDeferred<DisconnectReason>()
         val events = launch(start = CoroutineStart.UNDISPATCHED) {
             r.events.collect { event ->
@@ -406,6 +410,7 @@ object RideManager {
                             GroupTracker.forget(it.value)
                             RideRoles.forget(it.value)
                             Whisper.forget(it.value)
+                            Score.forget(it.value)
                         }
                         RiderAlerts.onRiderLeft(event.participant)
                     }
@@ -417,6 +422,7 @@ object RideManager {
                             RideRoles.onRiderJoined(it)
                             RideDestination.onRiderJoined(it)
                             Hazards.onRiderJoined(it)
+                            Score.onRiderJoined(it)
                         }
                         RiderAlerts.onRiderJoined(event.participant)
                     }
@@ -441,6 +447,7 @@ object RideManager {
             ProfileSync.onConnected()
             RiderAlerts.onConnected()
             HomeSafe.onConnected()
+            Score.onConnected()
             _state.update { it.copy(status = RideStatus.CONNECTED) }
             refreshRiders()
             catchUp()
@@ -473,6 +480,7 @@ object RideManager {
             RiderAlerts.detach()
             Whisper.detach()
             HomeSafe.detach()
+            Score.detach()
             if (room === r) room = null
             r.disconnect()
             r.release()
@@ -539,6 +547,7 @@ object RideManager {
         talkButton.stop()
         MicGate.closed = false
         RideHistory.finish()
+        Score.finish()
         TripTracker.stop()
         BreakReminder.stop()
         RainWatch.stop()
@@ -556,6 +565,7 @@ object RideManager {
             .sortedBy { it.name.lowercase() }
         _state.update { it.copy(riders = listOf(me) + others, watchers = r.watcherNames()) }
         RideHistory.noteRiders(others.map { it.name })
+        Score.noteRiders(others.map { it.name })
     }
 
     private fun Participant.toRider(isMe: Boolean, muted: Boolean) = Rider(

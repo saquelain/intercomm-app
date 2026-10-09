@@ -32,6 +32,11 @@ mute, a fake signal drop with `goOffline()` / `goOnline()`). GPS is faked too: `
   searches merged) and its fall-back to OpenStreetMap for the rest of the visit, rain alerts (the Open-Meteo request,
   already raining, rain here in 30 minutes with the pill, not repeated, rain ahead, an unlikely shower, one place when
   there's no direction, switched off) and both Settings switches. Overpass, Google and Open-Meteo are all faked by routes.
+- `points.test.js`: points & badges. A ride earning points (74 km in two halves with an 11-minute break, a pothole,
+  riding sweep, with Bilal), both phones' "Ride points" cards, the summary's Points card and "New badge: First ride",
+  home safe later (+15), the join-screen card, the Points & badges page in all three looks, Reset; a ready-made score
+  book with the app's test numbers (788 points, a 3-week streak, the badges); the switch off and on mid-ride; points
+  with Ride history off.
 - `gmap.test.js`: the Group map on Google Maps (Google's real script in keyless mode, served a stand-in key),
   long press, tap a rider, dark map, switching to OpenStreetMap in Settings, and a refused key falling back.
 
@@ -52,6 +57,7 @@ node tools/webtest/gmap.test.js
 node tools/webtest/plans.test.js
 node tools/webtest/watch.test.js
 node tools/webtest/road.test.js
+node tools/webtest/points.test.js
 ```
 
 In the Claude cloud container Playwright lives at `/opt/node22/lib/node_modules/playwright` (set

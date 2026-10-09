@@ -69,6 +69,7 @@ object Prefs {
     private const val KEY_PLANS = "ride_plans"
     private const val KEY_FINDER = "finder"
     private const val KEY_RAIN = "rain_alerts"
+    private const val KEY_POINTS = "points"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -395,4 +396,9 @@ object Prefs {
     fun rainAlerts(context: Context): Boolean = prefs(context).getBoolean(KEY_RAIN, false)
 
     fun setRainAlerts(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_RAIN, on).apply()
+
+    /** Points & badges: earn points for each ride; riders in the ride see each other's. On by default. */
+    fun points(context: Context): Boolean = prefs(context).getBoolean(KEY_POINTS, true)
+
+    fun setPoints(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_POINTS, on).apply()
 }

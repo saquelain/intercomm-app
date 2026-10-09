@@ -1,5 +1,6 @@
 package com.ridecomm.app.home
 
+import com.ridecomm.app.score.Score
 import com.ridecomm.app.ride.riderIds
 import com.ridecomm.app.ride.Riders
 import android.content.Context
@@ -125,6 +126,7 @@ object HomeSafe {
     fun imHome() {
         if (!enabled()) return
         _state.value = _state.value.copy(meHome = true)
+        Score.noteHome(appContext)
         homeUnsent = true
         sendHome()
     }
@@ -159,6 +161,7 @@ object HomeSafe {
                 r.trySendText(JSONObject().put("t", "home").put("name", name).toString(), TOPIC)
                 delay(500)
                 Prefs.setPendingHomeCheckIn(app, null)
+                Score.noteHome(app)
                 r.riderIds().size
             }
         } catch (e: Exception) {

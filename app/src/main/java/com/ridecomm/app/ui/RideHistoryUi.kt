@@ -25,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,8 +47,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
 import com.ridecomm.app.sos.LocationHelper
+import com.ridecomm.app.score.Score
+import com.ridecomm.app.score.ScoreBook
+import com.ridecomm.app.score.ScoreEntry
 import com.ridecomm.app.trip.RideHistory
 import com.ridecomm.app.trip.RideLog
 import com.ridecomm.app.trip.RideSummary
@@ -110,7 +115,7 @@ private fun RideRow(ride: RideSummary, onClick: () -> Unit) {
 
 /** A full-screen page over whatever is showing, in the current look. */
 @Composable
-private fun FullScreen(onClose: () -> Unit, content: @Composable () -> Unit) {
+internal fun FullScreen(onClose: () -> Unit, content: @Composable () -> Unit) {
     val look = LocalLook.current
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         LookScope(look) { LookBackground(look, Modifier.fillMaxSize(), GlassSceneStyle.RIDE) { content() } }
@@ -118,7 +123,7 @@ private fun FullScreen(onClose: () -> Unit, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun TopBar(title: String, subtitle: String?, onClose: () -> Unit) {
+internal fun PageTopBar(title: String, subtitle: String?, onClose: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         GlassIconButton(R.drawable.ms_arrow_back, "Back", size = 46.dp, iconSize = 22.dp, onClick = onClose)
         Spacer(Modifier.width(12.dp))
@@ -140,7 +145,7 @@ fun RideListScreen(onClose: () -> Unit, onOpen: (Long) -> Unit) {
             Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            TopBar("Your rides", "${rides.size} kept on this phone · ${km(rides.sumOf { it.distanceM })} in all", onClose)
+            PageTopBar("Your rides", "${rides.size} kept on this phone · ${km(rides.sumOf { it.distanceM })} in all", onClose)
             GlassCard(spacing = 10.dp) {
                 if (rides.isEmpty()) Text("No rides yet. They appear here after you leave a ride.", style = MaterialTheme.typography.bodyMedium)
                 rides.forEach { RideRow(it) { onOpen(it.id) } }
@@ -154,10 +159,15 @@ fun RideListScreen(onClose: () -> Unit, onOpen: (Long) -> Unit) {
 fun RideSummaryScreen(id: Long, onClose: () -> Unit) {
     val context = LocalContext.current
     val ride by produceState<RideSummary?>(null, id) { value = RideHistory.getAsync(context, id) }
+    val scores by Score.entries.collectAsState()
+    LaunchedEffect(Unit) { Score.load(context) }
     FullScreen(onClose) {
         ride?.let { r ->
+            val entry = if (Prefs.points(context)) scores.firstOrNull { kotlin.math.abs(it.atMs - r.startedAtMs) < 60_000 } else null
             RideSummaryContent(
                 r,
+                score = entry,
+                earned = entry?.let { e -> ScoreBook.badges(scores).filter { it.earnedAtMs == e.atMs }.map { it.badge } }.orEmpty(),
                 onClose = onClose,
                 onShare = { RidePicture.share(context, r) },
                 onDelete = {
@@ -180,6 +190,8 @@ fun RideSummaryContent(
     onShare: () -> Unit,
     onDelete: () -> Unit,
     map: @Composable (Modifier) -> Unit = { RouteMap(ride.route, ride.stops, it) },
+    score: ScoreEntry? = null,
+    earned: List<com.ridecomm.app.score.Badge> = emptyList(),
 ) {
     val context = LocalContext.current
     var confirmDelete by remember { mutableStateOf(false) }
@@ -187,7 +199,7 @@ fun RideSummaryContent(
         Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        TopBar(
+        PageTopBar(
             "${day(ride.startedAtMs)} · ${clock(ride.startedAtMs)}",
             "Ride ${ride.code}" + if (ride.riders.isNotEmpty()) " · with ${ride.riders.joinToString(", ")}" else "",
             onClose,
@@ -215,6 +227,7 @@ fun RideSummaryContent(
                 }
             }
         }
+        score?.let { RideScoreCard(it, earned) }
         if (ride.stops.isNotEmpty()) {
             GlassCard(spacing = 10.dp) {
                 SectionLabel("Stops")

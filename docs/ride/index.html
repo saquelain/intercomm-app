@@ -561,6 +561,49 @@
   html.look-neu .fuelpanel .ic { background: linear-gradient(135deg, #fff, #fde3c8) !important; color: #e5670c !important; box-shadow: var(--neu-out-sm); }
   html.look-neu .fuelpanel .rsub.ahead { color: #b7791f; }
 
+  /* Points & badges: level medal, progress bars, badges, month bars, the ride's leaderboard */
+  .medal { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; flex: none; color: #fff; background: linear-gradient(135deg, var(--orange), var(--pink)); }
+  .medal.gold { background: linear-gradient(135deg, #FFC93C, #FF8A1F); }
+  .medal.big { width: 60px; height: 60px; } .medal.big svg { width: 32px; height: 32px; }
+  .medal.sm { width: 30px; height: 30px; } .medal.sm svg { width: 16px; height: 16px; }
+  .lvname { font-size: 28px; font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; }
+  .pbar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.14); margin: 12px 0 6px; overflow: hidden; }
+  .pbar i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--orange), var(--pink)); }
+  .rsub.small { font-size: 13px; }
+  .streak { display: inline-flex; align-items: center; gap: 2px; color: var(--orange); font-weight: 700; font-size: 18px; white-space: nowrap; }
+  .streak svg { width: 22px; height: 22px; }
+  .ptscard { cursor: pointer; }
+  .bchips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .bchip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 14px; font-size: 14px; font-weight: 600; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); }
+  .bchip svg { width: 18px; height: 18px; color: var(--amber); }
+  .mbars { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; height: 84px; margin-top: 14px; }
+  .mb { display: flex; flex-direction: column; min-width: 0; }
+  .mb b { flex: 1; display: flex; align-items: flex-end; justify-content: center; }
+  .mb i { display: block; width: 60%; border-radius: 4px; background: var(--orange); opacity: .6; }
+  .mb.now i { opacity: 1; } .mb i.none { background: var(--faint); opacity: .4; }
+  .mb span { font-size: 11px; color: var(--faint); margin-top: 4px; text-align: center; }
+  .badges { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .badge { border-radius: 18px; padding: 12px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); min-width: 0; }
+  .badge.got, .newbadge { background: rgba(255,201,60,.14); border: 1px solid rgba(255,201,60,.35); }
+  .badge .row { gap: 8px; }
+  .bic { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex: none; background: rgba(255,255,255,.12); color: var(--muted); }
+  .bic svg { width: 18px; height: 18px; }
+  .badge.got .bic, .newbadge .bic { background: linear-gradient(135deg, #FFC93C, #FF8A1F); color: #fff; }
+  .bt { font-weight: 700; font-size: 16px; min-width: 0; line-height: 1.2; overflow-wrap: anywhere; }
+  .bh { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .badge .pbar { margin: 8px 0 2px; height: 6px; }
+  .howto { margin: 8px 0 0; padding-left: 20px; } .howto li { margin: 4px 0; color: var(--muted); }
+  .rank { width: 22px; flex: none; font-weight: 700; font-size: 18px; color: var(--faint); } .rank.first { color: var(--amber); }
+  .pts { font-weight: 800; font-size: 19px; white-space: nowrap; } .pts.me { color: var(--orange); } .pts.big { font-size: 24px; color: var(--orange); }
+  .pline { display: flex; justify-content: space-between; gap: 10px; margin-top: 6px; font-size: 16px; } .pline span:last-child { color: var(--muted); }
+  .newbadge { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 10px; border-radius: 16px; }
+  html.look-glass .badge.got, html.look-glass .newbadge { border-color: #ffd27a99; }
+  html.look-neu .bchip, html.look-neu .badge { background: var(--neu-surface); border: 0; box-shadow: var(--neu-out-sm); }
+  html.look-neu .badge.got, html.look-neu .newbadge { background: linear-gradient(135deg, #fff8e6, #fdebc8); border: 0; box-shadow: var(--neu-out-sm); }
+  html.look-neu .pbar { background: #dfe2ef; box-shadow: var(--neu-in); }
+  html.look-neu .bic { background: #dfe2ef; }
+  html.look-neu .pts.me, html.look-neu .pts.big { color: #2f6bff; } html.look-neu .streak { color: #e5670c; }
+
   /* Small phones (iPhone SE and narrower) and large text: nothing overlaps or spills out of its card. */
   .grow { min-width: 0; }
   .btn { min-width: 0; }
@@ -582,6 +625,8 @@
     .finds { gap: 8px; }
     .finds .btn { font-size: 14px; min-height: 66px; padding: 6px 2px; border-radius: 18px; }
     .fbtns { margin-left: 0; }
+    .badges { gap: 8px; } .badge { padding: 10px; } .bt { font-size: 15px; }
+    .lvname { font-size: 24px; }
   }
 </style>
 </head>
@@ -606,6 +651,7 @@
       </div>
       <div id="checkIn"></div>
       <div id="plansBox"></div>
+      <div id="pointsBox"></div>
       <div id="ridesBox"></div>
       <p class="note">Use earphones or your helmet headset. Keep this page open while riding: on iPhone, locking the screen or switching apps can pause your mic. Shared music plays in the Android app only.</p>
     </div>
@@ -644,6 +690,7 @@
     </div>
     <div class="card hidden" id="voteCard"></div>
     <div id="homeCard"></div>
+    <div id="scoreCard"></div>
     <div class="card">
       <div class="label">Ask the group</div>
       <div class="grid3" id="votes"></div>
@@ -742,6 +789,9 @@
 <!-- Planning a ride -->
 <div class="sheet hidden" id="planSheet"><div class="sheet-in" id="planSheetIn"></div></div>
 
+<!-- Points & badges -->
+<div class="sheet hidden" id="pointsSheet"><div class="sheet-in" id="pointsSheetIn"></div></div>
+
 <!-- All rides in the history -->
 <div class="sheet hidden" id="ridesSheet"><div class="sheet-in" id="ridesSheetIn"></div></div>
 
@@ -807,7 +857,7 @@
   const TOKEN_SERVER = params.get('ts') || 'ridecomm-xnnn94';
   const CODE_RE = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/;
   const T = { vote: 'rc-vote', sos: 'rc-sos', rider: 'rc-rider', music: 'rc-music', avatar: 'rc-avatar', loc: 'rc-loc', hazard: 'rc-hazard', role: 'rc-role',
-    whisper: 'rc-whisper', dest: 'rc-dest', home: 'rc-home', fuel: 'rc-fuel' };
+    whisper: 'rc-whisper', dest: 'rc-dest', home: 'rc-home', fuel: 'rc-fuel', score: 'rc-score' };
   // The group's private ride server (Cloudflare Worker), once it's deployed. Riders can also type it in Settings.
   const RIDE_SERVER = '';
   // Google Maps JavaScript key, restricted to https://saquelain.github.io/* in Google Cloud (public by design;
@@ -861,6 +911,12 @@
     build: 'M354-370q-97 0-165-67.5T121-602q0-20 3-37.5t11-36.5q3-8 9-12t13-6q7-2 14 0t13 8l113 113 92-86-118-118q-6-6-8-13t0-14q2-7 6-12.5t12-8.5q19-8 36-11.5t37-3.5q99 0 168.5 69.5T592-602q0 24-5 47t-13 46l221 221q27 26 26.5 63.5T793-161q-26 24-61.5 23.5T670-164L447-388q-23 8-46 13t-47 5Z',
     rain: 'M558-83q-11 5-23.5 1T517-97l-69-138q-5-11-1.5-23.5T461-276q11-5 23.5-1t17.5 15l69 138q5 11 1.5 23.5T558-83Zm240-1q-11 5-23.5 1T757-98l-69-138q-5-11-1.5-23.5T701-277q11-5 23.5-1t17.5 15l69 138q5 11 1.5 23.5T798-84Zm-480 0q-11 5-23.5 1.5T277-97l-69-138q-5-11-1-23.5t15-17.5q11-5 23.5-1.5T263-263l69 139q5 11 1 23t-15 17Zm-28-256q-87 0-148.5-61.5T80-550q0-79 56.5-141T277-759q32-56 84.5-88.5T480-880q91 0 152.5 57.5T708-680q79 4 125.5 53.5T880-510q0 70-49.5 120T710-340H290Z',
     cup: 'M442-242q-116 0-199-80t-83-195v-263q0-25 17.5-42.5T220-840h529q54 0 92.5 37t38.5 91q0 60-37 106t-94 46h-25v43q0 115-83 195t-199 80ZM220-620h444v-160H220v160Zm504 0h25q33 0 52-28.5t19-63.5q0-29-21-48.5T749-780h-25v160ZM190-120q-13 0-21.5-8.5T160-150q0-13 8.5-21.5T190-180h580q13 0 21.5 8.5T800-150q0 13-8.5 21.5T770-120H190Z',
+    trophy: 'M284-526v-166H180v44q0 45 29.5 78.5T284-526Zm392 0q45-10 74.5-43.5T780-648v-44H676v166ZM450-180v-148q-54-11-96-46.5T296-463q-74-8-125-60t-51-125v-44q0-24.75 17.63-42.38Q155.25-752 180-752h104v-28q0-24.75 17.63-42.38Q319.25-840 344-840h272q24.75 0 42.38 17.62Q676-804.75 676-780v28h104q24.75 0 42.38 17.62Q840-716.75 840-692v44q0 73-51 125t-125 60q-16 53-58 88.5T510-328v148h122q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H328q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h122Z',
+    fire: 'M160-400q0-116 71.5-225T428-811q17-11 34.5-.5T480-780v72q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658q8-9 18-12.5t19 2.5q66 45 103.5 116T800-400q0 95-49 171.5T622-113q23-26 35.5-58t12.5-67q0-38-14-71.5T615-370L480-502 346-370q-28 27-42 60.5T290-238q0 35 12.5 67t35.5 58q-80-39-129-115.5T160-400Zm320-18 92 90q18 18 28 41t10 49q0 53-38 90.5T480-110q-54 0-92-37.5T350-238q0-26 9.5-49t28.5-41l92-90Z',
+    lock: 'M220-80q-24.75 0-42.37-17.63Q160-115.25 160-140v-434q0-24.75 17.63-42.38Q195.25-634 220-634h70v-96q0-78.85 55.61-134.42Q401.21-920 480.11-920q78.89 0 134.39 55.58Q670-808.85 670-730v96h70q24.75 0 42.38 17.62Q800-598.75 800-574v434q0 24.75-17.62 42.37Q764.75-80 740-80H220Zm260.17-200q31.83 0 54.33-22.03T557-355q0-30-22.67-54.5t-54.5-24.5q-31.83 0-54.33 24.5t-22.5 55q0 30.5 22.67 52.5t54.5 22ZM350-634h260v-96q0-54.17-37.88-92.08-37.88-37.92-92-37.92T388-822.08q-38 37.91-38 92.08v96Z',
+    groups: 'M30-240q-12.75 0-21.37-8.63Q0-257.25 0-270v-23q0-38.57 41.5-62.78Q83-380 150.38-380q12.16 0 23.39.5t22.23 2.15q-8 17.35-12 35.17-4 17.81-4 37.18v65H30Zm240 0q-12.75 0-21.37-8.63Q240-257.25 240-270v-35q0-32 17.5-58.5T307-410q32-20 76.5-30t96.5-10q53 0 97.5 10t76.5 30q32 20 49 46.5t17 58.5v35q0 12.75-8.62 21.37Q702.75-240 690-240H270Zm510 0v-65q0-19.86-3.5-37.43T765-377.27q11-1.73 22.17-2.23 11.17-.5 22.83-.5 67.5 0 108.75 23.77T960-293v23q0 12.75-8.62 21.37Q942.75-240 930-240H780ZM149.57-410q-28.57 0-49.07-20.56Q80-451.13 80-480q0-29 20.56-49.5Q121.13-550 150-550q29 0 49.5 20.5t20.5 49.93q0 28.57-20.5 49.07T149.57-410Zm660 0q-28.57 0-49.07-20.56Q740-451.13 740-480q0-29 20.56-49.5Q781.13-550 810-550q29 0 49.5 20.5t20.5 49.93q0 28.57-20.5 49.07T809.57-410ZM480-480q-50 0-85-35t-35-85q0-51 35-85.5t85-34.5q51 0 85.5 34.5T600-600q0 50-34.5 85T480-480Z',
+    bike: 'M160-200q-66 0-113-47T0-360q0-57 36.5-101t93.5-55l-28-24H30q-13 0-21.5-8.5T0-570q0-13 8.5-21.5T30-600h150l100 60 146-55q7-2 14-3.5t15-1.5h111l-62-80h-64q-17 0-28.5-11.5T400-720q0-17 11.5-28.5T440-760h63q19 0 35.5 8.5T566-729l60 77 105-53q10-5 19.5 1t9.5 17v67q0 8-6 14t-14 6h-72l70 92q15-6 30.5-9t31.5-3q66 0 113 47t47 113q0 66-47 113t-113 47q-66 0-113-47t-47-113q0-27 9.5-52.5T676-460l-20-24-124 186q-5 8-14 13t-19 5h-84q-8 0-14.5-2.5T389-290l-69-60q-5 63-51 106.5T160-200Zm0-80q33 0 56.5-23.5T240-360q0-33-23.5-56.5T160-440q-33 0-56.5 23.5T80-360q0 33 23.5 56.5T160-280Zm640 0q33 0 56.5-23.5T880-360q0-33-23.5-56.5T800-440q-33 0-56.5 23.5T720-360q0 33 23.5 56.5T800-280Z',
+    twilight: 'M792-670q9 9 9 21t-9 21l-43 43q-9.07 9-21.53 9-12.47 0-21.34-9.05-9.13-9.06-8.63-21.5Q698-619 707-628l43-42q9-8 21-8.5t21 8.5ZM110-170q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32Q97.25-230 110-230h740q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H110Zm370.18-630q12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v60q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37v-60q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62ZM169-672q9-9 21-9t21 9l44 44q9 9.07 9 21.53 0 12.47-9 21.86-9 8.61-21.5 8.11T212-586l-43-44q-8-9-8.5-21t8.5-21Zm31 352q0-117 81.5-198.5T480-600q117 0 198.5 81.5T760-320H200Z',
   };
   const icon = (d) => '<svg class="i" viewBox="0 -960 960 960"><path d="' + d + '"/></svg>';
   /** The RideComm motorbike (the logo), also drawn on the shared ride picture. */
@@ -894,7 +950,7 @@
 
   // ---- Settings: every extra can be switched on or off at any time, also mid-ride ----
   const DEFAULTS = { map: false, voice: true, vibrate: true, awake: true, darkMap: false, hazards: true, roles: true, talk: 'open', night: 'off', shareInfo: true,
-    whisper: true, dest: true, home: true, history: true, planner: true, family: false, finder: true, rain: false, breakEvery: '120', look: 'classic', mapKind: 'google', locked: !!RIDE_SERVER, server: RIDE_SERVER };
+    whisper: true, dest: true, home: true, history: true, points: true, planner: true, family: false, finder: true, rain: false, breakEvery: '120', look: 'classic', mapKind: 'google', locked: !!RIDE_SERVER, server: RIDE_SERVER };
   const SET = Object.assign({}, DEFAULTS, (() => { try { return JSON.parse(store.get('rc-web-settings') || '{}'); } catch (e) { return {}; } })());
   const saveSettings = () => store.set('rc-web-settings', JSON.stringify(SET));
   const TOGGLES = [
@@ -908,6 +964,7 @@
     ['dest', 'Shared destination', 'Set where the group is heading: everyone hears it, sees how far it is, and gets one Navigate button. Search uses OpenStreetMap. Your own location isn\'t shared.'],
     ['home', 'Home safe check-in', 'At the end of the ride tap "I\'m home safe" and the riders still on the road hear it. With home saved, it happens by itself when you get there (keep this page open).'],
     ['history', 'Ride history', 'Keeps a summary of each ride on this phone: route, distance, time, speeds and stops. Nothing is shared unless you share it.'],
+    ['points', 'Points & badges', 'Earn points for each ride: distance, riding together, breaks, marking hazards, leading or sweeping and getting home safe. Never for speed. Levels, badges and your year are kept on this phone; riders in the ride see each other\'s ride points.'],
     ['planner', 'Ride planner', 'Plan a ride ahead: start time, meeting point and stops travel in the invite link, with a reminder in your calendar.'],
     ['finder', 'Fuel & food finder', 'Find petrol, food or a mechanic on the road ahead, and tap Low fuel to be warned at the next petrol pump ahead. Searches send your location to Google Maps or OpenStreetMap only when you use them.'],
     ['rain', 'Rain alerts', 'Hear when rain is expected where you are or on the road ahead. Every 15 minutes your rough location (about 1 km) goes to the free Open-Meteo weather service.'],
@@ -964,8 +1021,13 @@
     else if (key === 'home') { renderHome(); renderSettings(); if (!needLocation()) stopLocation(); else startLocation(); }
     else if (key === 'breakEvery') { BW.remindedAt = null; renderBreak(); renderSettings(); }
     else if (key === 'history') {
-      if (on) startRecording(); else { stopRecording(); if (!needLocation()) stopLocation(); }
+      // Points & badges keeps recording distance even without the history.
+      if (on) startRecording(); else if (!SET.points) { stopRecording(); if (!needLocation()) stopLocation(); }
       renderRides(); renderSettings();
+    } else if (key === 'points') {
+      if (on) { if (REC.ride) scoreBegin(); else startRecording(); }
+      else { scoreStop(); if (!SET.history) { stopRecording(); if (!needLocation()) stopLocation(); } }
+      renderPoints();
     } else if (key === 'planner') { renderPlans(); renderPlanCard(); }
     else if (key === 'family') { renderStatus(); if (on && SET.map) sendPosition(); }
     else if (key === 'finder') {
@@ -1213,6 +1275,7 @@
     if (shouldShareRegroup()) sendRegroup([id]);
     if (shouldShareRoles()) sendRoles([id]);
     sendMyHazards([id]);
+    sendScore([id]);
   }
   function onLeft(p) {
     const id = p.identity, name = p.name || 'A rider';
@@ -1221,6 +1284,7 @@
     if (SET.home && !HS.home.has(id)) { HS.leftNot.set(id, HS.seen.get(id) || name); renderHome(); }
     S.batteries.delete(id); S.onCall.delete(id); RW.ahead.delete(id); RW.behind.delete(id);
     G.pos.delete(id); G.sep.delete(id); F.others.delete(id);
+    if (SC.peers.delete(id)) renderScoreCard();
     if (S.regroup) S.regroup.arrived.delete(id);
     recompute(false);
     const bye = S.byes.get(id); S.byes.delete(id);
@@ -1823,6 +1887,7 @@
       const now = Date.now();
       const same = Array.from(H.list.values()).find((h) => h.kind === kind && dist(h.lat, h.lon, lat, lon) < 80);
       const h = same ? Object.assign({}, same, { at: now }) : { id: newId(), kind, lat, lon, by: myId, name: S.name, at: now };
+      if (!same && SC.ride) SC.hz++;
       H.list.set(h.id, h); H.warned.add(h.id);
       send(T.hazard, hazJson(h));
       speak(HAZ[kind].spoken + ' marked for the group'); vibrate(80);
@@ -2327,6 +2392,7 @@
     if (!SET.home || HS.meHome) return;
     HS.meHome = true; HS.unsent = true;
     store.set('rc-web-checkin', '');
+    scoreHome();
     send(T.home, { t: 'home', name: S.name }).then((ok) => { if (ok) HS.unsent = false; });
     speak(auto ? "You're home. Told the group you're home safe." : "Told the group you're home safe");
     renderHome();
@@ -2409,6 +2475,7 @@
       await new Promise((ok) => setTimeout(ok, 500));
       heard = Array.from(room.remoteParticipants.keys()).filter(isRider).length;
       store.set('rc-web-checkin', '');
+      scoreHome();
     } catch (e) { heard = null; }
     finally { try { room && room.disconnect(); } catch (e) {} }
     const msg = heard == null ? "Couldn't reach the ride. Share it with your group instead."
@@ -3080,16 +3147,19 @@
   }
   function noteRider(name) { const r = REC.ride; if (r && name && !r.riders.includes(name)) r.riders.push(name); }
   function startRecording() {
-    if (!SET.history || REC.ride || !S.code || !S.room) return;
+    if (!(SET.history || SET.points) || REC.ride || !S.code || !S.room) return;
     REC.ride = { id: newId(), code: S.code, start: Date.now(), dist: 0, moving: 0, top: 0, riders: [S.name], stops: [] };
     REC.pts = []; REC.kept = null; REC.last = null; REC.speeds = []; REC.stay = null; REC.lastStayAt = 0;
     S.room.remoteParticipants.forEach((p) => { if (isRider(p.identity)) noteRider(p.name); });
     clearInterval(REC.saver); REC.saver = setInterval(saveRide, 60000);
+    scoreBegin();
     startLocation();
   }
   /** Ends the recording; returns the saved ride (null when it was too short to keep). */
   function stopRecording() {
+    const rec = rideNow(), kept = !!rec && (rec.dist >= RL.MIN_DIST || rec.end - rec.start >= RL.MIN_MS);
     const saved = saveRide();
+    scoreFinish(kept);
     clearInterval(REC.saver); REC.saver = null; REC.ride = null;
     return saved;
   }
@@ -3136,6 +3206,8 @@
   function saveRide() {
     const rec = rideNow(); if (!rec) return null;
     if (rec.dist < RL.MIN_DIST && rec.end - rec.start < RL.MIN_MS) return null;
+    if (SC.ride) saveScore();
+    if (!SET.history) return null;
     writeRides([rec].concat(loadRides().filter((x) => x.id !== rec.id)).sort((a, b) => b.start - a.start));
     return rec;
   }
@@ -3174,7 +3246,7 @@
     $('rideBody').innerHTML = '<div class="card"><div class="stats">' +
       statTile(kmText(r.dist), 'km', 'Distance') + statTile(durText(r.moving), '', 'Riding time') + statTile(durText(r.end - r.start), '', 'Total time') +
       statTile(Math.round(r.avg || 0), 'km/h', 'Average') + statTile(Math.round(r.top || 0), 'km/h', 'Top speed') + statTile(stops.length, '', stops.length === 1 ? 'Stop' : 'Stops') +
-      '</div></div>' +
+      '</div></div>' + scoreHtml(r) +
       (stops.length ? '<div class="card"><div class="label">Stops</div>' + stops.map((s) =>
         '<div class="prow"><span class="pdot stop">' + icon(P.cup) + '</span><div class="grow"><div class="n">' + esc(clock(s.at)) + '</div><div class="dd">Stopped ' + durText(s.dur) + '</div></div>' +
         '<a class="btn nav" target="_blank" rel="noopener" aria-label="Open in Google Maps" href="https://www.google.com/maps/search/?api=1&query=' + s.lat.toFixed(5) + ',' + s.lon.toFixed(5) + '">' + icon(P.pin) + '<span>Map</span></a></div>').join('') + '</div>' : '') +
@@ -3289,6 +3361,220 @@
     downloadFile(name, blob);
     banner('Picture saved');
   }
+
+  // ---- Points & badges: points for riding well and looking after the group, never for speed (same rules as the app's ScoreLogic) ----
+  const SR = { GROUP: 10, GROUP_MAX: 5, BREAK: 15, BREAK_MAX: 3, HAZ: 10, HAZ_MAX: 5, ROLE: 25, HOME: 15, MIN_KM: 5, BREAKS_FROM: 60,
+    STREAK_KM: 5, KEEP: 1000, HOME_LATER: 24 * 3600000, BREAK_MS: 10 * 60000 };
+  const LEVELS = [['Rookie', 0], ['Rider', 200], ['Road Buddy', 600], ['Explorer', 1500], ['Road Captain', 3000], ['Road King', 6000], ['Legend', 12000]];
+  const BADGES = [
+    ['FIRST', 'First ride', 'Finish your first ride', 1, '', P.flag],
+    ['RIDES_10', '10 rides', 'Ride 10 times', 10, 'rides', P.bike],
+    ['RIDES_50', '50 rides', 'Ride 50 times', 50, 'rides', P.bike],
+    ['CENTURY', 'Century', '100 km in one ride', 100, 'km', P.finish],
+    ['LONG_HAUL', 'Long haul', '300 km in one ride', 300, 'km', P.route],
+    ['KM_1000', '1,000 km club', '1,000 km in all', 1000, 'km', P.trophy],
+    ['KM_5000', '5,000 km club', '5,000 km in all', 5000, 'km', P.trophy],
+    ['KM_10000', '10,000 km club', '10,000 km in all', 10000, 'km', P.trophy],
+    ['PACK', 'Pack ride', 'Ride with 5 riders or more', 5, 'riders', P.groups],
+    ['SPOTTER', 'Hazard spotter', 'Mark 10 hazards for the group', 10, 'hazards', P.warning],
+    ['LEADER', 'Road leader', 'Lead the group on 5 rides', 5, 'rides', P.nav],
+    ['SWEEP', 'Sweep hero', 'Ride sweep on 5 rides', 5, 'rides', P.shield],
+    ['HOME', 'Home safe', 'Check in home safe 10 times', 10, 'times', P.home],
+    ['SMART', 'Smart rider', 'Take a break on 10 rides of an hour or more', 10, 'rides', P.cup],
+    ['EARLY', 'Early bird', 'Start a ride between 4 and 6 am', 1, '', P.twilight],
+    ['WEEKLY', 'Every week', 'Ride 4 weeks in a row', 4, 'weeks', P.fire],
+  ];
+  const HOWTO = ['1 point for every km', '+10 for each rider with you (up to 5)', '+15 for each break of 10 minutes on rides of an hour or more (up to 3)',
+    '+10 for each hazard you mark for the group (up to 5)', '+25 for leading or riding sweep', '+15 for "I\'m home safe"', 'Never for speed'];
+  const SC = { ride: null, hz: 0, lead: false, sweep: false, home: false, breaks: 0, movedAt: null, lastMoving: 0, counted: false,
+    peers: new Map(), lastSent: -1, lastSentAt: 0, tick: null };
+  /** The score book: one entry of plain facts per ride, newest first, kept only on this phone (apart from the ride history). */
+  function loadScore() {
+    try { const l = JSON.parse(store.get('rc-web-score') || '[]'); return Array.isArray(l) ? l.filter((e) => e && e.id && e.at > 0) : []; } catch (e) { return []; }
+  }
+  function writeScore(list) { store.set('rc-web-score', JSON.stringify(list.slice().sort((a, b) => b.at - a.at).slice(0, SR.KEEP))); }
+  const num = (n) => Math.round(n).toLocaleString('en-US');
+  /** How a ride scored, line by line: [label, points]. */
+  function breakdown(e) {
+    const out = [], km = Math.floor(e.km || 0), real = (e.km || 0) >= SR.MIN_KM, plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
+    const o = Math.min(e.others || 0, SR.GROUP_MAX), b = Math.min(e.breaks || 0, SR.BREAK_MAX), h = Math.min(e.hz || 0, SR.HAZ_MAX);
+    if (km > 0) out.push([km + ' km ridden', km]);
+    if (real && o > 0) out.push(['Rode with ' + plural(o, 'rider', 'riders'), o * SR.GROUP]);
+    if ((e.min || 0) >= SR.BREAKS_FROM && b > 0) out.push(['Took ' + plural(b, 'break', 'breaks'), b * SR.BREAK]);
+    if (h > 0) out.push(['Marked ' + plural(h, 'hazard', 'hazards'), h * SR.HAZ]);
+    if (real && e.lead) out.push(['Led the group', SR.ROLE]);
+    if (real && e.sweep) out.push(['Rode sweep', SR.ROLE]);
+    if (e.home) out.push(['Home safe', SR.HOME]);
+    return out;
+  }
+  const points = (e) => breakdown(e).reduce((a, l) => a + l[1], 0);
+  const total = (list) => list.reduce((a, e) => a + points(e), 0);
+  const levelOf = (t) => LEVELS.reduce((i, l, j) => (t >= l[1] ? j : i), 0);
+  function levelProgress(t) { const i = levelOf(t), nx = LEVELS[i + 1]; return nx ? Math.min(1, Math.max(0, (t - LEVELS[i][1]) / (nx[1] - LEVELS[i][1]))) : 1; }
+  const toNext = (t) => { const nx = LEVELS[levelOf(t) + 1]; return nx ? num(nx[1] - t) + ' points to ' + nx[0] : 'Top level reached'; };
+  /** Weeks since 1970 counted from Monday, in local time. */
+  const weekIdx = (ms) => Math.floor((Math.floor((ms - new Date(ms).getTimezoneOffset() * 60000) / 86400000) + 3) / 7);
+  function longestRun(weeks) { let best = 0; weeks.forEach((w) => { if (weeks.has(w - 1)) return; let n = 1; while (weeks.has(w + n)) n++; best = Math.max(best, n); }); return best; }
+  /** Every badge with its progress; earned ones carry the start of the ride that earned them. */
+  function badgeProgress(list) {
+    const val = {}, earned = {}, weeks = new Set();
+    let rides = 0, km = 0, hz = 0, leads = 0, sweeps = 0, homes = 0, smart = 0, best = 0, most = 0, early = 0, streak = 0;
+    list.slice().sort((a, b) => a.at - b.at).forEach((e) => {
+      rides++; km += e.km || 0; best = Math.max(best, e.km || 0); most = Math.max(most, (e.others || 0) + 1); hz += e.hz || 0;
+      if (e.lead) leads++;
+      if (e.sweep) sweeps++;
+      if (e.home) homes++;
+      if ((e.min || 0) >= SR.BREAKS_FROM && (e.breaks || 0) > 0) smart++;
+      const h = new Date(e.at).getHours(); if (h >= 4 && h <= 5) early = 1;
+      if ((e.km || 0) >= SR.STREAK_KM) { weeks.add(weekIdx(e.at)); streak = Math.max(streak, longestRun(weeks)); }
+      const v = { FIRST: rides, RIDES_10: rides, RIDES_50: rides, CENTURY: Math.floor(best), LONG_HAUL: Math.floor(best), KM_1000: Math.floor(km), KM_5000: Math.floor(km),
+        KM_10000: Math.floor(km), PACK: most, SPOTTER: hz, LEADER: leads, SWEEP: sweeps, HOME: homes, SMART: smart, EARLY: early, WEEKLY: streak };
+      BADGES.forEach(([k, , , goal]) => { val[k] = v[k]; if (earned[k] == null && v[k] >= goal) earned[k] = e.at; });
+    });
+    return BADGES.map(([k, title, how, goal, unit, ic]) => ({ k, title, how, goal, unit, ic, value: val[k] || 0, at: earned[k] == null ? null : earned[k] }));
+  }
+  /** Weeks in a row with a ride, up to this week (or last week, so a streak isn't lost on Monday). */
+  function weekStreak(list, now) {
+    const ws = new Set(list.filter((e) => (e.km || 0) >= SR.STREAK_KM).map((e) => weekIdx(e.at)));
+    let w = weekIdx(now), n = 0;
+    if (!ws.has(w)) w--;
+    while (ws.has(w)) { n++; w--; }
+    return n;
+  }
+  function yearStats(list, y) {
+    const mine = list.filter((e) => new Date(e.at).getFullYear() === y), months = new Array(12).fill(0), count = new Map();
+    mine.forEach((e) => { months[new Date(e.at).getMonth()] += e.km || 0; Array.from(new Set(e.names || [])).forEach((n) => count.set(n, (count.get(n) || 0) + 1)); });
+    const buddies = Array.from(count.entries()).sort((a, b) => b[1] - a[1] || a[0].toLowerCase().localeCompare(b[0].toLowerCase())).slice(0, 3);
+    return { year: y, rides: mine.length, km: mine.reduce((a, e) => a + (e.km || 0), 0), min: mine.reduce((a, e) => a + (e.min || 0), 0), points: total(mine),
+      longest: mine.reduce((a, e) => Math.max(a, e.km || 0), 0), months, buddies };
+  }
+
+  // The ride going on: distance and riding time come from the ride recording (which runs for points even with Ride history off).
+  function scoreBegin() {
+    SC.ride = SET.points && REC.ride ? REC.ride : null;
+    SC.hz = 0; SC.lead = false; SC.sweep = false; SC.home = false; SC.breaks = 0; SC.movedAt = null; SC.lastMoving = 0; SC.counted = false;
+    SC.lastSent = -1; SC.lastSentAt = 0;
+    clearInterval(SC.tick); SC.tick = SC.ride ? setInterval(scoreTick, 15000) : null;
+    sendScore();
+    renderScoreCard();
+  }
+  function scoreStop() { clearInterval(SC.tick); SC.tick = null; SC.ride = null; SC.peers.clear(); renderScoreCard(); }
+  function scoreEntry() {
+    const r = SC.ride; if (!r) return null;
+    const others = r.riders.slice(1);
+    return { id: r.id, at: r.start, km: Math.round(r.dist / 100) / 10, min: Math.floor(r.moving / 60000), others: others.length, names: others.slice(0, 8),
+      breaks: SC.breaks, hz: SC.hz, lead: SC.lead, sweep: SC.sweep, home: SC.home };
+  }
+  const ridePoints = () => { const e = scoreEntry(); return e ? points(e) : 0; };
+  function myYear() { const y = new Date().getFullYear(), id = SC.ride && SC.ride.id; return total(loadScore().filter((e) => e.id !== id && new Date(e.at).getFullYear() === y)) + ridePoints(); }
+  function myLevel() { const id = SC.ride && SC.ride.id; return levelOf(total(loadScore().filter((e) => e.id !== id)) + ridePoints()); }
+  function scoreTick() {
+    const r = SC.ride; if (!r) return;
+    const now = Date.now();
+    // A break: riding time standing still for 10 minutes after some riding (like the app's BreakCounter).
+    if (r.moving !== SC.lastMoving) { if (r.moving > SC.lastMoving) SC.counted = false; SC.movedAt = now; SC.lastMoving = r.moving; }
+    if (!SC.counted && SC.movedAt != null && SC.lastMoving > 0 && now - SC.movedAt >= SR.BREAK_MS) { SC.breaks++; SC.counted = true; }
+    if (ROLES.lead === myId) SC.lead = true;
+    if (ROLES.sweep === myId) SC.sweep = true;
+    if (ridePoints() !== SC.lastSent && now - SC.lastSentAt >= 120000) sendScore();
+    renderScoreCard();
+  }
+  /** My points for the ride's leaderboard (rc-score). */
+  function sendScore(to) {
+    if (!SC.ride || !S.room) return;
+    const p = ridePoints(); SC.lastSent = p; SC.lastSentAt = Date.now();
+    send(T.score, { t: 'score', name: S.name, level: myLevel(), ride: p, year: myYear() }, to);
+  }
+  function onScore(o, from) {
+    // Kept even before my own count starts: riders already there answer the moment I join.
+    if (o.t !== 'score' || !SET.points) return;
+    SC.peers.set(from, { name: String(o.name || 'Rider').slice(0, 40), level: Math.max(0, Math.min(LEVELS.length - 1, o.level | 0)),
+      ride: Math.max(0, o.ride | 0), year: Math.max(0, o.year | 0) });
+    renderScoreCard();
+  }
+  function saveScore() { const e = scoreEntry(); if (e) writeScore([e].concat(loadScore().filter((x) => x.id !== e.id))); }
+  /** The ride ended: keep its entry (if the ride was long enough) and say any new badge. */
+  function scoreFinish(kept) {
+    const e = scoreEntry();
+    scoreStop();
+    if (!e || !kept) return;
+    const before = loadScore().filter((x) => x.id !== e.id);
+    writeScore([e].concat(before));
+    const had = new Set(badgeProgress(before).filter((b) => b.at != null).map((b) => b.k));
+    const fresh = badgeProgress(loadScore()).filter((b) => b.at != null && !had.has(b.k));
+    if (fresh.length) { speak(fresh.length === 1 ? 'New badge: ' + fresh[0].title : fresh.length + ' new badges'); banner('New badge: ' + fresh.map((b) => b.title).join(', ')); }
+  }
+  /** "I'm home safe": counts for this ride, or my last ride if it started within a day. */
+  function scoreHome() {
+    if (!SET.points) return;
+    if (SC.ride) { SC.home = true; renderScoreCard(); return; }
+    const list = loadScore(), last = list.sort((a, b) => b.at - a.at)[0];
+    if (!last || last.home || Date.now() - last.at > SR.HOME_LATER) return;
+    last.home = true; writeScore(list); renderPoints();
+  }
+
+  const pbar = (f) => '<div class="pbar"><i style="width:' + (f > 0 ? Math.max(4, Math.min(100, f * 100)) : 0) + '%"></i></div>';
+  const medal = (lv, cls) => '<span class="medal' + (cls ? ' ' + cls : '') + (lv >= 4 ? ' gold' : '') + '">' + icon(P.lead) + '</span>';
+  /** Join screen: level, points, this year in one line and the latest badges. */
+  function renderPoints() {
+    const box = $('pointsBox'); if (!box) return;
+    if (!SET.points) { box.innerHTML = ''; return; }
+    const list = loadScore(), t = total(list), lv = levelOf(t), now = Date.now(), y = yearStats(list, new Date(now).getFullYear()), streak = weekStreak(list, now);
+    const latest = badgeProgress(list).filter((b) => b.at != null).sort((a, b) => b.at - a.at).slice(0, 3);
+    box.innerHTML = '<div class="card ptscard" style="margin-top:16px" id="pointsOpen" role="button" tabindex="0"><div class="row"><div class="label grow">Points &amp; badges</div><span class="linkbtn">See all</span></div>' +
+      '<div class="row" style="margin-top:10px">' + medal(lv) + '<div class="grow"><div class="rname">' + LEVELS[lv][0] + '</div><div class="rsub">' + num(t) + ' points</div></div>' +
+      (streak >= 2 ? '<span class="streak">' + icon(P.fire) + streak + ' wk</span>' : '') + '</div>' + pbar(levelProgress(t)) + '<div class="rsub small">' + toNext(t) + '</div>' +
+      '<p style="margin-top:8px">' + (y.rides ? 'This year: ' + num(Math.floor(y.km)) + ' km · ' + y.rides + (y.rides === 1 ? ' ride' : ' rides') + ' · ' + num(y.points) + ' points'
+        : 'Ride with RideComm to earn points. Never for speed: for distance, riding together and looking after the group.') + '</p>' +
+      (latest.length ? '<div class="bchips">' + latest.map((b) => '<span class="bchip">' + icon(b.ic) + esc(b.title) + '</span>').join('') + '</div>' : '') + '</div>';
+  }
+  const badgeTile = (b) => '<div class="badge' + (b.at != null ? ' got' : '') + '"><div class="row"><span class="bic">' + icon(b.at != null ? b.ic : P.lock) + '</span><div class="bt">' + esc(b.title) + '</div></div>' +
+    '<div class="bh">' + esc(b.how) + '</div>' + (b.at == null && b.goal > 1 ? pbar(Math.min(1, b.value / b.goal)) +
+      '<div class="bh">' + num(Math.min(b.value, b.goal)) + ' / ' + num(b.goal) + (b.unit ? ' ' + b.unit : '') + '</div>' : '') + '</div>';
+  /** The full page: level, this year, badges, how points are earned. */
+  function openPoints() {
+    const list = loadScore(), t = total(list), lv = levelOf(t), now = Date.now(), y = yearStats(list, new Date(now).getFullYear()), streak = weekStreak(list, now);
+    const badges = badgeProgress(list), got = badges.filter((b) => b.at != null).length, hours = Math.floor(y.min / 60), maxM = Math.max(...y.months), month = new Date(now).getMonth();
+    $('pointsSheetIn').innerHTML = '<div class="row"><h1 class="grow">Points &amp; badges</h1><button class="iconbtn" id="pointsClose" aria-label="Close">' + icon(P.close) + '</button></div>' +
+      '<p>Kept on this phone · never for speed</p>' +
+      '<div class="card"><div class="row">' + medal(lv, 'big') + '<div class="grow"><div class="label">Level ' + (lv + 1) + ' of ' + LEVELS.length + '</div><div class="lvname">' + LEVELS[lv][0] + '</div>' +
+      '<div class="rsub">' + num(t) + ' points</div></div></div>' + pbar(levelProgress(t)) + '<div class="rsub small">' + toNext(t) + '</div></div>' +
+      '<div class="card"><div class="label">This year · ' + y.year + '</div><div class="stats" style="margin-top:10px">' +
+      statTile(num(Math.floor(y.km)), 'km', 'Distance') + statTile(y.rides, '', y.rides === 1 ? 'Ride' : 'Rides') + statTile(hours > 0 ? hours : y.min, hours > 0 ? 'h' : 'min', 'Riding time') +
+      statTile(num(y.points), '', 'Points') + statTile(num(Math.floor(y.longest)), 'km', 'Longest ride') + statTile(streak, streak === 1 ? 'week' : 'weeks', 'Week streak') + '</div>' +
+      (maxM > 0 ? '<div class="mbars">' + y.months.map((km, i) => '<div class="mb' + (i === month ? ' now' : '') + '"><b><i' + (km > 0 ? '' : ' class="none"') + ' style="height:' +
+        (km > 0 ? Math.max(6, km / maxM * 100) : 4) + '%"></i></b><span>' + 'JFMAMJJASOND'[i] + '</span></div>').join('') + '</div>' : '') +
+      (y.buddies.length ? '<p style="margin-top:8px">Rode most with ' + y.buddies.map(([n, c]) => esc(n) + ' (' + c + ')').join(', ') + '</p>' : '') + '</div>' +
+      '<div class="card"><div class="row"><div class="label grow">Badges</div><div class="rsub">' + got + ' of ' + badges.length + '</div></div><div class="badges">' +
+      badges.slice().sort((a, b) => (b.at != null) - (a.at != null)).map(badgeTile).join('') + '</div></div>' +
+      '<div class="card"><div class="label">How to earn points</div><ul class="howto">' + HOWTO.map((l) => '<li>' + esc(l) + '</li>').join('') + '</ul>' +
+      '<p class="note">Levels: ' + LEVELS.map(([n, m]) => n + ' ' + num(m)).join(' · ') + '</p></div>' +
+      (list.length ? '<div class="field"><button class="btn" id="pointsReset">' + icon(P.del) + 'Reset points</button></div>' : '');
+    $('pointsSheet').classList.remove('hidden');
+  }
+  /** In the ride: this ride's points for me and every rider present who shares theirs. */
+  function renderScoreCard() {
+    const box = $('scoreCard'); if (!box) return;
+    if (!SC.ride || !S.room) { box.innerHTML = ''; return; }
+    const present = new Set(S.room.remoteParticipants.keys());
+    const board = Array.from(SC.peers.entries()).filter(([id]) => present.has(id)).map(([id, p]) => Object.assign({ id }, p))
+      .concat([{ id: myId, name: S.name, level: myLevel(), ride: ridePoints(), me: true }])
+      .sort((a, b) => b.ride - a.ride || (a.me ? 0 : 1) - (b.me ? 0 : 1));
+    box.innerHTML = '<div class="card"><div class="row"><span style="color:var(--amber)">' + icon(P.trophy) + '</span><div class="label grow">Ride points</div></div>' +
+      board.map((r, i) => '<div class="rider"><span class="rank' + (i === 0 && r.ride > 0 ? ' first' : '') + '">' + (i + 1) + '</span>' + medal(r.level, 'sm') +
+        '<div class="grow"><div class="rname">' + (r.me ? 'You' : esc(r.name)) + '</div><div class="rsub">' + LEVELS[r.level][0] + '</div></div><div class="pts' + (r.me ? ' me' : '') + '">+' + num(r.ride) + '</div></div>').join('') +
+      (board.length === 1 ? '<p class="note" style="font-size:13px">Riders with Points &amp; badges on show up here.</p>' : '') + '</div>';
+  }
+  /** On a ride's summary: how it scored and the badges it earned. */
+  function scoreHtml(r) {
+    if (!SET.points) return '';
+    const list = loadScore(), e = list.find((x) => x.id === r.id); if (!e) return '';
+    const lines = breakdown(e), earned = badgeProgress(list).filter((b) => b.at === e.at);
+    return '<div class="card"><div class="row"><span style="color:var(--amber)">' + icon(P.trophy) + '</span><div class="label grow">Points</div><div class="pts big">+' + num(points(e)) + '</div></div>' +
+      (lines.length ? lines.map(([l, p]) => '<div class="pline"><span>' + esc(l) + '</span><span>+' + num(p) + '</span></div>').join('') : '<p>A short ride: no points this time.</p>') +
+      earned.map((b) => '<div class="newbadge"><span class="bic">' + icon(b.ic) + '</span><div class="grow"><div class="bt">New badge: ' + esc(b.title) + '</div><div class="bh">' + esc(b.how) + '</div></div></div>').join('') + '</div>';
+  }
+
 
   // ---- Rendering ----
   function renderRiders() {
@@ -3425,7 +3711,7 @@
       else if (o.t === 'stop') { S.music = null; $('music').classList.add('hidden'); }
     });
     text(T.hazard, onHazard); text(T.role, onRole);
-    text(T.whisper, onWhisper); text(T.dest, onDest); text(T.home, onHome); text(T.fuel, onFuel);
+    text(T.whisper, onWhisper); text(T.dest, onDest); text(T.home, onHome); text(T.fuel, onFuel); text(T.score, onScore);
     room.registerByteStreamHandler(T.avatar, async (reader, info) => {
       try {
         const chunks = await reader.readAll();
@@ -3475,7 +3761,8 @@
     if (SET.hazards) send(T.hazard, { t: 'sync' });
     if (SET.dest) send(T.dest, { t: 'sync' });
     if (HS.unsent) send(T.home, { t: 'home', name: S.name }).then((ok) => { if (ok) HS.unsent = false; });
-    renderHazards(); renderDest(); renderHome(); renderBreak(); renderRoad(); renderRain();
+    sendScore();
+    renderHazards(); renderDest(); renderHome(); renderBreak(); renderRoad(); renderRain(); renderScoreCard();
     // Song files are for the Android app; this browser doesn't download them.
     send(T.music, { t: 'saving', on: true });
     renderAll();
@@ -3588,7 +3875,7 @@
     try { S.wakeLock && S.wakeLock.release(); } catch (e) {}
     $('ride').classList.add('hidden'); $('dock').classList.add('hidden'); $('join').classList.remove('hidden');
     applyLook();
-    $('audio').innerHTML = ''; renderAlerts(); renderMySos(); renderFamily(); renderPlanCard(); renderPlans(); renderRides();
+    $('audio').innerHTML = ''; renderAlerts(); renderMySos(); renderFamily(); renderPlanCard(); renderPlans(); renderRides(); renderPoints();
     // The ride just ended: show its summary.
     if (saved) openRide(saved.id);
   }
@@ -3681,6 +3968,10 @@
     const rd = e.target.closest('[data-ride]');
     if (rd) openRide(rd.dataset.ride);
     if (e.target.closest('#ridesAll')) openAllRides();
+    // Points & badges
+    if (e.target.closest('#pointsOpen')) openPoints();
+    if (e.target.closest('#pointsClose')) $('pointsSheet').classList.add('hidden');
+    if (e.target.closest('#pointsReset') && confirm('Reset all your points and badges on this phone?')) { writeScore([]); openPoints(); renderPoints(); banner('Points reset'); }
     if (e.target.closest('#ridesClose')) $('ridesSheet').classList.add('hidden');
     if (e.target.closest('#rideShare') && RV.ride) sharePicture(RV.ride);
     if (e.target.closest('#rideDelete')) deleteRide();
@@ -3815,7 +4106,7 @@
   if (hashParams.get('k') || hashParams.get('p')) history.replaceState(null, '', location.pathname + location.search);
   if (CODE_RE.test(preset)) $('codeIn').value = preset;
   $('nameIn').value = store.get('rc-web-name') || '';
-  renderCheckIn(); renderPlans(); renderRides();
+  renderCheckIn(); renderPlans(); renderRides(); renderPoints();
 })();
 </script>
 </body>

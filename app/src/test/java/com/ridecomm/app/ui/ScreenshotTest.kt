@@ -824,4 +824,56 @@ open class ScreenshotTest {
 
     @Test
     fun finderResults() = softShot("83_finder_soft") { FinderDialog(com.ridecomm.app.nearby.PoiKind.FUEL, groupMapOn = true, onClose = {}, preset = pumps) }
+
+    // ---- Points & badges ----
+
+    private fun dayAgo(d: Int, h: Int = 0) = now - d * 86_400_000L - h * 3_600_000L
+    private val scoreBook = listOf(
+        com.ridecomm.app.score.ScoreEntry("s1", dayAgo(1), km = 132.4, movingMin = 190, others = 3, names = listOf("Amit", "Rahul", "Vikram"), breaks = 2, hazards = 1, sweep = true, home = true),
+        com.ridecomm.app.score.ScoreEntry("s2", dayAgo(8), km = 64.0, movingMin = 80, others = 2, names = listOf("Amit", "Rahul"), breaks = 1, lead = true),
+        com.ridecomm.app.score.ScoreEntry("s3", dayAgo(15), km = 210.0, movingMin = 300, others = 4, names = listOf("Amit", "Rahul", "Vikram", "Asha"), breaks = 3, hazards = 3),
+        com.ridecomm.app.score.ScoreEntry("s4", dayAgo(22), km = 38.0, movingMin = 50, others = 1, names = listOf("Amit")),
+        com.ridecomm.app.score.ScoreEntry("s5", dayAgo(70), km = 420.0, movingMin = 520, others = 2, names = listOf("Vikram", "Asha"), breaks = 3, home = true),
+        com.ridecomm.app.score.ScoreEntry("s6", dayAgo(120), km = 25.0, movingMin = 40),
+    )
+    private val board = com.ridecomm.app.score.RideScoreState(
+        active = true,
+        board = listOf(
+            com.ridecomm.app.score.RiderScore("a", "Amit", 3, 96, 2_480),
+            com.ridecomm.app.score.RiderScore("me", "Saquelain", 2, 74, 1_240, isMe = true),
+            com.ridecomm.app.score.RiderScore("r", "Rahul", 1, 61, 520),
+        ),
+    )
+
+    @Composable
+    private fun PointsCards() {
+        androidx.compose.foundation.layout.Column(Modifier.padding(20.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+            PointsCard(scoreBook, now) {}
+            RidePointsCard(board)
+            RideScoreCard(scoreBook[0], listOf(com.ridecomm.app.score.Badge.CENTURY))
+        }
+    }
+
+    @Test
+    fun pointsCards() = shot("90_points_cards") { PointsCards() }
+
+    @Test
+    fun pointsCardsSoft() = softShot("91_points_cards_soft") { PointsCards() }
+
+    @Test
+    fun pointsCardsGlass() = glassShot("92_points_cards_glass", GlassSceneStyle.RIDE) { PointsCards() }
+
+    @Test
+    fun pointsPage() = shot("93_points_page") { PointsContent(scoreBook, now, {}, {}) }
+
+    @Test
+    fun pointsPageSoft() = softShot("94_points_page_soft") { PointsContent(scoreBook, now, {}, {}) }
+
+    @Test
+    fun pointsPageEmpty() = glassShot("95_points_page_empty_glass") { PointsContent(emptyList(), now, {}, {}) }
+
+    @Test
+    fun rideSummaryWithPoints() = softShot("96_ride_summary_points_soft") {
+        RideSummaryContent(sampleRide, {}, {}, {}, routeStandIn, score = scoreBook[0], earned = listOf(com.ridecomm.app.score.Badge.CENTURY))
+    }
 }

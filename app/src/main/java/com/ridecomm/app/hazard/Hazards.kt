@@ -6,6 +6,7 @@ import com.ridecomm.app.Announcer
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.group.GroupMath
 import com.ridecomm.app.ride.safeMainScope
+import com.ridecomm.app.score.Score
 import com.ridecomm.app.ride.trySendText
 import com.ridecomm.app.sos.LocationHelper
 import com.ridecomm.app.trip.TripTracker
@@ -126,6 +127,7 @@ object Hazards {
         val existing = HazardLogic.sameSpot(hazards.values, kind, loc.latitude, loc.longitude)
         val hazard = existing?.copy(atMs = now) ?: Hazard(UUID.randomUUID().toString(), kind, loc.latitude, loc.longitude, myId(), myName(), now)
         hazards[hazard.id] = hazard
+        if (existing == null) Score.noteHazard()
         // I'm at it: no warning for me.
         warned += hazard.id
         send(hazard, emptyList())

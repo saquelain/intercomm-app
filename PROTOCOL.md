@@ -192,3 +192,45 @@ Each phone finds petrol pumps itself; nothing about places is sent to the group.
   closer), coordinates rounded to 0.01°: `minutely_15=precipitation&hourly=precipitation_probability`. Rain is
   expected when a 15-minute step in the next 2 hours has ≥ 0.3 mm and that hour's probability is ≥ 40 %.
   Not said if it's already raining here; the same alert isn't repeated within 45 minutes.
+
+## Points & badges (Settings → "Points & badges", on by default)
+
+Each phone keeps its own **score book**, one entry per ride (app: `score.json` in the app's files; web:
+localStorage `rc-web-score`, newest 1000). It is separate from Ride history: deleting rides keeps the points.
+An entry is kept when the ride is (300 m or 5 minutes) and holds plain facts; points are always worked out
+from the facts with the rules below, so app and web agree:
+
+`{ "id": "<ride id>", "at": <start ms>, "km": 42.3, "min": <minutes moving>, "others": <other riders seen>,
+"names": ["Amit", …up to 8], "breaks": <stops of 10 min or more>, "hz": <hazards I marked>, "lead": true,
+"sweep": false, "home": true }`
+
+| Points | For |
+|---|---|
+| 1 per km | distance (whole km) |
+| 10 per other rider, up to 5 | riding together (rides of 5 km or more) |
+| 15 per break, up to 3 | stops of 10 minutes or more, on rides with an hour or more of riding |
+| 10 per hazard, up to 5 | hazards I marked for the group (a new spot, not re-marking one) |
+| 25 | leading the group, 25 for riding sweep (rides of 5 km or more) |
+| 15 | "I'm home safe" (in the ride, at home by itself, or a later check-in for my last ride if it started within 24 h) |
+
+Never for speed. **Levels** by all-time points: Rookie 0, Rider 200, Road Buddy 600, Explorer 1,500, Road
+Captain 3,000, Road King 6,000, Legend 12,000.
+
+**Badges** (all-time): First ride (1 ride), 10 rides, 50 rides, Century (100 km in one ride), Long haul (300 km
+in one ride), 1,000 / 5,000 / 10,000 km club (total), Pack ride (5 riders or more: 4 others), Hazard spotter
+(10 hazards), Road leader (lead on 5 rides), Sweep hero (sweep on 5 rides), Home safe (10 check-ins), Smart
+rider (a break on 10 rides of an hour or more), Early bird (a ride started between 4 and 6 am), Every week
+(rides of 5 km or more in 4 weeks in a row, weeks start on Monday). A badge's date is the ride that earned it.
+
+**This year**: rides, km, riding hours, points, longest ride, km per month, the riders ridden with most, and
+the week streak (weeks in a row up to this one or last week with a ride of 5 km or more).
+
+### `rc-score`: points in the ride (only with Points & badges on)
+
+| `t` | Fields | Meaning |
+|---|---|---|
+| `score` | `name`, `level` (0–6), `ride` (points this ride so far), `year` (points this year, this ride included) | My points |
+
+Sent to everyone on joining (and after a drop), to a rider who joins, and every 2 minutes when `ride` changed.
+Riders show a "Ride points" leaderboard of the riders present. A phone with the setting off sends nothing and
+shows nothing.
