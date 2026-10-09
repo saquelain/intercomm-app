@@ -70,6 +70,9 @@ object Prefs {
     private const val KEY_FINDER = "finder"
     private const val KEY_RAIN = "rain_alerts"
     private const val KEY_POINTS = "points"
+    private const val KEY_GARAGE = "garage"
+    private const val KEY_WRAPPED = "wrapped"
+    private const val KEY_GARAGE_JSON = "garage_json"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -401,4 +404,19 @@ object Prefs {
     fun points(context: Context): Boolean = prefs(context).getBoolean(KEY_POINTS, true)
 
     fun setPoints(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_POINTS, on).apply()
+
+    /** My garage: bikes, service and document reminders. On by default; kept on this phone. */
+    fun garage(context: Context): Boolean = prefs(context).getBoolean(KEY_GARAGE, true)
+
+    fun setGarage(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_GARAGE, on).apply()
+
+    /** Ride Wrapped: the year in review (needs Points & badges). On by default; made on this phone. */
+    fun wrapped(context: Context): Boolean = prefs(context).getBoolean(KEY_WRAPPED, true)
+
+    fun setWrapped(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_WRAPPED, on).apply()
+
+    /** The garage itself (JSON, see GarageLogic). */
+    fun garageJson(context: Context): String = prefs(context).getString(KEY_GARAGE_JSON, "") ?: ""
+
+    fun setGarageJson(context: Context, json: String) = prefs(context).edit().putString(KEY_GARAGE_JSON, json).apply()
 }

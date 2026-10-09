@@ -876,4 +876,93 @@ open class ScreenshotTest {
     fun rideSummaryWithPoints() = softShot("96_ride_summary_points_soft") {
         RideSummaryContent(sampleRide, {}, {}, {}, routeStandIn, score = scoreBook[0], earned = listOf(com.ridecomm.app.score.Badge.CENTURY))
     }
+
+    // ---- My garage ----
+
+    private val garage = run {
+        val g = com.ridecomm.app.garage.GarageLogic
+        val b = g.newBike("Classic 350", "MH12 AB 1234", 9_820.0, now - 150L * 86_400_000L).copy(
+            addedKm = 3_160.0,
+            insuranceUntilMs = now + 12 * 86_400_000L,
+            pucUntilMs = now + 200 * 86_400_000L,
+        )
+        val chainDone = b.copy(items = b.items.map { if (it.name.startsWith("Chain")) it.copy(lastKm = 12_600.0) else it })
+        com.ridecomm.app.garage.Garage(
+            listOf(chainDone, g.newBike("Duke 390", "", 4_200.0, now)),
+            chainDone.id,
+            licenceUntilMs = now - 3 * 86_400_000L,
+        )
+    }
+
+    @Composable
+    private fun GarageCards() {
+        androidx.compose.foundation.layout.Column(Modifier.padding(20.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+            GarageCard(garage, now) {}
+            GarageCard(com.ridecomm.app.garage.Garage(listOf(garage.bikes[1]), garage.bikes[1].id), now) {}
+            GarageCard(com.ridecomm.app.garage.Garage(), now) {}
+        }
+    }
+
+    @Test
+    fun garageCards() = shot("97_garage_cards") { GarageCards() }
+
+    @Test
+    fun garageCardsSoft() = softShot("98_garage_cards_soft") { GarageCards() }
+
+    @Test
+    fun garagePage() = shot("99_garage_page") { GarageContent(garage, now, {}, { _, _, _ -> }, {}, {}, {}, {}) }
+
+    @Test
+    fun garagePageGlass() = glassShot("100_garage_page_glass") { GarageContent(garage, now, {}, { _, _, _ -> }, {}, {}, {}, {}) }
+
+    @Test
+    fun garagePageSoft() = softShot("101_garage_page_soft") { GarageContent(garage, now, {}, { _, _, _ -> }, {}, {}, {}, {}) }
+
+    @Test
+    fun garagePageEmpty() = softShot("102_garage_empty_soft") { GarageContent(com.ridecomm.app.garage.Garage(), now, {}, { _, _, _ -> }, {}, {}, {}, {}) }
+
+    // ---- Ride Wrapped ----
+
+    private val wrapped: com.ridecomm.app.score.WrappedYear by lazy {
+        val year = com.ridecomm.app.score.ScoreBook.yearOf(now)
+        fun at(m: Int, d: Int, h: Int = 6) = java.util.Calendar.getInstance().apply { clear(); set(year, m - 1, d, h, 0) }.timeInMillis
+        val crew = listOf("Amit", "Rahul", "Vikram")
+        val book = (1..9).map { i ->
+            com.ridecomm.app.score.ScoreEntry("w$i", at(1 + i % 9, 3 + i), km = 60.0 + i * 37 % 200, movingMin = 90 + i * 20, others = i % 4,
+                names = crew.take(i % 4), breaks = 1, hazards = i % 2, lead = i % 3 == 0, sweep = i == 4)
+        } + com.ridecomm.app.score.ScoreEntry("long", at(7, 12, h = 5), km = 412.0, movingMin = 520, others = 2, names = listOf("Amit", "Vikram"))
+        val shape = { k: Int -> (0..30).map { t -> com.ridecomm.app.trip.RoutePoint(18.5 + t * 0.003 * kotlin.math.cos(k + t / 6.0), 73.8 + t * 0.003 * kotlin.math.sin(k * 1.7 + t / 9.0)) } }
+        val routes = book.mapIndexed { i, e -> e.atMs to shape(i) }
+        com.ridecomm.app.score.WrappedLogic.build(book, routes, year)!!
+    }
+
+    private fun wrappedShot(name: String, slide: Int) = captureRoboImage("$dir/$name.png") {
+        RideCommTheme { WrappedStory(wrapped, {}, {}, start = slide) }
+    }
+
+    @Test fun wrapped1() = wrappedShot("110_wrapped_1_distance", 0)
+    @Test fun wrapped2() = wrappedShot("111_wrapped_2_rides", 1)
+    @Test fun wrapped3() = wrappedShot("112_wrapped_3_longest", 2)
+    @Test fun wrapped4() = wrappedShot("113_wrapped_4_month", 3)
+    @Test fun wrapped5() = wrappedShot("114_wrapped_5_crew", 4)
+    @Test fun wrapped6() = wrappedShot("115_wrapped_6_badges", 5)
+    @Test fun wrapped7() = wrappedShot("116_wrapped_7_type", 6)
+    @Test fun wrapped8() = wrappedShot("117_wrapped_8_routes", 7)
+    @Test fun wrapped9() = wrappedShot("118_wrapped_9_share", 8)
+
+    @Test
+    fun wrappedCards() = softShot("119_wrapped_cards_soft") {
+        androidx.compose.foundation.layout.Column(Modifier.padding(20.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+            WrappedCard(2026, ready = true) {}
+            WrappedCard(2026, ready = false) {}
+        }
+    }
+
+    @Test
+    fun wrappedPicture() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val bitmap = WrappedPicture.render(context, wrapped)
+        java.io.File(dir).mkdirs()
+        java.io.File("$dir/120_wrapped_picture.png").outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+    }
 }

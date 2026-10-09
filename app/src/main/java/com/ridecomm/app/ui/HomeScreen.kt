@@ -71,7 +71,10 @@ import kotlinx.coroutines.withContext
 import com.ridecomm.app.CrashLog
 import com.ridecomm.app.BuildConfig
 import com.ridecomm.app.Prefs
+import com.ridecomm.app.garage.MyGarage
 import com.ridecomm.app.score.Score
+import com.ridecomm.app.score.ScoreBook
+import com.ridecomm.app.score.WrappedLogic
 import com.ridecomm.app.trip.RideHistory
 import com.ridecomm.app.trip.RideSummary
 import com.ridecomm.app.plan.RidePlans
@@ -122,6 +125,12 @@ fun HomeScreen(state: RideState) {
     var openRide by remember { mutableStateOf<Long?>(null) }
     var pointsOn by remember { mutableStateOf(Prefs.points(context)) }
     var showPoints by remember { mutableStateOf(false) }
+    var garageOn by remember { mutableStateOf(Prefs.garage(context)) }
+    var showGarage by remember { mutableStateOf(false) }
+    var wrappedOn by remember { mutableStateOf(Prefs.wrapped(context)) }
+    var showWrapped by remember { mutableStateOf(false) }
+    val garage by MyGarage.state.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { MyGarage.load(context) }
     val scores by Score.entries.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { withContext(Dispatchers.IO) { Score.load(context) } }
     var allRides by remember { mutableStateOf(false) }
@@ -308,6 +317,12 @@ fun HomeScreen(state: RideState) {
         }
 
         if (plannerOn) PlannerCard(plans, joinEnabled = name.isNotBlank(), onPlan = { planning = true }) { startRide(it) }
+        // December to mid-January: the year in review, once there's a ride in it.
+        val wrappedYear = WrappedLogic.yearFor(now)
+        if (wrappedOn && pointsOn && WrappedLogic.season(now) && scores.any { ScoreBook.yearOf(it.atMs) == wrappedYear }) {
+            WrappedCard(wrappedYear, ready = true) { showWrapped = true }
+        }
+        if (garageOn) GarageCard(garage, now) { showGarage = true }
         if (pointsOn) PointsCard(scores, now) { showPoints = true }
         if (historyOn) HistoryCard(rides, onOpen = { openRide = it }, onAll = { allRides = true })
 
@@ -323,6 +338,8 @@ fun HomeScreen(state: RideState) {
     if (allRides) RideListScreen(onClose = { allRides = false }) { openRide = it }
     openRide?.let { RideSummaryScreen(it) { openRide = null } }
     if (showPoints) PointsScreen { showPoints = false }
+    if (showGarage) GarageScreen { showGarage = false }
+    if (showWrapped) WrappedScreen(WrappedLogic.yearFor(now)) { showWrapped = false }
 
     if (showSettings) {
         SettingsDialog(
@@ -331,6 +348,8 @@ fun HomeScreen(state: RideState) {
                 plannerOn = Prefs.planner(context)
                 historyOn = Prefs.rideHistory(context)
                 pointsOn = Prefs.points(context)
+                garageOn = Prefs.garage(context)
+                wrappedOn = Prefs.wrapped(context)
                 serverReady = Prefs.serverConfigured(context)
                 savedName = Prefs.riderName(context)
                 name = savedName
@@ -578,6 +597,8 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var finder by remember { mutableStateOf(Prefs.finder(context)) }
     var rainAlerts by remember { mutableStateOf(Prefs.rainAlerts(context)) }
     var points by remember { mutableStateOf(Prefs.points(context)) }
+    var garage by remember { mutableStateOf(Prefs.garage(context)) }
+    var wrapped by remember { mutableStateOf(Prefs.wrapped(context)) }
     val googleMaps = remember { GoogleMapSetup.available(context) }
     // Android 13+: the lock screen note is a notification, which needs permission.
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -822,6 +843,19 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             points,
         ) { points = it }
         SettingSwitch(
+            "Ride Wrapped",
+            "Your year in review, made on this phone from Points & badges and your ride history: km, longest ride, your " +
+                "crew, badges and your rider type, with a picture to share. On the home screen from 1 December, any time " +
+                "from Points & badges.",
+            wrapped,
+        ) { wrapped = it }
+        SettingSwitch(
+            "My garage",
+            "Your bike's odometer (your rides add their km), reminders for oil change and service by km or months, and " +
+                "before your insurance, PUC or licence run out. Kept on this phone.",
+            garage,
+        ) { garage = it }
+        SettingSwitch(
             "Ride planner",
             "Plan a ride ahead: start time, meeting point and stops travel in the invite link, with reminders " +
                 "before it starts.",
@@ -851,6 +885,9 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setRainAlerts(context, rainAlerts)
                 Prefs.setPoints(context, points)
                 Score.applySettings(context)
+                Prefs.setGarage(context, garage)
+                Prefs.setWrapped(context, wrapped)
+                MyGarage.applySettings(context)
                 RidePlans.applySettings(context)
                 Prefs.setKeepOtherMusic(context, keepMusic)
                 if (riderName.isNotBlank()) Prefs.setRiderName(context, riderName.trim())

@@ -47,7 +47,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ridecomm.app.Prefs
 import com.ridecomm.app.R
+import com.ridecomm.app.score.WrappedLogic
 import com.ridecomm.app.score.Badge
 import com.ridecomm.app.score.BadgeProgress
 import com.ridecomm.app.score.Levels
@@ -91,7 +93,7 @@ private fun LevelMedal(index: Int, size: androidx.compose.ui.unit.Dp) {
 }
 
 @Composable
-private fun ProgressBar(fraction: Float, modifier: Modifier = Modifier, brush: Brush = Palette.Brand) {
+internal fun ProgressBar(fraction: Float, modifier: Modifier = Modifier, brush: Brush = Palette.Brand) {
     val track = Palette.TextTertiary.copy(alpha = 0.25f)
     Canvas(modifier.fillMaxWidth().height(8.dp)) {
         val r = CornerRadius(size.height / 2)
@@ -169,14 +171,21 @@ fun PointsScreen(onClose: () -> Unit) {
     val context = LocalContext.current
     LaunchedEffect(Unit) { Score.load(context) }
     val entries by Score.entries.collectAsState()
+    val now = remember { System.currentTimeMillis() }
+    val year = WrappedLogic.yearFor(now)
+    var wrapped by remember { mutableStateOf(false) }
     FullScreen(onClose) {
-        PointsContent(entries, System.currentTimeMillis(), onClose, onReset = { Score.reset(context) })
+        PointsContent(
+            entries, now, onClose, onReset = { Score.reset(context) },
+            onWrapped = if (Prefs.wrapped(context) && entries.any { ScoreBook.yearOf(it.atMs) == year }) { { wrapped = true } } else null,
+        )
     }
+    if (wrapped) WrappedScreen(year) { wrapped = false }
 }
 
 /** The page's content for given entries (screenshots render it straight). */
 @Composable
-fun PointsContent(entries: List<ScoreEntry>, nowMs: Long, onClose: () -> Unit, onReset: () -> Unit) {
+fun PointsContent(entries: List<ScoreEntry>, nowMs: Long, onClose: () -> Unit, onReset: () -> Unit, onWrapped: (() -> Unit)? = null) {
     val total = ScoreBook.total(entries)
     val level = Levels.of(total)
     val year = ScoreBook.year(entries, ScoreBook.yearOf(nowMs))
@@ -202,6 +211,7 @@ fun PointsContent(entries: List<ScoreEntry>, nowMs: Long, onClose: () -> Unit, o
             Text(toNext(total), style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
         }
 
+        if (onWrapped != null) WrappedCard(WrappedLogic.yearFor(nowMs), WrappedLogic.season(nowMs), onWrapped)
         GlassCard(spacing = 12.dp) {
             SectionLabel("This year · ${year.year}")
             val hours = year.movingMin / 60

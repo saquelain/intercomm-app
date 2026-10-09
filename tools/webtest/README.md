@@ -37,6 +37,13 @@ mute, a fake signal drop with `goOffline()` / `goOnline()`). GPS is faked too: `
   home safe later (+15), the join-screen card, the Points & badges page in all three looks, Reset; a ready-made score
   book with the app's test numbers (788 points, a 3-week streak, the badges); the switch off and on mid-ride; points
   with Ride history off.
+- `garage.test.js`: My garage. Adding a bike (the usual items, stored like the app), the join card ("All good: next…"),
+  editing an item until it's due, papers (ends in 12 days, expired 3 days ago, the calendar file), the reminder when a
+  ride starts, a ride's km on the odometer, Done, a second bike and switching, a new odometer, an own item and
+  removing it, removing a bike, the switch off (rides add nothing), screenshots in the three looks.
+- `wrapped.test.js`: Ride Wrapped with the clock set to October, December and January: the "so far" button, the
+  December card, every slide with the app test's numbers, tapping back, the 1080 × 1920 share picture, Watch again, a
+  year without rides, the switch off.
 - `gmap.test.js`: the Group map on Google Maps (Google's real script in keyless mode, served a stand-in key),
   long press, tap a rider, dark map, switching to OpenStreetMap in Settings, and a refused key falling back.
 
@@ -58,6 +65,8 @@ node tools/webtest/plans.test.js
 node tools/webtest/watch.test.js
 node tools/webtest/road.test.js
 node tools/webtest/points.test.js
+node tools/webtest/garage.test.js
+node tools/webtest/wrapped.test.js
 ```
 
 In the Claude cloud container Playwright lives at `/opt/node22/lib/node_modules/playwright` (set

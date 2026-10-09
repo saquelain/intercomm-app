@@ -234,3 +234,49 @@ the week streak (weeks in a row up to this one or last week with a ride of 5 km 
 Sent to everyone on joining (and after a drop), to a rider who joins, and every 2 minutes when `ride` changed.
 Riders show a "Ride points" leaderboard of the riders present. A phone with the setting off sends nothing and
 shows nothing.
+
+## My garage (Settings → "My garage", on by default; no messages)
+
+Kept only on each phone (app: Prefs `garage`; web: localStorage `rc-web-garage`), one JSON object:
+
+`{ "bikes": [ { "id": "…", "name": "Classic 350", "reg": "MH12AB1234", "odo": 12000, "added": 480.5,
+"items": [ { "id": "…", "name": "Oil change", "km": 3000, "months": 6, "lastKm": 12000, "lastAt": <ms> } ],
+"insurance": <ms or 0>, "puc": <ms or 0> } ], "current": "<bike id>", "licence": <ms or 0> }`
+
+- **Odometer** = `odo` (what the rider typed) + `added` (km ridden with RideComm since, from my own GPS; each ride
+  of 300 m or more adds its distance to the current bike when it ends). Typing a new odometer sets `added` to 0.
+- **A new bike** gets Oil change (3,000 km or 6 months), Chain clean & lube (600 km), Air filter (10,000 km) and
+  General service (5,000 km or 12 months), counted from when the bike was added. "Done" sets `lastKm` to the
+  odometer and `lastAt` to now. `km` or `months` 0 means not by that measure.
+- **Service status**: km left = `lastKm + km − odometer`, days left to `lastAt + months`. Due when either is ≤ 0;
+  soon when km left ≤ 10 % of `km` (at least 100 km) or days left ≤ 14. "Oil change due", "Oil change in 240 km",
+  "Oil change in 12 days" (whichever comes first).
+- **Documents** (insurance and PUC per bike, licence per rider): expired when the date has passed, soon within 30
+  days. "Insurance expired 3 days ago", "PUC ends in 12 days" / "ends tomorrow" / "ends today".
+- **Reminders**: starting a ride says the first thing that's due or expired ("Reminder: oil change is due on your
+  Classic 350"). The app also notifies at 9 am 30 days, 7 days and on the day a document ends; the web page offers
+  "Add to calendar" for a document instead.
+
+## Ride Wrapped (Settings → "Ride Wrapped", on by default; no messages)
+
+A year in review made on the phone from the Points & badges score book (so it needs Points & badges on) and, for
+the route pictures, the ride history. The year shown is this year, or last year until 15 January. It opens from
+the Points & badges page ("Your 2026 Wrapped") and, from 1 December to 15 January, from a card on the home / join
+screen. It needs at least one ride that year. Slides, tap to go on:
+
+1. **Distance**: total km, compared: "That's like riding Mumbai to Goa 1.5 times" using the longest of Mumbai–Pune
+   150, Delhi–Jaipur 280, Delhi–Manali 540, Mumbai–Goa 590, Delhi–Leh 1,000, Kashmir–Kanyakumari 3,700 km that the
+   total covers at least once (else "N % of the way from Mumbai to Pune"), and "X % of the way around the Earth"
+   (40,075 km, one decimal under 10 %).
+2. **Rides and time**: rides, hours riding (moving minutes / 60, rounded down), the favourite day (most rides by
+   weekday; ties go to the earlier day from Monday) and the usual start ("around 6 am": the most common start hour).
+3. **Longest ride**: km, date, who came (names), and its route when the history still has it (same start ± 1 min).
+4. **Best month**: the month with the most km, with the 12-month bars.
+5. **Your crew**: how many different riders, and the top 3 by rides together.
+6. **Badges and points**: badges earned that year, points that year, the level now.
+7. **Rider type**, the first that fits: Long hauler (average 150 km a ride or more), Early bird (30 % of rides start
+   before 7 am), Road captain (lead on 30 % of rides), Guardian (sweep rides + hazards marked ≥ 30 % of rides),
+   Pack rider (3 other riders a ride on average or more), Weekend warrior (70 % of rides on Saturday or Sunday),
+   else Explorer.
+8. **Every route**: the year's routes from the history as small drawings (skipped when there are none).
+9. **Share**: a 1080 × 1920 picture with the year's numbers, rider type and routes.

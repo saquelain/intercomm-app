@@ -22,6 +22,7 @@ import com.ridecomm.app.home.HomeLogic
 import com.ridecomm.app.home.HomeSafe
 import com.ridecomm.app.music.MusicManager
 import com.ridecomm.app.profile.ProfileSync
+import com.ridecomm.app.garage.MyGarage
 import com.ridecomm.app.score.Score
 import com.ridecomm.app.sos.SosManager
 import com.ridecomm.app.vote.VoteManager
@@ -104,6 +105,7 @@ object RideManager {
         RiderAlerts.start(appContext)
         RideHistory.begin(appContext, code)
         Score.begin(appContext)
+        MyGarage.onRideStart(appContext)
         TripTracker.start(appContext)
         BreakReminder.start(appContext)
         RainWatch.start(appContext)
@@ -183,6 +185,7 @@ object RideManager {
         MicGate.closed = false
         RideHistory.finish()
         Score.finish()
+        MyGarage.onRideEnd(appContext, TripTracker.state.value.distanceM / 1000)
         TripTracker.stop()
         BreakReminder.stop()
         RainWatch.stop()
@@ -548,6 +551,7 @@ object RideManager {
         MicGate.closed = false
         RideHistory.finish()
         Score.finish()
+        MyGarage.onRideEnd(appContext, TripTracker.state.value.distanceM / 1000)
         TripTracker.stop()
         BreakReminder.stop()
         RainWatch.stop()

@@ -107,7 +107,7 @@ Links the owner uses:
   `trip/BreakReminder`, `sos/LockScreenInfo`, `trip/RideHistory` + `RideLog` (history on the phone),
   `plan/` (ride planner), `ride/Riders` (who is a rider: family watchers `watch-…` and check-ins `…~home`
   are not; use `room.riderIds()`, never raw `remoteParticipants`), `nearby/` (fuel & food ahead, low fuel),
-  `weather/` (rain alerts), `score/` (points & badges). Play Store: `PLAY_STORE.md`, build type `play`, `design/play/`.
+  `weather/` (rain alerts), `score/` (points & badges), `garage/` (my garage). Play Store: `PLAY_STORE.md`, build type `play`, `design/play/`.
 - Pattern: pure logic in a plain-Kotlin class/object (unit-tested, e.g. `HazardLogic`, `RoleWatch`,
   `SunTimes`, `TalkButton`), and a manager object with `attach(room)` / `detach()` / `release()` /
   `requestSync()` / `onRiderJoined()` that sends JSON over a LiveKit text-stream topic.

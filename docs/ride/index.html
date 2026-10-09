@@ -604,6 +604,51 @@
   html.look-neu .bic { background: #dfe2ef; }
   html.look-neu .pts.me, html.look-neu .pts.big { color: #2f6bff; } html.look-neu .streak { color: #e5670c; }
 
+  /* My garage: notes with a coloured dot, odometer, service rows, papers with a date */
+  .gnote { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 16px; }
+  .gdot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--go); }
+  .gdot.due { background: var(--stop); } .gdot.soon { background: var(--amber); }
+  .gbike { color: var(--cyan); display: grid; place-items: center; flex: none; } .gbike svg { width: 30px; height: 30px; } .gbike.big svg { width: 44px; height: 44px; }
+  .godo { font-size: 38px; font-weight: 800; letter-spacing: 1px; white-space: nowrap; }
+  .gitem { margin-top: 14px; }
+  .gopen { background: none; border: 0; padding: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+  .btn.small.gdone { width: auto; min-height: 42px; padding: 0 14px; font-size: 15px; margin: 0; flex: none; }
+  .rsub.due { color: var(--stop); } .rsub.soon { color: var(--amber); }
+  .pbar.ok i { background: linear-gradient(90deg, #34E89E, #0FB5A8); } .pbar.soon i { background: linear-gradient(90deg, #FFC93C, #FF8A1F); }
+  .pbar.due i { background: linear-gradient(90deg, #FF5E62, #E5245E); }
+  .gitem .pbar { margin: 8px 0 4px; height: 6px; }
+  .gdoc { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .gdoc input.gdate { width: 150px; height: 44px; font-size: 15px; padding: 0 8px; flex: none; color-scheme: dark; }
+  .gdoc .iconbtn { width: 44px; height: 44px; flex: none; }
+  .bchip.gpick { cursor: pointer; color: inherit; font: inherit; font-size: 15px; font-weight: 600; }
+  .bchip.gpick svg { color: var(--muted); } .bchip.gpick.sel { background: rgba(34,211,238,.22); border-color: rgba(34,211,238,.5); } .bchip.gpick.sel svg { color: var(--cyan); }
+  .bchip.gpick.add { color: var(--orange); } .bchip.gpick.add svg { color: var(--orange); }
+  html.look-neu .gdoc input.gdate { color-scheme: light; }
+  html.look-neu .bchip.gpick.sel { background: linear-gradient(135deg, #e0f7fc, #c6eef7); }
+
+  /* Ride Wrapped: full-screen slides in bright colours, the same in every look */
+  .wrap { position: fixed; inset: 0; z-index: 2000; color: #fff; overflow-y: auto; background: linear-gradient(165deg, var(--wa) 0%, var(--wa) 45%, var(--wb) 100%); }
+  .wrap.s0 { --wa: #2B1C70; --wb: #FF3D81; } .wrap.s1 { --wa: #0B3B4F; --wb: #22D3EE; } .wrap.s2 { --wa: #3A1A00; --wb: #FF8A1F; }
+  .wrap.s3 { --wa: #1B1340; --wb: #7C5CFF; } .wrap.s4 { --wa: #05301F; --wb: #34E89E; } .wrap.s5 { --wa: #3B2A00; --wb: #FFC93C; }
+  .wrap.s6 { --wa: #3A0A2A; --wb: #F326A9; } .wrap.s7 { --wa: #0E0B22; --wb: #4F46E5; } .wrap.s8 { --wa: #2B1C70; --wb: #FF8A1F; }
+  .wrap-in { max-width: 520px; min-height: 100%; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 20px max(16px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
+  .wprog { display: flex; gap: 4px; } .wprog i { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.3); } .wprog i.on { background: #fff; }
+  .wtop { margin-top: 12px; } .wtop .iconbtn { background: rgba(255,255,255,.2); border: 0; color: #fff; width: 40px; height: 40px; }
+  .wk { font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,.8); }
+  .wbody { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 24px 0; }
+  .wbig { font-size: clamp(40px, 15vw, 64px); font-weight: 800; line-height: 1.05; overflow-wrap: anywhere; }
+  .wl { font-size: 18px; color: rgba(255,255,255,.9); } .wl.strong { font-size: 24px; font-weight: 700; color: #fff; }
+  .wmore { text-align: center; font-size: 13px; color: rgba(255,255,255,.6); min-height: 18px; }
+  .wroute { width: 100%; height: 100%; display: block; } .wbigroute { height: 200px; }
+  .wgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; } .wgrid div { aspect-ratio: 1; border-radius: 12px; background: rgba(255,255,255,.15); }
+  .wbars { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; height: 140px; margin-top: 8px; }
+  .wbars .mb i { background: rgba(255,255,255,.45); opacity: 1; } .wbars .mb i.top { background: #fff; } .wbars .mb span { color: rgba(255,255,255,.75); }
+  .wrap .btn { color: #fff; border-color: rgba(255,255,255,.35); background: rgba(255,255,255,.15); }
+  .wrap .btn.primary { background: linear-gradient(90deg, #FF8A1F, #FF3D81); border: 0; }
+  .wcard { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; margin-top: 16px; padding: 18px 20px; border: 0; border-radius: 24px; color: #fff; cursor: pointer;
+    background: linear-gradient(120deg, #7C5CFF, #FF3D81, #FF8A1F); font: inherit; }
+  .wcard svg { width: 40px; height: 40px; flex: none; } .wct { font-size: 22px; font-weight: 800; } .wcs { font-size: 15px; color: rgba(255,255,255,.9); }
+
   /* Small phones (iPhone SE and narrower) and large text: nothing overlaps or spills out of its card. */
   .grow { min-width: 0; }
   .btn { min-width: 0; }
@@ -627,6 +672,8 @@
     .fbtns { margin-left: 0; }
     .badges { gap: 8px; } .badge { padding: 10px; } .bt { font-size: 15px; }
     .lvname { font-size: 24px; }
+    .godo { font-size: 30px; }
+    .gdoc { flex-wrap: wrap; } .gdoc .grow { flex-basis: 100%; } .gdoc input.gdate { flex: 1; width: auto; }
   }
 </style>
 </head>
@@ -651,6 +698,8 @@
       </div>
       <div id="checkIn"></div>
       <div id="plansBox"></div>
+      <div id="wrappedBox"></div>
+      <div id="garageBox"></div>
       <div id="pointsBox"></div>
       <div id="ridesBox"></div>
       <p class="note">Use earphones or your helmet headset. Keep this page open while riding: on iPhone, locking the screen or switching apps can pause your mic. Shared music plays in the Android app only.</p>
@@ -789,6 +838,17 @@
 <!-- Planning a ride -->
 <div class="sheet hidden" id="planSheet"><div class="sheet-in" id="planSheetIn"></div></div>
 
+<!-- Ride Wrapped: the year in review, tap for the next slide -->
+<div class="wrap hidden" id="wrapView"><div class="wrap-in">
+  <div class="wprog" id="wrapProg"></div>
+  <div class="row wtop"><div class="grow wk" id="wrapYear"></div><button class="iconbtn" id="wrapClose" aria-label="Close"><svg class="i" viewBox="0 -960 960 960"><path d="M480-424 284-228q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536-480l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480-424Z"/></svg></button></div>
+  <div class="wbody" id="wrapBody"></div>
+  <div class="wmore" id="wrapMore"></div>
+</div></div>
+
+<!-- My garage -->
+<div class="sheet hidden" id="garageSheet"><div class="sheet-in" id="garageSheetIn"></div></div>
+
 <!-- Points & badges -->
 <div class="sheet hidden" id="pointsSheet"><div class="sheet-in" id="pointsSheetIn"></div></div>
 
@@ -917,6 +977,8 @@
     groups: 'M30-240q-12.75 0-21.37-8.63Q0-257.25 0-270v-23q0-38.57 41.5-62.78Q83-380 150.38-380q12.16 0 23.39.5t22.23 2.15q-8 17.35-12 35.17-4 17.81-4 37.18v65H30Zm240 0q-12.75 0-21.37-8.63Q240-257.25 240-270v-35q0-32 17.5-58.5T307-410q32-20 76.5-30t96.5-10q53 0 97.5 10t76.5 30q32 20 49 46.5t17 58.5v35q0 12.75-8.62 21.37Q702.75-240 690-240H270Zm510 0v-65q0-19.86-3.5-37.43T765-377.27q11-1.73 22.17-2.23 11.17-.5 22.83-.5 67.5 0 108.75 23.77T960-293v23q0 12.75-8.62 21.37Q942.75-240 930-240H780ZM149.57-410q-28.57 0-49.07-20.56Q80-451.13 80-480q0-29 20.56-49.5Q121.13-550 150-550q29 0 49.5 20.5t20.5 49.93q0 28.57-20.5 49.07T149.57-410Zm660 0q-28.57 0-49.07-20.56Q740-451.13 740-480q0-29 20.56-49.5Q781.13-550 810-550q29 0 49.5 20.5t20.5 49.93q0 28.57-20.5 49.07T809.57-410ZM480-480q-50 0-85-35t-35-85q0-51 35-85.5t85-34.5q51 0 85.5 34.5T600-600q0 50-34.5 85T480-480Z',
     bike: 'M160-200q-66 0-113-47T0-360q0-57 36.5-101t93.5-55l-28-24H30q-13 0-21.5-8.5T0-570q0-13 8.5-21.5T30-600h150l100 60 146-55q7-2 14-3.5t15-1.5h111l-62-80h-64q-17 0-28.5-11.5T400-720q0-17 11.5-28.5T440-760h63q19 0 35.5 8.5T566-729l60 77 105-53q10-5 19.5 1t9.5 17v67q0 8-6 14t-14 6h-72l70 92q15-6 30.5-9t31.5-3q66 0 113 47t47 113q0 66-47 113t-113 47q-66 0-113-47t-47-113q0-27 9.5-52.5T676-460l-20-24-124 186q-5 8-14 13t-19 5h-84q-8 0-14.5-2.5T389-290l-69-60q-5 63-51 106.5T160-200Zm0-80q33 0 56.5-23.5T240-360q0-33-23.5-56.5T160-440q-33 0-56.5 23.5T80-360q0 33 23.5 56.5T160-280Zm640 0q33 0 56.5-23.5T880-360q0-33-23.5-56.5T800-440q-33 0-56.5 23.5T720-360q0 33 23.5 56.5T800-280Z',
     twilight: 'M792-670q9 9 9 21t-9 21l-43 43q-9.07 9-21.53 9-12.47 0-21.34-9.05-9.13-9.06-8.63-21.5Q698-619 707-628l43-42q9-8 21-8.5t21 8.5ZM110-170q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32Q97.25-230 110-230h740q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H110Zm370.18-630q12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v60q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37v-60q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62ZM169-672q9-9 21-9t21 9l44 44q9 9.07 9 21.53 0 12.47-9 21.86-9 8.61-21.5 8.11T212-586l-43-44q-8-9-8.5-21t8.5-21Zm31 352q0-117 81.5-198.5T480-600q117 0 198.5 81.5T760-320H200Z',
+    check: 'm424-408-86-86q-11-11-28-11t-28 11q-11 11-11 28t11 28l114 114q12 12 28 12t28-12l226-226q11-11 11-28t-11-28q-11-11-28-11t-28 11L424-408Zm56 328q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z',
+    play: 'M320-273v-414q0-17 12-28.5t28-11.5q5 0 10.5 1.5T381-721l326 207q9 6 13.5 15t4.5 19q0 10-4.5 19T707-446L381-239q-5 3-10.5 4.5T360-233q-16 0-28-11.5T320-273Z',
   };
   const icon = (d) => '<svg class="i" viewBox="0 -960 960 960"><path d="' + d + '"/></svg>';
   /** The RideComm motorbike (the logo), also drawn on the shared ride picture. */
@@ -950,7 +1012,7 @@
 
   // ---- Settings: every extra can be switched on or off at any time, also mid-ride ----
   const DEFAULTS = { map: false, voice: true, vibrate: true, awake: true, darkMap: false, hazards: true, roles: true, talk: 'open', night: 'off', shareInfo: true,
-    whisper: true, dest: true, home: true, history: true, points: true, planner: true, family: false, finder: true, rain: false, breakEvery: '120', look: 'classic', mapKind: 'google', locked: !!RIDE_SERVER, server: RIDE_SERVER };
+    whisper: true, dest: true, home: true, history: true, points: true, garage: true, wrapped: true, planner: true, family: false, finder: true, rain: false, breakEvery: '120', look: 'classic', mapKind: 'google', locked: !!RIDE_SERVER, server: RIDE_SERVER };
   const SET = Object.assign({}, DEFAULTS, (() => { try { return JSON.parse(store.get('rc-web-settings') || '{}'); } catch (e) { return {}; } })());
   const saveSettings = () => store.set('rc-web-settings', JSON.stringify(SET));
   const TOGGLES = [
@@ -965,6 +1027,8 @@
     ['home', 'Home safe check-in', 'At the end of the ride tap "I\'m home safe" and the riders still on the road hear it. With home saved, it happens by itself when you get there (keep this page open).'],
     ['history', 'Ride history', 'Keeps a summary of each ride on this phone: route, distance, time, speeds and stops. Nothing is shared unless you share it.'],
     ['points', 'Points & badges', 'Earn points for each ride: distance, riding together, breaks, marking hazards, leading or sweeping and getting home safe. Never for speed. Levels, badges and your year are kept on this phone; riders in the ride see each other\'s ride points.'],
+    ['wrapped', 'Ride Wrapped', 'Your year in review, made on this phone from Points & badges and your ride history: km, longest ride, your crew, badges and your rider type, with a picture to share. On the join screen from 1 December, any time from Points & badges.'],
+    ['garage', 'My garage', 'Your bike\'s odometer (your rides add their km), reminders for oil change and service by km or months, and before your insurance, PUC or licence run out. Kept on this phone.'],
     ['planner', 'Ride planner', 'Plan a ride ahead: start time, meeting point and stops travel in the invite link, with a reminder in your calendar.'],
     ['finder', 'Fuel & food finder', 'Find petrol, food or a mechanic on the road ahead, and tap Low fuel to be warned at the next petrol pump ahead. Searches send your location to Google Maps or OpenStreetMap only when you use them.'],
     ['rain', 'Rain alerts', 'Hear when rain is expected where you are or on the road ahead. Every 15 minutes your rough location (about 1 km) goes to the free Open-Meteo weather service.'],
@@ -1022,12 +1086,16 @@
     else if (key === 'breakEvery') { BW.remindedAt = null; renderBreak(); renderSettings(); }
     else if (key === 'history') {
       // Points & badges keeps recording distance even without the history.
-      if (on) startRecording(); else if (!SET.points) { stopRecording(); if (!needLocation()) stopLocation(); }
+      if (on) startRecording(); else if (!SET.points && !SET.garage) { stopRecording(); if (!needLocation()) stopLocation(); }
       renderRides(); renderSettings();
     } else if (key === 'points') {
       if (on) { if (REC.ride) scoreBegin(); else startRecording(); }
-      else { scoreStop(); if (!SET.history) { stopRecording(); if (!needLocation()) stopLocation(); } }
+      else { scoreStop(); if (!SET.history && !SET.garage) { stopRecording(); if (!needLocation()) stopLocation(); } }
       renderPoints();
+    } else if (key === 'wrapped') renderWrappedCard();
+    else if (key === 'garage') {
+      if (on) startRecording(); else if (!SET.history && !SET.points) { stopRecording(); if (!needLocation()) stopLocation(); }
+      renderGarage();
     } else if (key === 'planner') { renderPlans(); renderPlanCard(); }
     else if (key === 'family') { renderStatus(); if (on && SET.map) sendPosition(); }
     else if (key === 'finder') {
@@ -3147,7 +3215,7 @@
   }
   function noteRider(name) { const r = REC.ride; if (r && name && !r.riders.includes(name)) r.riders.push(name); }
   function startRecording() {
-    if (!(SET.history || SET.points) || REC.ride || !S.code || !S.room) return;
+    if (!(SET.history || SET.points || SET.garage) || REC.ride || !S.code || !S.room) return;
     REC.ride = { id: newId(), code: S.code, start: Date.now(), dist: 0, moving: 0, top: 0, riders: [S.name], stops: [] };
     REC.pts = []; REC.kept = null; REC.last = null; REC.speeds = []; REC.stay = null; REC.lastStayAt = 0;
     S.room.remoteParticipants.forEach((p) => { if (isRider(p.identity)) noteRider(p.name); });
@@ -3160,6 +3228,7 @@
     const rec = rideNow(), kept = !!rec && (rec.dist >= RL.MIN_DIST || rec.end - rec.start >= RL.MIN_MS);
     const saved = saveRide();
     scoreFinish(kept);
+    if (rec) garageAddRide(rec.dist / 1000);
     clearInterval(REC.saver); REC.saver = null; REC.ride = null;
     return saved;
   }
@@ -3536,7 +3605,7 @@
     const list = loadScore(), t = total(list), lv = levelOf(t), now = Date.now(), y = yearStats(list, new Date(now).getFullYear()), streak = weekStreak(list, now);
     const badges = badgeProgress(list), got = badges.filter((b) => b.at != null).length, hours = Math.floor(y.min / 60), maxM = Math.max(...y.months), month = new Date(now).getMonth();
     $('pointsSheetIn').innerHTML = '<div class="row"><h1 class="grow">Points &amp; badges</h1><button class="iconbtn" id="pointsClose" aria-label="Close">' + icon(P.close) + '</button></div>' +
-      '<p>Kept on this phone · never for speed</p>' +
+      '<p>Kept on this phone · never for speed</p>' + wrappedButton(now) +
       '<div class="card"><div class="row">' + medal(lv, 'big') + '<div class="grow"><div class="label">Level ' + (lv + 1) + ' of ' + LEVELS.length + '</div><div class="lvname">' + LEVELS[lv][0] + '</div>' +
       '<div class="rsub">' + num(t) + ' points</div></div></div>' + pbar(levelProgress(t)) + '<div class="rsub small">' + toNext(t) + '</div></div>' +
       '<div class="card"><div class="label">This year · ' + y.year + '</div><div class="stats" style="margin-top:10px">' +
@@ -3575,6 +3644,393 @@
       earned.map((b) => '<div class="newbadge"><span class="bic">' + icon(b.ic) + '</span><div class="grow"><div class="bt">New badge: ' + esc(b.title) + '</div><div class="bh">' + esc(b.how) + '</div></div></div>').join('') + '</div>';
   }
 
+
+  // ---- My garage: my bikes, their odometer (my rides add their km), service by km or months, papers (same rules as the app's GarageLogic) ----
+  const GR = { DAY: 86400000, DOC_SOON: 30, ITEM_SOON: 14 };
+  const GV = { edit: null }; // what the garage sheet is editing: null, 'bike', 'newbike', 'item:<id>' or 'newitem'
+  function loadGarage() {
+    try { const g = JSON.parse(store.get('rc-web-garage') || '{}'); return { bikes: Array.isArray(g.bikes) ? g.bikes.filter((b) => b && b.id) : [], current: g.current || '', licence: +g.licence || 0 }; }
+    catch (e) { return { bikes: [], current: '', licence: 0 }; }
+  }
+  function saveGarage(g) { store.set('rc-web-garage', JSON.stringify(g)); renderGarage(); }
+  const curBike = (g) => g.bikes.find((b) => b.id === g.current) || g.bikes[0] || null;
+  const odoOf = (b) => (+b.odo || 0) + (+b.added || 0);
+  const kmFmt = (km) => num(Math.trunc(km)) + ' km';
+  function newBike(name, reg, odo, now) {
+    const item = (n, km, months) => ({ id: newId(), name: n, km, months, lastKm: odo, lastAt: now });
+    return { id: newId(), name: name.trim().slice(0, 40) || 'My bike', reg: reg.trim().toUpperCase().slice(0, 20), odo, added: 0, insurance: 0, puc: 0,
+      items: [item('Oil change', 3000, 6), item('Chain clean & lube', 600, 0), item('Air filter', 10000, 0), item('General service', 5000, 12)] };
+  }
+  const addMonths = (ms, m) => { const d = new Date(ms); d.setMonth(d.getMonth() + m); return d.getTime(); };
+  /** Whole days from now to [until] by the calendar: 0 today, 1 tomorrow, -3 three days ago. */
+  const daysTo = (until, now) => { const noon = (ms) => { const d = new Date(ms); d.setHours(12, 0, 0, 0); return d.getTime(); }; return Math.round((noon(until) - noon(now)) / GR.DAY); };
+  const kmLeft = (it, odo) => (it.km > 0 ? it.lastKm + it.km - odo : null);
+  const itemDays = (it, now) => (it.months > 0 ? daysTo(addMonths(it.lastAt, it.months), now) : null);
+  function urgency(it, odo, now) {
+    const k = kmLeft(it, odo), d = itemDays(it, now);
+    if ((k != null && k <= 0) || (d != null && d <= 0)) return 2;
+    if ((k != null && k <= Math.max(it.km * 0.1, 100)) || (d != null && d <= GR.ITEM_SOON)) return 1;
+    return 0;
+  }
+  const dayWords = (d) => (d === 1 ? '1 day' : d < 60 ? d + ' days' : Math.round(d / 30.4) + ' months');
+  /** "Oil change due", "Oil change in 240 km", "Oil change in 12 days": whichever comes first. */
+  function itemNote(it, odo, now) {
+    const u = urgency(it, odo, now), k = kmLeft(it, odo), d = itemDays(it, now);
+    const text = u === 2 ? it.name + ' due'
+      : k != null && d != null && d <= GR.ITEM_SOON && k > Math.max(it.km * 0.1, 100) ? it.name + ' in ' + dayWords(d)
+      : k != null ? it.name + ' in ' + num(k) + ' km' : d != null ? it.name + ' in ' + dayWords(d) : it.name;
+    return { text, u, item: it.id };
+  }
+  function itemUsed(it, odo, now) {
+    const byKm = it.km > 0 ? (odo - it.lastKm) / it.km : 0;
+    const byTime = it.months > 0 ? (now - it.lastAt) / Math.max(1, addMonths(it.lastAt, it.months) - it.lastAt) : 0;
+    return Math.min(1, Math.max(0, byKm, byTime));
+  }
+  const longDate = (ms) => new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  function docNote(label, until, now) {
+    if (!until) return null;
+    const d = daysTo(until, now);
+    if (d < 0) return { text: label + ' expired ' + (d === -1 ? 'yesterday' : -d + ' days ago'), u: 2 };
+    if (d === 0) return { text: label + ' ends today', u: 2 };
+    if (d === 1) return { text: label + ' ends tomorrow', u: 1 };
+    if (d <= GR.DOC_SOON) return { text: label + ' ends in ' + d + ' days', u: 1 };
+    return { text: label + ' until ' + longDate(until), u: 0 };
+  }
+  /** What needs attention for the current bike and my licence, most urgent first. */
+  function garageAlerts(g, now) {
+    const b = curBike(g), notes = [];
+    if (b) { b.items.forEach((it) => notes.push(itemNote(it, odoOf(b), now))); [docNote('Insurance', b.insurance, now), docNote('PUC', b.puc, now)].forEach((n) => n && notes.push(n)); }
+    const lic = docNote('Licence', g.licence, now); if (lic) notes.push(lic);
+    return notes.filter((n) => n.u > 0).map((n, i) => [n, i]).sort((a, b) => b[0].u - a[0].u || a[1] - b[1]).map((x) => x[0]);
+  }
+  /** Said when a ride starts if something is due: "Reminder: oil change is due on your Classic 350". */
+  function garageReminder(g, now) {
+    if (!SET.garage) return null;
+    const due = garageAlerts(g, now).find((n) => n.u === 2); if (!due) return null;
+    const b = curBike(g), it = due.item && b ? b.items.find((x) => x.id === due.item) : null;
+    return it ? 'Reminder: ' + it.name.toLowerCase() + ' is due on your ' + b.name : 'Reminder: ' + due.text;
+  }
+  /** A ride ended: its km go on the bike I'm riding. */
+  function garageAddRide(km) {
+    if (!SET.garage || !(km >= 0.3)) return;
+    const g = loadGarage(), b = curBike(g); if (!b) return;
+    b.added = Math.floor(((+b.added || 0) + km) * 10) / 10;
+    saveGarage(g);
+  }
+  const dotCls = (u) => (u === 2 ? 'due' : u === 1 ? 'soon' : 'ok');
+  const noteLine = (n) => '<div class="gnote"><i class="gdot ' + dotCls(n.u) + '"></i>' + esc(n.text) + '</div>';
+  /** Join screen: the bike I ride, its odometer and what needs doing soon. */
+  function renderGarage() {
+    const box = $('garageBox'); if (!box) return;
+    if (!SET.garage) { box.innerHTML = ''; return; }
+    const g = loadGarage(), b = curBike(g), now = Date.now();
+    if (!b) { box.innerHTML = '<button class="btn" style="margin-top:16px" id="garageOpen">' + icon(P.build) + 'My garage: add your bike</button>'; return; }
+    const alerts = garageAlerts(g, now);
+    const next = b.items.filter((it) => it.km > 0).sort((x, y) => kmLeft(x, odoOf(b)) - kmLeft(y, odoOf(b)))[0];
+    box.innerHTML = '<div class="card ptscard" style="margin-top:16px" id="garageOpen" role="button" tabindex="0"><div class="row"><div class="label grow">My garage</div><span class="linkbtn">Open</span></div>' +
+      '<div class="row" style="margin-top:8px"><span class="gbike">' + icon(P.bike) + '</span><div class="grow"><div class="rname">' + esc(b.name) + '</div><div class="rsub">' +
+      esc([kmFmt(odoOf(b)), b.reg].filter(Boolean).join(' · ')) + '</div></div></div>' +
+      (alerts.length ? alerts.slice(0, 3).map(noteLine).join('')
+        : noteLine({ u: 0, text: 'All good' + (next ? ': next, ' + itemNote(next, odoOf(b), now).text.replace(/^./, (c) => c.toLowerCase()) : '') })) + '</div>';
+  }
+  /** The garage sheet: bikes, odometer, service, papers; editing happens inside it. */
+  function openGarage() {
+    const g = loadGarage(), b = curBike(g), now = Date.now(), e = GV.edit;
+    const field = (id, label, value, attrs) => '<div class="field"><div class="label">' + label + '</div><input id="' + id + '" value="' + esc(value == null ? '' : value) + '"' + (attrs || '') + '></div>';
+    const numAttrs = ' inputmode="numeric" pattern="[0-9]*" maxlength="7"';
+    let html = '<div class="row"><h1 class="grow">My garage</h1><button class="iconbtn" id="garageClose" aria-label="Close">' + icon(P.close) + '</button></div><p>Kept on this phone.</p>';
+    if (e === 'bike' || e === 'newbike') {
+      const cur = e === 'bike' ? b : null;
+      html += '<div class="card"><div class="rname">' + (cur ? 'Edit bike' : 'Add a bike') + '</div>' + field('gName', 'Bike', cur ? cur.name : '', ' maxlength="40" placeholder="e.g. Classic 350"') +
+        field('gReg', 'Number plate (optional)', cur ? cur.reg : '', ' maxlength="20" placeholder="e.g. MH12AB1234"') +
+        field('gOdo', 'Odometer (km)', cur ? Math.trunc(odoOf(cur)) : '', numAttrs + ' placeholder="e.g. 12000"') +
+        '<div class="grid2" style="margin-top:14px"><button class="btn" id="gCancel">Cancel</button><button class="btn primary" id="gSaveBike">Save</button></div></div>';
+    } else if (b && e && (e === 'newitem' || e.startsWith('item:'))) {
+      const it = e === 'newitem' ? null : b.items.find((x) => 'item:' + x.id === e);
+      html += '<div class="card"><div class="rname">' + (it ? esc(it.name) : 'Add to track') + '</div>' + field('gIName', 'What', it ? it.name : '', ' maxlength="40" placeholder="e.g. Brake pads"') +
+        field('gIKm', 'Every … km (optional)', it && it.km ? it.km : '', numAttrs + ' placeholder="e.g. 3000"') + field('gIMonths', 'Or every … months (optional)', it && it.months ? it.months : '', ' inputmode="numeric" maxlength="2" placeholder="e.g. 6"') +
+        field('gILast', 'Last done at (km)', Math.trunc(it ? it.lastKm : odoOf(b)), numAttrs) +
+        '<div class="grid2" style="margin-top:14px"><button class="btn" id="gCancel">Cancel</button><button class="btn primary" id="gSaveItem">Save</button></div>' +
+        (it ? '<div class="field"><button class="btn" id="gDelItem">' + icon(P.close) + 'Stop tracking this</button></div>' : '') + '</div>';
+    } else if (!b) {
+      html += '<div class="card"><span class="gbike big">' + icon(P.bike) + '</span><div class="rname" style="margin-top:8px">Add your bike</div><p>Type its odometer once: your rides keep it up to date. ' +
+        'You get reminders for oil change, chain, air filter and service by km or months, and before your insurance, PUC or licence run out.</p>' +
+        '<div class="field"><button class="btn primary" id="gAddBike">' + icon(P.add) + 'Add your bike</button></div></div>';
+    } else {
+      const odo = odoOf(b);
+      html += '<div class="bchips">' + g.bikes.map((x) => '<button class="bchip gpick' + (x.id === b.id ? ' sel' : '') + '" data-gbike="' + esc(x.id) + '">' + icon(P.bike) + esc(x.name) + '</button>').join('') +
+        '<button class="bchip gpick add" id="gAddBike">' + icon(P.add) + 'Add bike</button></div>' +
+        '<div class="card"><div class="row"><div class="grow"><div class="lvname">' + esc(b.name) + '</div>' + (b.reg ? '<div class="rsub">' + esc(b.reg) + '</div>' : '') + '</div>' +
+        '<button class="iconbtn" id="gEditBike" aria-label="Edit bike">' + icon(P.edit) + '</button></div><div class="label" style="margin-top:10px">Odometer</div><div class="godo">' + kmFmt(odo) + '</div>' +
+        '<div class="rsub small">' + (b.added > 0 ? kmFmt(b.added) + ' added by your rides since you typed it.' : 'Your rides add their km by themselves.') + '</div></div>' +
+        '<div class="card"><div class="row"><div class="label grow">Service</div><button class="linkbtn" id="gAddItem">+ Add</button></div>' +
+        (b.items.length ? '' : '<p>Nothing to track. Add an oil change or anything else.</p>') + b.items.map((it) => {
+          const n = itemNote(it, odo, now), every = [it.km > 0 ? kmFmt(it.km) : '', it.months > 0 ? it.months + (it.months === 1 ? ' month' : ' months') : ''].filter(Boolean).join(' or ');
+          const status = n.u === 2 ? 'Due now' : n.text.slice(it.name.length).trim().replace(/^./, (c) => c.toUpperCase());
+          return '<div class="gitem"><div class="row"><button class="grow gopen" data-gitem="' + esc(it.id) + '"><div class="rname" style="font-size:17px">' + esc(it.name) + '</div><div class="rsub ' + dotCls(n.u) + '">' + esc(status) + '</div></button>' +
+            '<button class="btn small gdone" data-gdone="' + esc(it.id) + '">' + icon(P.check) + 'Done</button></div>' +
+            '<div class="pbar ' + dotCls(n.u) + '"><i style="width:' + Math.max(4, itemUsed(it, odo, now) * 100) + '%"></i></div>' +
+            '<div class="bh">Every ' + every + ' · last at ' + kmFmt(it.lastKm) + ', ' + longDate(it.lastAt) + '</div></div>';
+        }).join('') + '</div>' +
+        '<div class="card"><div class="label">Papers</div>' + [['insurance', 'Insurance', b.insurance], ['puc', 'PUC (pollution)', b.puc], ['licence', 'Driving licence', g.licence]].map(([k, label, until]) => {
+          const n = docNote(label, until, now);
+          const sub = !n ? 'Add the end date' : n.u === 0 ? 'Until ' + longDate(until) : n.text.slice(label.length).trim().replace(/^./, (c) => c.toUpperCase());
+          const iso = until ? new Date(until - new Date(until).getTimezoneOffset() * 60000).toISOString().slice(0, 10) : '';
+          return '<div class="gdoc"><div class="grow"><div class="rname" style="font-size:17px">' + label + '</div><div class="rsub ' + (n ? dotCls(n.u) : '') + '">' + esc(sub) + '</div></div>' +
+            '<input type="date" class="gdate" data-gdoc="' + k + '" value="' + iso + '" aria-label="' + label + ' end date">' +
+            (until ? '<button class="iconbtn" data-gcal="' + k + '" aria-label="Add to calendar">' + icon(P.calAdd) + '</button>' : '') + '</div>';
+        }).join('') + '<p class="note" style="font-size:13px">The calendar button adds a reminder 30 days and 7 days before.</p></div>' +
+        '<div class="field"><button class="btn" id="gDelBike">' + icon(P.del) + 'Remove this bike</button></div>';
+    }
+    $('garageSheetIn').innerHTML = html;
+    $('garageSheet').classList.remove('hidden');
+  }
+  const gval = (id) => ($(id) ? $(id).value.trim() : '');
+  const gnum = (id) => { const v = parseFloat(gval(id).replace(/[^0-9.]/g, '')); return isFinite(v) && v >= 0 ? v : null; };
+  function garageClick(t) {
+    const g = loadGarage(), b = curBike(g), now = Date.now();
+    if (t.closest('#garageOpen')) { GV.edit = null; openGarage(); return true; }
+    if (t.closest('#garageClose')) { $('garageSheet').classList.add('hidden'); GV.edit = null; return true; }
+    if (t.closest('#gAddBike')) { GV.edit = 'newbike'; openGarage(); return true; }
+    if (t.closest('#gEditBike')) { GV.edit = 'bike'; openGarage(); return true; }
+    if (t.closest('#gAddItem')) { GV.edit = 'newitem'; openGarage(); return true; }
+    if (t.closest('#gCancel')) { GV.edit = null; openGarage(); return true; }
+    const pick = t.closest('[data-gbike]');
+    if (pick) { g.current = pick.dataset.gbike; saveGarage(g); openGarage(); return true; }
+    const open = t.closest('[data-gitem]');
+    if (open) { GV.edit = 'item:' + open.dataset.gitem; openGarage(); return true; }
+    const done = t.closest('[data-gdone]');
+    if (done && b) { const it = b.items.find((x) => x.id === done.dataset.gdone); if (it) { it.lastKm = odoOf(b); it.lastAt = now; saveGarage(g); banner(it.name + ' done'); } openGarage(); return true; }
+    const cal = t.closest('[data-gcal]');
+    if (cal && b) { docCalendar(cal.dataset.gcal, g, b); return true; }
+    if (t.closest('#gSaveBike')) {
+      const name = gval('gName'); if (!name) { banner('Type the bike\'s name'); return true; }
+      const odo = gnum('gOdo');
+      if (GV.edit === 'newbike') { const nb = newBike(name, gval('gReg'), odo || 0, now); g.bikes.push(nb); g.current = nb.id; }
+      else if (b) {
+        b.name = name.slice(0, 40); b.reg = gval('gReg').toUpperCase().slice(0, 20);
+        if (odo != null && Math.trunc(odo) !== Math.trunc(odoOf(b))) { b.odo = odo; b.added = 0; }
+      }
+      saveGarage(g); GV.edit = null; openGarage(); return true;
+    }
+    if (t.closest('#gSaveItem') && b) {
+      const name = gval('gIName'), km = Math.trunc(gnum('gIKm') || 0), months = Math.trunc(gnum('gIMonths') || 0);
+      if (!name || !(km > 0 || months > 0)) { banner('Type what it is and every how many km or months'); return true; }
+      const last = gnum('gILast'), id = GV.edit.startsWith('item:') ? GV.edit.slice(5) : null, it = id && b.items.find((x) => x.id === id);
+      if (it) Object.assign(it, { name: name.slice(0, 40), km, months, lastKm: last != null ? last : it.lastKm });
+      else b.items.push({ id: newId(), name: name.slice(0, 40), km, months, lastKm: last != null ? last : odoOf(b), lastAt: now });
+      saveGarage(g); GV.edit = null; openGarage(); return true;
+    }
+    if (t.closest('#gDelItem') && b) { b.items = b.items.filter((x) => 'item:' + x.id !== GV.edit); saveGarage(g); GV.edit = null; openGarage(); return true; }
+    if (t.closest('#gDelBike') && b) {
+      if (!confirm('Remove ' + b.name + ' from your garage?')) return true;
+      g.bikes = g.bikes.filter((x) => x.id !== b.id); g.current = g.bikes[0] ? g.bikes[0].id : ''; saveGarage(g); openGarage(); return true;
+    }
+    return false;
+  }
+  /** A date typed in Papers: noon that day (or none when cleared). */
+  function garageDate(input) {
+    const g = loadGarage(), b = curBike(g), m = /^(\d{4})-(\d\d)-(\d\d)$/.exec(input.value || '');
+    const ms = m ? new Date(+m[1], m[2] - 1, +m[3], 12).getTime() : 0, k = input.dataset.gdoc;
+    if (k === 'licence') g.licence = ms; else if (b) b[k] = ms;
+    saveGarage(g); openGarage();
+  }
+  /** An all-day calendar entry on the day a paper ends, with reminders 30 and 7 days before. */
+  function docCalendar(k, g, b) {
+    const until = k === 'licence' ? g.licence : b[k]; if (!until) return;
+    const what = k === 'licence' ? 'Driving licence' : (k === 'puc' ? 'PUC' : 'Insurance') + ' for ' + b.name;
+    const d = new Date(until), day = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+    const tx = (t) => String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,');
+    const alarm = (days) => ['BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + tx(what + ' ends in ' + days + ' days'), 'TRIGGER:-P' + days + 'D', 'END:VALARM'];
+    const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//RideComm//My garage//EN', 'BEGIN:VEVENT', 'UID:' + k + '-' + (k === 'licence' ? 'me' : b.id) + '-' + day + '@ridecomm',
+      'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''), 'DTSTART;VALUE=DATE:' + day, 'SUMMARY:' + tx(what + ' ends'),
+      ...alarm(30), ...alarm(7), 'END:VEVENT', 'END:VCALENDAR'].join('\r\n') + '\r\n';
+    downloadFile(k + '-' + day + '.ics', new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+  }
+
+  // ---- Ride Wrapped: the year in review from the score book and the ride history (same rules as the app's WrappedLogic) ----
+  const WR_ROUTES = [['Mumbai to Pune', 150], ['Delhi to Jaipur', 280], ['Delhi to Manali', 540], ['Mumbai to Goa', 590], ['Delhi to Leh', 1000], ['Kashmir to Kanyakumari', 3700]];
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const TYPES = {
+    LONG_HAULER: ['Long hauler', 'Short hops aren\'t your thing: you ride far.'],
+    EARLY_BIRD: ['Early bird', 'On the road before the sun, and the traffic.'],
+    ROAD_CAPTAIN: ['Road captain', 'The group follows your lead.'],
+    GUARDIAN: ['Guardian', 'Riding sweep and marking hazards: you look after everyone.'],
+    PACK_RIDER: ['Pack rider', 'Better together: you ride with a crowd.'],
+    WEEKEND_WARRIOR: ['Weekend warrior', 'Weekdays are for work, weekends are for the road.'],
+    EXPLORER: ['Explorer', 'Every kind of ride, every kind of road.'],
+  };
+  const WV = { w: null, at: 0 };
+  /** This year, or last year until 15 January. */
+  const wrappedYear = (now) => { const d = new Date(now); return d.getMonth() === 0 && d.getDate() <= 15 ? d.getFullYear() - 1 : d.getFullYear(); };
+  const wrappedSeason = (now) => { const d = new Date(now); return d.getMonth() === 11 || (d.getMonth() === 0 && d.getDate() <= 15); };
+  const fmt1 = (v) => (v === Math.floor(v) ? String(v) : v.toFixed(1));
+  function wrComparison(km) {
+    const best = WR_ROUTES.filter((r) => km >= r[1]).pop();
+    if (!best) return "That's " + Math.round(km / WR_ROUTES[0][1] * 100) + '% of the way from ' + WR_ROUTES[0][0];
+    const times = Math.floor(km / best[1] * 10) / 10;
+    return times < 1.05 ? "That's like riding " + best[0] : "That's like riding " + best[0] + ' ' + fmt1(times) + ' times';
+  }
+  const wrEarth = (km) => { const p = km / 40075 * 100; return (p < 10 ? fmt1(Math.floor(p * 10) / 10) : String(Math.floor(p))) + '% of the way around the Earth'; };
+  function riderType(e) {
+    if (!e.length) return 'EXPLORER';
+    const n = e.length, sum = (f) => e.reduce((a, x) => a + f(x), 0), share = (f) => e.filter(f).length / n;
+    if (sum((x) => x.km || 0) / n >= 150) return 'LONG_HAULER';
+    if (share((x) => new Date(x.at).getHours() < 7) >= 0.3) return 'EARLY_BIRD';
+    if (share((x) => x.lead) >= 0.3) return 'ROAD_CAPTAIN';
+    if ((e.filter((x) => x.sweep).length + sum((x) => x.hz || 0)) / n >= 0.3) return 'GUARDIAN';
+    if (sum((x) => x.others || 0) / n >= 3) return 'PACK_RIDER';
+    if (share((x) => [0, 6].includes(new Date(x.at).getDay())) >= 0.7) return 'WEEKEND_WARRIOR';
+    return 'EXPLORER';
+  }
+  /** The year in review, or null without a ride that year. */
+  function buildWrapped(all, rides, year) {
+    const e = all.filter((x) => new Date(x.at).getFullYear() === year).sort((a, b) => a.at - b.at);
+    if (!e.length) return null;
+    const stats = yearStats(all, year), km = e.reduce((a, x) => a + (x.km || 0), 0);
+    const byDay = new Array(7).fill(0), byHour = new Array(24).fill(0);
+    e.forEach((x) => { const d = new Date(x.at); byDay[d.getDay()]++; byHour[d.getHours()]++; });
+    // Monday first, so ties go to the earlier day of the week.
+    const fav = [1, 2, 3, 4, 5, 6, 0].reduce((best, d) => (byDay[d] > byDay[best] ? d : best), 1);
+    const hour = byHour.reduce((best, c, h) => (c > byHour[best] ? h : best), 0);
+    const longest = e.reduce((a, x) => ((x.km || 0) > (a.km || 0) ? x : a), e[0]);
+    const routes = rides.filter((r) => new Date(r.start).getFullYear() === year).sort((a, b) => a.start - b.start).map((r) => ({ start: r.start, pts: decodeRoute(r.route || '') })).filter((r) => r.pts.length >= 2);
+    const lr = routes.find((r) => Math.abs(r.start - longest.at) < 60000);
+    const best = stats.months.reduce((b, v, i) => (v > stats.months[b] ? i : b), 0);
+    return { year, rides: e.length, km, hours: Math.floor(e.reduce((a, x) => a + (x.min || 0), 0) / 60), comparison: wrComparison(km), earth: wrEarth(km), fav, hour, longest,
+      longestRoute: lr ? lr.pts : [], months: stats.months, best, riders: new Set(e.flatMap((x) => x.names || [])).size, buddies: stats.buddies,
+      badges: badgeProgress(all).filter((b) => b.at != null && new Date(b.at).getFullYear() === year), points: stats.points, level: levelOf(total(all)), type: riderType(e),
+      routes: routes.map((r) => r.pts) };
+  }
+  const hourText = (h) => 'around ' + (h === 0 ? 'midnight' : h < 12 ? h + ' am' : h === 12 ? 'noon' : h - 12 + ' pm');
+  const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
+  /** A route drawn into a w×h box (north up), as an SVG path. */
+  function routeSvg(pts, w, h, pad, stroke) {
+    if (pts.length < 2) return '';
+    const lat0 = pts.reduce((a, p) => a + p[0], 0) / pts.length, kx = Math.cos(lat0 * Math.PI / 180);
+    const xs = pts.map((p) => p[1] * kx), ys = pts.map((p) => -p[0]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    const sc = Math.min((w - 2 * pad) / Math.max(maxX - minX, 1e-9), (h - 2 * pad) / Math.max(maxY - minY, 1e-9));
+    const ox = (w - (maxX - minX) * sc) / 2, oy = (h - (maxY - minY) * sc) / 2;
+    const d = pts.map((_, i) => (i ? 'L' : 'M') + (ox + (xs[i] - minX) * sc).toFixed(1) + ' ' + (oy + (ys[i] - minY) * sc).toFixed(1)).join('');
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" class="wroute"><defs><linearGradient id="wg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF8A1F"/><stop offset="1" stop-color="#FF3D81"/></linearGradient></defs>' +
+      '<path d="' + d + '" fill="none" stroke="url(#wg)" stroke-width="' + stroke + '" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  /** The slides: each returns its HTML. */
+  function wrappedSlides(w) {
+    const k = (t) => '<div class="wk">' + esc(t) + '</div>', big = (t) => '<div class="wbig">' + esc(t) + '</div>';
+    const line = (t, strong) => '<div class="' + (strong ? 'wl strong' : 'wl') + '">' + esc(t) + '</div>';
+    const list = [
+      () => k('Your ' + w.year + ' on RideComm') + big(num(w.km) + ' km') + line(w.comparison + '.', true) + line("That's " + w.earth + '.'),
+      () => k('Rides') + big(plural(w.rides, 'ride', 'rides')) + line(plural(w.hours, 'hour', 'hours') + ' in the saddle', true) +
+        line('Your favourite day: ' + DAYS[w.fav]) + line('You usually set off ' + hourText(w.hour)),
+      () => k('Your longest ride') + big(num(w.longest.km) + ' km') + line(new Date(w.longest.at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }), true) +
+        line((w.longest.names || []).length ? 'With ' + w.longest.names.join(', ') : 'Just you and the road') + (w.longestRoute.length ? '<div class="wbigroute">' + routeSvg(w.longestRoute, 300, 200, 12, 5) + '</div>' : ''),
+      () => k('Your best month') + big(MONTHS[w.best]) + line(num(w.months[w.best]) + ' km', true) + '<div class="wbars">' + w.months.map((v, i) =>
+        '<div class="mb"><b><i style="height:' + Math.max(4, v / Math.max(...w.months) * 100) + '%"' + (i === w.best ? ' class="top"' : '') + '></i></b><span>' + 'JFMAMJJASOND'[i] + '</span></div>').join('') + '</div>',
+      () => k('Your crew') + (w.riders ? big(plural(w.riders, 'rider', 'riders')) + line('rode with you this year', true) +
+        w.buddies.map(([n, c], i) => line((i + 1) + '. ' + n + ' · ' + plural(c, 'ride', 'rides'))).join('') : big('Solo') + line('Every ride just you. Invite a friend next year!', true)),
+      () => k('Points & badges') + big(num(w.points) + ' points') + line('Level now: ' + LEVELS[w.level][0], true) +
+        (w.badges.length ? line(plural(w.badges.length, 'new badge', 'new badges') + ':') + line(w.badges.map((b) => b.title).join(' · ')) : line('No new badges this year')),
+      () => k('Your rider type') + big(TYPES[w.type][0]) + line(TYPES[w.type][1], true),
+    ];
+    if (w.routes.length) list.push(() => k('Every route') + line(plural(w.routes.length, 'route', 'routes') + ' on your phone', true) +
+      '<div class="wgrid">' + w.routes.slice(0, 30).map((r) => '<div>' + routeSvg(r, 100, 100, 10, 3) + '</div>').join('') + '</div>');
+    list.push(() => k('That was ' + w.year) + big(num(w.km) + ' km') + line(w.rides + ' rides · ' + w.hours + ' h · ' + TYPES[w.type][0], true) +
+      '<button class="btn primary" id="wrShare" style="margin-top:18px">' + icon(P.share) + 'Share my year</button><button class="btn" id="wrAgain" style="margin-top:10px">Watch again</button>');
+    return list;
+  }
+  function renderWrapped() {
+    const w = WV.w; if (!w) return;
+    const slides = wrappedSlides(w), at = Math.min(WV.at, slides.length - 1);
+    const view = $('wrapView');
+    view.className = 'wrap s' + (at % 9);
+    $('wrapProg').innerHTML = slides.map((_, i) => '<i' + (i <= at ? ' class="on"' : '') + '></i>').join('');
+    $('wrapYear').textContent = 'RideComm · ' + w.year + ' Wrapped';
+    $('wrapBody').innerHTML = slides[at]();
+    $('wrapMore').textContent = at < slides.length - 1 ? 'Tap for more' : '';
+  }
+  function openWrapped() {
+    const year = wrappedYear(Date.now());
+    WV.w = buildWrapped(loadScore(), loadRides(), year); WV.at = 0;
+    if (!WV.w) { banner('No rides in ' + year + ' yet'); return; }
+    $('pointsSheet').classList.add('hidden');
+    renderWrapped();
+  }
+  function closeWrapped() { WV.w = null; $('wrapView').className = 'wrap hidden'; }
+  function wrappedTap(e) {
+    if (!WV.w || e.target.closest('button')) return;
+    const total = wrappedSlides(WV.w).length;
+    WV.at = e.clientX < window.innerWidth / 3 ? Math.max(0, WV.at - 1) : Math.min(total - 1, WV.at + 1);
+    renderWrapped();
+  }
+  /** The year as a story-sized picture (1080 × 1920), like the app's. */
+  function wrappedPicture(w) {
+    const W = 1080, H = 1920, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d'), font = (wt, px) => wt + ' ' + px + 'px Outfit, "Segoe UI", system-ui, sans-serif';
+    const fit = (t, maxW, px, wt) => { while (px > 20) { x.font = font(wt, px); if (x.measureText(t).width <= maxW) break; px -= 2; } return t; };
+    const text = (t, tx, ty, px, col, wt, maxW) => { x.fillStyle = col; x.fillText(fit(t, maxW || W - 144, px, wt), tx, ty); };
+    const rr = (l, t, w2, h2, rad) => { x.beginPath(); x.moveTo(l + rad, t); x.arcTo(l + w2, t, l + w2, t + h2, rad); x.arcTo(l + w2, t + h2, l, t + h2, rad); x.arcTo(l, t + h2, l, t, rad); x.arcTo(l, t, l + w2, t, rad); x.closePath(); };
+    const bg = x.createLinearGradient(0, 0, 400, H); bg.addColorStop(0, '#2B1C70'); bg.addColorStop(1, '#0E0B22'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    [[120, 160, 700, 'rgba(124,92,255,.47)'], [1040, 900, 650, 'rgba(255,61,129,.33)'], [200, 1800, 600, 'rgba(34,211,238,.27)']].forEach(([cx, cy, rad, col]) => {
+      const g = x.createRadialGradient(cx, cy, 0, cx, cy, rad); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+    });
+    x.textBaseline = 'alphabetic';
+    text(('RideComm · ' + w.year + ' Wrapped').toUpperCase(), 72, 130, 34, 'rgba(255,255,255,.7)', 700);
+    text(num(w.km) + ' km', 72, 300, 150, '#fff', 800);
+    text(w.comparison, 72, 370, 42, 'rgba(255,255,255,.9)', 400);
+    const tiles = [[String(w.rides), 'Rides'], [w.hours + ' h', 'Riding'], [num(w.longest.km) + ' km', 'Longest ride'], [MONTHS[w.best].slice(0, 3), 'Best month'],
+      [String(w.riders), 'Riders with me'], [num(w.points), 'Points']], tw = (W - 144 - 48) / 3;
+    tiles.forEach(([v, l], i) => {
+      const tx = 72 + (i % 3) * (tw + 24), ty = 440 + Math.floor(i / 3) * 190;
+      rr(tx, ty, tw, 166, 34); x.fillStyle = 'rgba(255,255,255,.12)'; x.fill();
+      text(v, tx + 28, ty + 82, 58, '#fff', 800, tw - 56); text(l, tx + 28, ty + 132, 30, 'rgba(255,255,255,.7)', 400, tw - 56);
+    });
+    text('RIDER TYPE', 72, 900, 30, 'rgba(255,255,255,.7)', 700);
+    text(TYPES[w.type][0], 72, 980, 76, '#FFC93C', 800);
+    text(TYPES[w.type][1], 72, 1036, 36, 'rgba(255,255,255,.9)', 400);
+    if (w.buddies.length) text('Rode most with ' + w.buddies.map((b) => b[0]).join(', '), 72, 1100, 36, 'rgba(255,255,255,.9)', 400);
+    const routes = w.routes.slice(0, 24), cols = routes.length <= 12 ? 4 : 6, gap = 20, rows = Math.ceil(routes.length / cols);
+    const cell = Math.min((W - 144 - gap * (cols - 1)) / cols, rows ? (1800 - 1170 - gap * (rows - 1)) / rows : 0), left = (W - (cell * cols + gap * (cols - 1))) / 2;
+    routes.forEach((pts, i) => {
+      const cx = left + (i % cols) * (cell + gap), cy = 1170 + Math.floor(i / cols) * (cell + gap);
+      rr(cx, cy, cell, cell, 24); x.fillStyle = 'rgba(255,255,255,.1)'; x.fill();
+      const lat0 = pts.reduce((a, p) => a + p[0], 0) / pts.length, kx = Math.cos(lat0 * Math.PI / 180), xs = pts.map((p) => p[1] * kx), ys = pts.map((p) => -p[0]);
+      const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys), pad = 18;
+      const sc = Math.min((cell - 2 * pad) / Math.max(maxX - minX, 1e-9), (cell - 2 * pad) / Math.max(maxY - minY, 1e-9));
+      const ox = cx + (cell - (maxX - minX) * sc) / 2, oy = cy + (cell - (maxY - minY) * sc) / 2;
+      const g = x.createLinearGradient(cx, cy, cx + cell, cy + cell); g.addColorStop(0, '#FF8A1F'); g.addColorStop(1, '#FF3D81');
+      x.beginPath(); pts.forEach((_, j) => { const px = ox + (xs[j] - minX) * sc, py = oy + (ys[j] - minY) * sc; if (j) x.lineTo(px, py); else x.moveTo(px, py); });
+      x.strokeStyle = g; x.lineWidth = cols === 4 ? 9 : 7; x.lineCap = 'round'; x.lineJoin = 'round'; x.stroke();
+    });
+    text('Made with RideComm', 72, H - 70, 32, 'rgba(255,255,255,.5)', 400);
+    return c;
+  }
+  function shareWrapped() {
+    const w = WV.w; if (!w) return;
+    const url = wrappedPicture(w).toDataURL('image/png'), bin = atob(url.split(',')[1]), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const name = 'ridecomm-' + w.year + '-wrapped.png', blob = new Blob([bytes], { type: 'image/png' }), file = new File([blob], name, { type: 'image/png' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'My ' + w.year + ' on RideComm', text: 'My ' + w.year + ' on RideComm: ' + num(w.km) + ' km, ' + w.rides + ' rides' })
+        .catch((e) => { if (!e || e.name !== 'AbortError') { downloadFile(name, blob); banner('Picture saved'); } });
+      return;
+    }
+    downloadFile(name, blob); banner('Picture saved');
+  }
+  /** "Your 2026 is ready" (December to mid-January) or "Your 2026 so far"; empty when there's nothing to show. */
+  function wrappedButton(now) {
+    const y = wrappedYear(now);
+    if (!SET.wrapped || !SET.points || !loadScore().some((e) => new Date(e.at).getFullYear() === y)) return '';
+    return '<button class="wcard" id="wrappedOpen"><div class="grow"><div class="wk">Ride Wrapped</div><div class="wct">Your ' + y + (wrappedSeason(now) ? ' is ready' : ' so far') +
+      '</div><div class="wcs">Your km, your crew, your rider type</div></div>' + icon(P.play) + '</button>';
+  }
+  /** Join screen, 1 December to 15 January. */
+  function renderWrappedCard() {
+    const box = $('wrappedBox'); if (!box) return;
+    box.innerHTML = wrappedSeason(Date.now()) ? wrappedButton(Date.now()) : '';
+  }
 
   // ---- Rendering ----
   function renderRiders() {
@@ -3833,6 +4289,7 @@
       history.replaceState(null, '', '?code=' + code + (params.get('ts') ? '&ts=' + params.get('ts') : ''));
       keepAwake();
       speak('Joined ride ' + code.split('').join(' '));
+      const fix = garageReminder(loadGarage(), Date.now()); if (fix) speak(fix);
     } catch (e) {
       err.textContent = e && e.message && /Permission|NotAllowed/i.test(e.name + e.message)
         ? 'RideComm needs the microphone. Allow it in the browser and try again.'
@@ -3875,7 +4332,7 @@
     try { S.wakeLock && S.wakeLock.release(); } catch (e) {}
     $('ride').classList.add('hidden'); $('dock').classList.add('hidden'); $('join').classList.remove('hidden');
     applyLook();
-    $('audio').innerHTML = ''; renderAlerts(); renderMySos(); renderFamily(); renderPlanCard(); renderPlans(); renderRides(); renderPoints();
+    $('audio').innerHTML = ''; renderAlerts(); renderMySos(); renderFamily(); renderPlanCard(); renderPlans(); renderRides(); renderPoints(); renderGarage(); renderWrappedCard();
     // The ride just ended: show its summary.
     if (saved) openRide(saved.id);
   }
@@ -3895,6 +4352,12 @@
 
   // Settings
   document.addEventListener('click', (e) => {
+    if (garageClick(e.target)) return;
+    // Ride Wrapped
+    if (e.target.closest('#wrappedOpen')) { openWrapped(); return; }
+    if (e.target.closest('#wrapClose')) { closeWrapped(); return; }
+    if (e.target.closest('#wrShare')) { shareWrapped(); return; }
+    if (e.target.closest('#wrAgain')) { WV.at = 0; renderWrapped(); return; }
     if (e.target.closest('[data-open-settings]')) openSettings();
     if (e.target.closest('[data-open-map]')) openMap();
     const chip = e.target.closest('[data-chip]');
@@ -4030,6 +4493,8 @@
   });
   $('settingsClose').addEventListener('click', () => $('settings').classList.add('hidden'));
   $('settings').addEventListener('click', (e) => { if (e.target.id === 'settings') $('settings').classList.add('hidden'); });
+  $('wrapView').addEventListener('click', wrappedTap);
+  $('garageSheet').addEventListener('change', (e) => { if (e.target.matches('.gdate')) garageDate(e.target); });
   $('settings').addEventListener('change', (e) => { const k = e.target.dataset.setting; if (k) setSetting(k, e.target.checked); });
   $('serverBox').addEventListener('input', (e) => {
     if (e.target.id === 'serverIn') { SET.server = e.target.value.trim(); saveSettings(); }
@@ -4106,7 +4571,7 @@
   if (hashParams.get('k') || hashParams.get('p')) history.replaceState(null, '', location.pathname + location.search);
   if (CODE_RE.test(preset)) $('codeIn').value = preset;
   $('nameIn').value = store.get('rc-web-name') || '';
-  renderCheckIn(); renderPlans(); renderRides(); renderPoints();
+  renderCheckIn(); renderPlans(); renderRides(); renderPoints(); renderGarage(); renderWrappedCard();
 })();
 </script>
 </body>

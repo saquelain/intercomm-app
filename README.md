@@ -206,6 +206,16 @@ between phones).
   who you rode with most, week streak). In the ride a "Ride points" card shows everyone's points for that ride; the
   summary shows how the ride scored and any new badge ("New badge: Century"). Kept only on the phone, apart from the
   ride history, so deleting rides keeps the points.
+- **My garage** (Settings, on): your bikes with their odometer (typed once; every ride adds its km to the bike
+  you're riding), service reminders by km or months (oil change, chain clean & lube, air filter, general service, or
+  your own) with "Done", and insurance / PUC / licence end dates. The home card shows what needs doing ("Oil change
+  in 240 km", "PUC ends in 12 days"); starting a ride says anything that's due; the app notifies 30 and 7 days before
+  a paper ends and on the day (the web page offers "Add to calendar"). Kept only on the phone.
+- **Ride Wrapped** (Settings, on): your year in review, made on the phone from Points & badges and the ride history:
+  total km ("That's like riding Delhi to Leh 1.8 times"), rides and hours, favourite day, your longest ride with its
+  route, best month, your crew, the year's badges, your rider type (Long hauler, Early bird, Road captain, Guardian,
+  Pack rider, Weekend warrior, Explorer) and every route, as story slides you tap through, ending with a 1080 × 1920
+  picture to share. A card on the home screen from 1 December to 15 January; any time from Points & badges ("so far").
 - **Family can watch** (Settings, off): Share → "Family link" gives family at home a page
   (`…/watch/?code=ABCDEF`) with a live map of the riders, the regroup point, destination and any SOS (with an
   alarm). Each rider decides: with the switch off, their position and SOS never reach the family page. Family
@@ -258,6 +268,9 @@ The gear button opens **Settings**, saved in the browser and changeable any time
   reminder counts time in the ride, as the web page doesn't track speed.
 - **Points & badges** (on by default), the same rules, levels, badges and "Ride points" card as the app; it counts
   distance from the page's ride recording, also with Ride history off.
+- **Ride Wrapped** (on by default), the same slides and share picture as the app.
+- **My garage** (on by default), the same as the app; papers get an "Add to calendar" file with reminders instead of
+  notifications.
 - **Lock rides to my group:** private ride server address and group key (an invite link to a locked ride fills
   the key in).
 - Tapping a rider also offers **Mute for me** and, in browsers that allow it, a volume slider (iPhone Safari

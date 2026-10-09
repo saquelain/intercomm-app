@@ -111,6 +111,8 @@ fake-LiveKit web tests but has not been confirmed on a ride yet.
 | Rain alerts (Open-Meteo here + 25 km ahead, off by default) | app + web | built |
 | Play Store groundwork (targetSdk 36, `play` build + CI bundle, privacy page, store pictures, guide) | app | ready; owner's steps pending |
 | Points & badges (points never for speed, 7 levels, 16 badges, This year, Ride points leaderboard, `rc-score`) | app + web | built (4th chat, build #55), web published |
+| My garage (bikes, odometer from rides, service by km/months with Done, insurance / PUC / licence dates and reminders) | app + web | built (4th chat); web not published |
+| Ride Wrapped (year in review slides, rider type, share picture 1080 × 1920; card 1 Dec – 15 Jan) | app + web | built (4th chat); web not published |
 
 Chronology (git log): step 1 voice call → music → floating button → votes → SOS → glass redesign →
 group tracking → Spotify ducking → crash detection, photos → invite links → private ride server →
@@ -229,6 +231,25 @@ The owner picked "Badges & yearly stats" and asked to "gamify it, points system 
   runs when Ride history *or* Points is on (rides are only written with history on).
 - Points never reward speed on purpose; caps (5 riders, 3 breaks, 5 hazards) stop farming.
 
+## My garage (Oct 2026, fourth chat)
+
+Picked from a "something different" menu with Ride Wrapped. Rules in PROTOCOL.md "My garage".
+- App: `garage/GarageLogic.kt` (pure: `Garage`, `Bike`, `ServiceItem`, urgency, notes, alerts, the ride-start
+  reminder, reminder times, JSON shared with the web), `garage/MyGarage.kt` (Prefs `garage_json`, AlarmManager
+  notifications for papers via `MyGarage$Reminder`, re-set after reboot), `ui/GarageUi.kt` (home card, page, dialogs;
+  dates with the platform `DatePickerDialog`, "Clear" removes one). `RideManager` calls `onRideStart` /
+  `onRideEnd(km from TripTracker)`.
+- Web: the `GR` / `GV` block (`rc-web-garage`), editing inside the sheet; `<input type="date">` for papers and an .ics
+  with 30- and 7-day alarms. The ride recording (`REC`) now also runs for the garage.
+
+## Ride Wrapped (Oct 2026, fourth chat)
+
+Rules in PROTOCOL.md "Ride Wrapped". App: `score/Wrapped.kt` (`WrappedLogic.build` from the score book + history
+routes, comparisons, `RiderType`), `ui/WrappedUi.kt` (`WrappedCard`, `WrappedScreen` / `WrappedStory` slides as
+composable lambdas, `WrappedPicture` share image). Opened from the Points & badges page and, in season, the home
+card. Web: the `WV` block (`#wrapView` overlay, `wrappedPicture` canvas). Both tests (`WrappedLogicTest`,
+`wrapped.test.js`) use the same rides and expect the same numbers.
+
 ## Ideas not built yet (from the last "what next" list)
 
 - **Hindi language**: app, web page and spoken alerts in Hindi (a Settings choice).
@@ -284,6 +305,7 @@ phones can't do a mesh group call; voice is only ~10 MB an hour anyway).
    `sdk.dir=$HOME/android-sdk` to `local.properties` (gitignored).
 3. `./gradlew testDebugUnitTest` should pass (about 385 tests).
 4. Store pictures (only when needed): `STORE_SHOTS=1 ./gradlew recordRoborazziDebug --tests '*StoreShotTest*'`.
-5. Web tests: see `tools/webtest/README.md` (8 suites: rides, features, more, gmap, plans, watch, road, points;
+5. Web tests: see `tools/webtest/README.md` (10 suites: rides, features, more, gmap, plans, watch, road, points,
+   garage, wrapped;
    all print "No page errors").
 6. GitHub access goes through the GitHub MCP tools (no `gh` CLI in the container).
