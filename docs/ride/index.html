@@ -525,6 +525,42 @@
   .rmk svg { width: 16px; height: 16px; }
   .rmk.start { background: #0FB5A8; } .rmk.end { background: var(--pink); } .rmk.stop { background: var(--amber); color: #2A1E05; }
 
+  /* On the road ahead: fuel, food and mechanic finder, low fuel; rain alerts next to the connection status */
+  .finds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+  .finds .btn { flex-direction: column; gap: 4px; min-height: 72px; border-radius: 20px; font-size: 15px; padding: 6px 4px; }
+  .finds .btn svg { width: 26px; height: 26px; }
+  .find-fuel svg, .lowfuel svg { color: var(--amber); } .find-food svg { color: var(--pink); } .find-mech svg { color: var(--cyan); }
+  .btn.lowfuel { min-height: 52px; margin-top: 10px; font-size: 17px; }
+  .card.fuel { border-color: rgba(255,201,60,.6); background: linear-gradient(135deg, rgba(255,201,60,.18), rgba(255,201,60,.05)); }
+  .fuelpanel { padding-bottom: 16px; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,.12); }
+  .fuelpanel .rname { overflow-wrap: anywhere; }
+  .fplace { padding: 12px 0; }
+  .fplace + .fplace { border-top: 1px solid rgba(255,255,255,.08); }
+  .fplace .n { font-weight: 600; font-size: 17px; overflow-wrap: anywhere; } .fplace .dd { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .fplace .dd.ahead { color: var(--amber); }
+  .fbtns { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0 48px; }
+  .btn.mini { width: auto; min-height: 42px; padding: 0 14px; font-size: 15px; gap: 6px; }
+  .btn.mini svg { width: 18px; height: 18px; }
+  .pdot.mech { background: rgba(34,211,238,.2); color: var(--cyan); } .pdot.food { background: rgba(255,61,129,.22); color: var(--pink); }
+  .tag svg { width: 18px; height: 18px; }
+  .pills { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; }
+  .pill.rain { color: var(--text); border-color: rgba(34,211,238,.45); background: rgba(34,211,238,.12); }
+  .pill.rain svg { width: 20px; height: 20px; color: var(--cyan); }
+  html.look-glass #ride .card.fuel { border-color: rgba(255,201,60,.75); background: linear-gradient(135deg, #ffc93c45, #ffffff0c 62%, #ffc93c22); }
+  html.look-glass .fuelpanel, html.look-glass .fplace + .fplace { border-color: #ffffff40; }
+  html.look-glass .fplace .dd { color: #d0c7e8; } html.look-glass .fplace .dd.ahead { color: var(--amber); }
+  html.look-glass #ride .pill.rain { border-color: #9ff0ffaa; background: linear-gradient(135deg, #22d3ee40, #ffffff0c); }
+  html.look-glass .pill.rain svg { color: #7de9ff; }
+  html.look-glass #roadCard .btn.go { border-color: #b8ffe4; background: linear-gradient(105deg, #17f4bcdd, #0cb5c3dd); color: #03362d; }
+  html.look-glass .pdot.food { background: #ff7ac355; color: #fff; } html.look-glass .pdot.mech { background: #22d3ee40; color: #7de9ff; }
+  html.look-neu .card.fuel { background: linear-gradient(135deg, #fdf8ee, #f4e9d2); }
+  html.look-neu .fuelpanel, html.look-neu .fplace + .fplace { border-color: #dcdfec; }
+  html.look-neu .find-fuel svg, html.look-neu .lowfuel svg { color: #e5670c; } html.look-neu .find-food svg { color: #d6336c; } html.look-neu .find-mech svg { color: #0b8db0; }
+  html.look-neu .pdot.food { background: #fde0ea; color: #d6336c; } html.look-neu .pdot.mech { background: #dcf1f7; color: #0b8db0; }
+  html.look-neu .pill.rain svg { color: #0b8db0; }
+  html.look-neu .fuelpanel .ic { background: linear-gradient(135deg, #fff, #fde3c8) !important; color: #e5670c !important; box-shadow: var(--neu-out-sm); }
+  html.look-neu .fuelpanel .rsub.ahead { color: #b7791f; }
+
   /* Small phones (iPhone SE and narrower) and large text: nothing overlaps or spills out of its card. */
   .grow { min-width: 0; }
   .btn { min-width: 0; }
@@ -543,6 +579,9 @@
     .choice { padding: 12px; gap: 10px; }
     #plansBox .card { padding: 18px 14px; }
     .planitem .ic.violet { display: none; }
+    .finds { gap: 8px; }
+    .finds .btn { font-size: 14px; min-height: 66px; padding: 6px 2px; border-radius: 18px; }
+    .fbtns { margin-left: 0; }
   }
 </style>
 </head>
@@ -582,7 +621,7 @@
       <button class="iconbtn" data-open-settings aria-label="Settings" style="margin-right:4px"><svg class="i" viewBox="0 -960 960 960"><path d="M433-80q-27 0-46.5-18T363-142l-9-66q-13-5-24.5-12T307-235l-62 26q-25 11-50 2t-39-32l-47-82q-14-23-8-49t27-43l53-40q-1-7-1-13.5v-27q0-6.5 1-13.5l-53-40q-21-17-27-43t8-49l47-82q14-23 39-32t50 2l62 26q11-8 23-15t24-12l9-66q4-26 23.5-44t46.5-18h94q27 0 46.5 18t23.5 44l9 66q13 5 24.5 12t22.5 15l62-26q25-11 50-2t39 32l47 82q14 23 8 49t-27 43l-53 40q1 7 1 13.5v27q0 6.5-2 13.5l53 40q21 17 27 43t-8 49l-48 82q-14 23-39 32t-50-2l-60-26q-11 8-23 15t-24 12l-9 66q-4 26-23.5 44T527-80h-94Zm49-260q58 0 99-41t41-99q0-58-41-99t-99-41q-59 0-99.5 41T342-480q0 58 40.5 99t99.5 41Z"/></svg></button>
       <button class="sos-btn" id="sosBtn" aria-label="SOS">SOS</button>
     </div>
-    <div class="pill" id="status"><span class="dot" id="statusDot"></span><span id="statusText">Joining…</span></div>
+    <div class="pills"><div class="pill" id="status"><span class="dot" id="statusDot"></span><span id="statusText">Joining…</span></div><div class="pill rain hidden" id="rainPill"></div></div>
     <div class="pill fam hidden" id="famPill"></div>
     <div id="alerts"></div>
     <div id="breakCard"></div>
@@ -590,6 +629,7 @@
     <div id="planCard"></div>
     <div class="card hidden" id="mapCard"></div>
     <div id="hazCard"></div>
+    <div id="roadCard"></div>
     <div class="card hidden" id="mySos">
       <div class="rname">Your SOS was sent</div>
       <p id="mySosText">The group can see where you are.</p>
@@ -696,6 +736,9 @@
   </div>
 </div>
 
+<!-- Petrol, food or a mechanic on the road ahead -->
+<div class="sheet hidden" id="findSheet"><div class="sheet-in" id="findSheetIn"></div></div>
+
 <!-- Planning a ride -->
 <div class="sheet hidden" id="planSheet"><div class="sheet-in" id="planSheetIn"></div></div>
 
@@ -764,7 +807,7 @@
   const TOKEN_SERVER = params.get('ts') || 'ridecomm-xnnn94';
   const CODE_RE = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/;
   const T = { vote: 'rc-vote', sos: 'rc-sos', rider: 'rc-rider', music: 'rc-music', avatar: 'rc-avatar', loc: 'rc-loc', hazard: 'rc-hazard', role: 'rc-role',
-    whisper: 'rc-whisper', dest: 'rc-dest', home: 'rc-home' };
+    whisper: 'rc-whisper', dest: 'rc-dest', home: 'rc-home', fuel: 'rc-fuel' };
   // The group's private ride server (Cloudflare Worker), once it's deployed. Riders can also type it in Settings.
   const RIDE_SERVER = '';
   // Google Maps JavaScript key, restricted to https://saquelain.github.io/* in Google Cloud (public by design;
@@ -815,6 +858,8 @@
     nav: 'M480-252 207-128q-9.75 5-18.37 2.5Q180-128 174-133.89q-6-5.88-8.5-14.71-2.5-8.83 2.5-18.4l285-650q3.65-9 11.3-13.5 7.66-4.5 15.68-4.5t15.69 4.5Q503.35-826 507-817l285 650q5 9.57 2.5 18.4-2.5 8.83-8.5 14.71-6 5.89-14.62 8.39-8.63 2.5-18.38-2.5L480-252Z',
     image: 'M180-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h600q24 0 42 18t18 42v600q0 24-18 42t-42 18H180Zm86-157h429q9 0 13-8t-1-16L590-457q-5-6-12-6t-12 6L446-302l-81-111q-5-6-12-6t-12 6l-86 112q-6 8-2 16t13 8Z',
     start: 'M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-147q106 0 179.5-73.5T733-480q0-106-73.5-179.5T480-733q-106 0-179.5 73.5T227-480q0 106 73.5 179.5T480-227Z',
+    build: 'M354-370q-97 0-165-67.5T121-602q0-20 3-37.5t11-36.5q3-8 9-12t13-6q7-2 14 0t13 8l113 113 92-86-118-118q-6-6-8-13t0-14q2-7 6-12.5t12-8.5q19-8 36-11.5t37-3.5q99 0 168.5 69.5T592-602q0 24-5 47t-13 46l221 221q27 26 26.5 63.5T793-161q-26 24-61.5 23.5T670-164L447-388q-23 8-46 13t-47 5Z',
+    rain: 'M558-83q-11 5-23.5 1T517-97l-69-138q-5-11-1.5-23.5T461-276q11-5 23.5-1t17.5 15l69 138q5 11 1.5 23.5T558-83Zm240-1q-11 5-23.5 1T757-98l-69-138q-5-11-1.5-23.5T701-277q11-5 23.5-1t17.5 15l69 138q5 11 1.5 23.5T798-84Zm-480 0q-11 5-23.5 1.5T277-97l-69-138q-5-11-1-23.5t15-17.5q11-5 23.5-1.5T263-263l69 139q5 11 1 23t-15 17Zm-28-256q-87 0-148.5-61.5T80-550q0-79 56.5-141T277-759q32-56 84.5-88.5T480-880q91 0 152.5 57.5T708-680q79 4 125.5 53.5T880-510q0 70-49.5 120T710-340H290Z',
     cup: 'M442-242q-116 0-199-80t-83-195v-263q0-25 17.5-42.5T220-840h529q54 0 92.5 37t38.5 91q0 60-37 106t-94 46h-25v43q0 115-83 195t-199 80ZM220-620h444v-160H220v160Zm504 0h25q33 0 52-28.5t19-63.5q0-29-21-48.5T749-780h-25v160ZM190-120q-13 0-21.5-8.5T160-150q0-13 8.5-21.5T190-180h580q13 0 21.5 8.5T800-150q0 13-8.5 21.5T770-120H190Z',
   };
   const icon = (d) => '<svg class="i" viewBox="0 -960 960 960"><path d="' + d + '"/></svg>';
@@ -849,7 +894,7 @@
 
   // ---- Settings: every extra can be switched on or off at any time, also mid-ride ----
   const DEFAULTS = { map: false, voice: true, vibrate: true, awake: true, darkMap: false, hazards: true, roles: true, talk: 'open', night: 'off', shareInfo: true,
-    whisper: true, dest: true, home: true, history: true, planner: true, family: false, breakEvery: '120', look: 'classic', mapKind: 'google', locked: !!RIDE_SERVER, server: RIDE_SERVER };
+    whisper: true, dest: true, home: true, history: true, planner: true, family: false, finder: true, rain: false, breakEvery: '120', look: 'classic', mapKind: 'google', locked: !!RIDE_SERVER, server: RIDE_SERVER };
   const SET = Object.assign({}, DEFAULTS, (() => { try { return JSON.parse(store.get('rc-web-settings') || '{}'); } catch (e) { return {}; } })());
   const saveSettings = () => store.set('rc-web-settings', JSON.stringify(SET));
   const TOGGLES = [
@@ -864,6 +909,8 @@
     ['home', 'Home safe check-in', 'At the end of the ride tap "I\'m home safe" and the riders still on the road hear it. With home saved, it happens by itself when you get there (keep this page open).'],
     ['history', 'Ride history', 'Keeps a summary of each ride on this phone: route, distance, time, speeds and stops. Nothing is shared unless you share it.'],
     ['planner', 'Ride planner', 'Plan a ride ahead: start time, meeting point and stops travel in the invite link, with a reminder in your calendar.'],
+    ['finder', 'Fuel & food finder', 'Find petrol, food or a mechanic on the road ahead, and tap Low fuel to be warned at the next petrol pump ahead. Searches send your location to Google Maps or OpenStreetMap only when you use them.'],
+    ['rain', 'Rain alerts', 'Hear when rain is expected where you are or on the road ahead. Every 15 minutes your rough location (about 1 km) goes to the free Open-Meteo weather service.'],
     ['family', 'Family can watch', 'Family at home can follow you on a live map with a link you share (Share → Family link). Needs Group map on. They can\'t hear the ride, and you see when they\'re watching.'],
   ];
   const CHOICES = [
@@ -921,6 +968,13 @@
       renderRides(); renderSettings();
     } else if (key === 'planner') { renderPlans(); renderPlanCard(); }
     else if (key === 'family') { renderStatus(); if (on && SET.map) sendPosition(); }
+    else if (key === 'finder') {
+      if (!on) { endLowFuel(true); F.others.clear(); F.token = null; $('findSheet').classList.add('hidden'); }
+      renderRoad(); renderRiders();
+    } else if (key === 'rain') {
+      if (on) { RAIN.at = 0; startLocation(); rainTick(); } else { RAIN.now = null; if (!needLocation()) stopLocation(); }
+      renderRain();
+    }
     else if (key === 'locked') renderSettings();
   }
   function renderSettings() {
@@ -1166,7 +1220,7 @@
     W.board.delete(id); if (W.to === id) stopWhisper(); refreshWhisper();
     if (SET.home && !HS.home.has(id)) { HS.leftNot.set(id, HS.seen.get(id) || name); renderHome(); }
     S.batteries.delete(id); S.onCall.delete(id); RW.ahead.delete(id); RW.behind.delete(id);
-    G.pos.delete(id); G.sep.delete(id);
+    G.pos.delete(id); G.sep.delete(id); F.others.delete(id);
     if (S.regroup) S.regroup.arrived.delete(id);
     recompute(false);
     const bye = S.byes.get(id); S.byes.delete(id);
@@ -1293,11 +1347,13 @@
     if (!prev) sendPosition();
     recordFix(c);
     checkHazards(); checkDest(); checkHomeArrival();
+    roadFix(c);
     recompute(true);
   }
   /** Location is used for the group map, and (only on this phone) to warn about hazards others marked and for the ride history. */
   function needLocation() {
-    return SET.map || !!REC.ride || (SET.hazards && Array.from(H.list.values()).some((h) => h.by !== myId)) || (SET.dest && !!D.dest) || (SET.home && !!HOMESPOT);
+    return SET.map || !!REC.ride || (SET.hazards && Array.from(H.list.values()).some((h) => h.by !== myId)) || (SET.dest && !!D.dest) || (SET.home && !!HOMESPOT) ||
+      (SET.finder && F.low) || (SET.rain && !!S.room);
   }
   function sendPosition(to) {
     if (!SET.map || !G.me || !S.room) return;
@@ -2387,6 +2443,341 @@
       '<div class="grid2 wide"><button class="btn primary" id="breakAsk">' + icon(P.coffee) + 'Ask for a break</button><button class="btn" id="breakLater">Not now</button></div></div>';
   }
 
+  // ---- On the road ahead: petrol, food or a mechanic ahead of me, and low fuel (PROTOCOL.md "Places ahead and rain") ----
+  // Each phone searches by itself; only "I'm low on fuel" goes to the group (rc-fuel).
+  const FIND = {
+    fuel: { label: 'Fuel', title: 'Petrol pumps', stop: 'Fuel stop', none: 'Petrol pump', icon: P.fuel, cls: 'find-fuel', dot: 'stop', radius: 20000,
+      google: ['gas_station'], osm: '["amenity"="fuel"]' },
+    food: { label: 'Food', title: 'Food', stop: 'Food stop', none: 'Restaurant', icon: P.food, cls: 'find-food', dot: 'food', radius: 10000,
+      google: ['restaurant', 'cafe'], osm: '["amenity"~"^(restaurant|fast_food|cafe|food_court)$"]' },
+    mech: { label: 'Mechanic', title: 'Mechanics', stop: 'Mechanic', none: 'Mechanic', icon: P.build, cls: 'find-mech', dot: 'mech', radius: 20000,
+      google: ['car_repair'], osm: '["shop"~"^(car_repair|motorcycle|motorcycle_repair|tyres)$"]' },
+  };
+  const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
+  const F = {
+    dir: null, dirAt: 0, last: null, kmh: 0, googleBad: false, provider: '', others: new Set(), // direction of travel, search provider, riders low on fuel
+    kind: null, results: null, error: null, token: null, // the finder sheet
+    low: false, target: null, pumps: [], skipped: new Set(), searching: false, searchedAt: 0, from: null, failed: false, // low fuel
+    said2k: false, said500: false, noneSaid: false, stopSince: null,
+  };
+  const angleOff = (a, b) => ((a - b) % 360 + 540) % 360 - 180;
+  /** My direction of travel: GPS while moving at 10 km/h or more (kept 5 minutes after stopping), else towards the destination, else none. */
+  function travelDir() {
+    if (F.dir != null && Date.now() - F.dirAt <= 5 * 60000) return F.dir;
+    if (SET.dest && D.dest && G.me && dist(G.me.lat, G.me.lon, D.dest.lat, D.dest.lon) > 300) return bearing(G.me.lat, G.me.lon, D.dest.lat, D.dest.lon);
+    return null;
+  }
+  /** Each GPS fix: my speed and direction, then low fuel and rain. */
+  function roadFix(c) {
+    const now = Date.now(), here = { lat: c.latitude, lon: c.longitude, at: now }, prev = F.last;
+    const moved = prev ? dist(prev.lat, prev.lon, here.lat, here.lon) : 0;
+    F.kmh = c.speed != null && !isNaN(c.speed) ? c.speed * 3.6 : prev && now > prev.at ? moved / ((now - prev.at) / 1000) * 3.6 : 0;
+    if (F.kmh >= 10) {
+      const h = c.heading != null && !isNaN(c.heading) ? c.heading : prev && moved > 20 ? bearing(prev.lat, prev.lon, here.lat, here.lon) : null;
+      if (h != null) { F.dir = h; F.dirAt = now; }
+    }
+    F.last = here;
+    lowFuelFix(); rainTick();
+    if (F.low) renderRoad();
+  }
+  /** Where a place is from me: distance, angle off my direction, left or right (30 m or more aside, under 2 km away), and whether it's ahead. */
+  function placeInfo(me, dir, place) {
+    const d = dist(me.lat, me.lon, place.lat, place.lon);
+    if (dir == null) return { place, d, delta: null, side: null, ahead: true, rank: d };
+    const delta = angleOff(bearing(me.lat, me.lon, place.lat, place.lon), dir), r = delta * Math.PI / 180;
+    const along = d * Math.cos(r), across = d * Math.sin(r);
+    return { place, d, delta, side: Math.abs(across) >= 30 && d < 2000 ? (across < 0 ? 'left' : 'right') : null,
+      ahead: Math.abs(delta) <= 40 || (d <= 400 && Math.abs(delta) <= 90), rank: along + 2 * Math.abs(across) };
+  }
+  /** The places ahead of me, best first (along the way plus twice the sideways distance); with no direction, all of them, nearest first. */
+  const placesAhead = (me, dir, places) => places.map((p) => placeInfo(me, dir, p)).filter((a) => a.ahead).sort((a, b) => a.rank - b.rank);
+  /** "6 kilometres", "2.4 kilometres", "450 metres", as spoken. */
+  function fuelDist(m) {
+    if (m < 1000) return Math.max(50, Math.round(m / 50) * 50) + ' metres';
+    const km = m >= 10000 ? Math.round(m / 1000) : Math.round(m / 100) / 10;
+    return km + (km === 1 ? ' kilometre' : ' kilometres');
+  }
+  /** A point some metres away in a direction (the searches and the weather 9 or 25 km ahead). */
+  function destPoint(lat, lon, brg, m) {
+    const r = Math.PI / 180, a = m / 6371000, p1 = lat * r, b = brg * r;
+    const p2 = Math.asin(Math.sin(p1) * Math.cos(a) + Math.cos(p1) * Math.sin(a) * Math.cos(b));
+    const l2 = lon * r + Math.atan2(Math.sin(b) * Math.sin(a) * Math.cos(p1), Math.cos(a) - Math.sin(p1) * Math.sin(p2));
+    return { lat: p2 / r, lon: ((l2 / r + 540) % 360) - 180 };
+  }
+  const withTimeout = (p, ms) => Promise.race([p, new Promise((ok, bad) => setTimeout(() => bad(new Error('timeout')), ms))]);
+  /** Google Places (New) nearby search: 3 km around me, plus 9 km around a point 9 km ahead; merged. */
+  async function googlePlaces(kind, me, dir) {
+    const k = FIND[kind];
+    await loadGoogle();
+    const lib = await google.maps.importLibrary('places');
+    const rank = (lib.SearchNearbyRankPreference && lib.SearchNearbyRankPreference.DISTANCE) || 'DISTANCE';
+    const near = (c, radius) => lib.Place.searchNearby({ fields: ['displayName', 'location', 'id'], locationRestriction: { center: { lat: c.lat, lng: c.lon }, radius },
+      includedTypes: k.google, maxResultCount: 20, rankPreference: rank });
+    const asks = [near(me, 3000)];
+    if (dir != null) asks.push(near(destPoint(me.lat, me.lon, dir, 9000), 9000));
+    const found = new Map();
+    (await Promise.all(asks)).forEach((r) => ((r && r.places) || []).forEach((p) => {
+      const at = p.location;
+      if (!at || found.has(p.id)) return;
+      const lat = typeof at.lat === 'function' ? at.lat() : at.lat, lon = typeof at.lng === 'function' ? at.lng() : at.lng;
+      found.set(p.id, { id: p.id, name: String(p.displayName || k.none).slice(0, 60), lat, lon });
+    }));
+    return Array.from(found.values()).filter((p) => isFinite(p.lat) && isFinite(p.lon));
+  }
+  /** OpenStreetMap (Overpass): three servers in turn, 20 s each. */
+  async function osmPlaces(kind, me) {
+    const k = FIND[kind], around = '(around:' + k.radius + ',' + me.lat.toFixed(5) + ',' + me.lon.toFixed(5) + ')';
+    const q = '[out:json][timeout:20];(node' + k.osm + around + ';way' + k.osm + around + ';);out center tags 300;';
+    for (const url of OVERPASS) {
+      const stop = new AbortController(), timer = setTimeout(() => stop.abort(), 20000);
+      try {
+        const res = await fetch(url, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, signal: stop.signal });
+        if (!res.ok) throw new Error('overpass ' + res.status);
+        const o = await res.json();
+        return (o.elements || []).map((e) => {
+          const t = e.tags || {}, c = e.center || {};
+          return { id: e.type + e.id, name: String(t.name || t.brand || t.operator || k.none).slice(0, 60), lat: e.lat != null ? e.lat : c.lat, lon: e.lon != null ? e.lon : c.lon };
+        }).filter((p) => isFinite(p.lat) && isFinite(p.lon));
+      } catch (e) { console.warn('places', url, e); } finally { clearTimeout(timer); }
+    }
+    throw new Error('search');
+  }
+  /** Google when this page's key allows it (once it fails, OpenStreetMap for the rest of the visit), else OpenStreetMap. */
+  async function findPlaces(kind, me, dir) {
+    if (GMAPS_KEY && !GM.failed && !F.googleBad) {
+      try { const list = await withTimeout(googlePlaces(kind, me, dir), 20000); F.provider = 'Google Maps'; return list; }
+      catch (e) { F.googleBad = true; console.warn('Google places', e); }
+    }
+    const list = await osmPlaces(kind, me);
+    F.provider = 'OpenStreetMap';
+    return list;
+  }
+  function myPosition() {
+    if (G.me) return Promise.resolve({ lat: G.me.lat, lon: G.me.lon });
+    return new Promise((ok, bad) => {
+      if (!navigator.geolocation) { bad(new Error('location')); return; }
+      navigator.geolocation.getCurrentPosition((p) => ok({ lat: p.coords.latitude, lon: p.coords.longitude }), bad, { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 });
+    });
+  }
+  /** Fuel, Food or Mechanic: a sheet with up to 6 places ahead, each with Navigate (and Stop here with the Group map on). */
+  async function openFinder(kind) {
+    if (!SET.finder || !FIND[kind]) return;
+    const token = {};
+    Object.assign(F, { kind, results: null, error: null, token });
+    renderFinder(); $('findSheet').classList.remove('hidden');
+    let me;
+    try { me = await myPosition(); } catch (e) { if (F.token === token) { F.error = 'location'; renderFinder(); } return; }
+    const dir = travelDir();
+    try {
+      const list = await findPlaces(kind, me, dir);
+      if (F.token !== token) return;
+      F.results = { dir, list: placesAhead(me, dir, list).slice(0, 6) };
+    } catch (e) { if (F.token !== token) return; F.error = 'net'; }
+    renderFinder();
+  }
+  function renderFinder() {
+    const k = FIND[F.kind]; if (!k) return;
+    const r = F.results, dir = r ? r.dir : travelDir();
+    let body;
+    if (F.error === 'location') body = '<p style="color:var(--amber)">Allow location for this site to find places near you.</p>';
+    else if (F.error) body = '<p style="color:var(--amber)">Couldn\'t search. Check your internet.</p>';
+    else if (!r) body = '<p>Searching…</p>';
+    else if (!r.list.length) body = '<p>Nothing found within ' + k.radius / 1000 + ' km' + (dir != null ? ' ahead' : '') + '.</p>';
+    else {
+      body = r.list.map((a, i) => {
+        const where = shortDist(a.d) + (dir != null ? ' ahead' + (a.side ? ' · on your ' + a.side : '') : ' away' + (i ? '' : ' · nearest'));
+        return '<div class="fplace"><div class="row" style="gap:12px"><span class="pdot ' + k.dot + '">' + icon(k.icon) + '</span><div class="grow"><div class="n">' + esc(a.place.name) +
+          '</div><div class="dd' + (dir != null ? ' ahead' : '') + '">' + where + '</div></div></div><div class="fbtns"><a class="btn mini" target="_blank" rel="noopener" href="' +
+          directions(a.place.lat, a.place.lon) + '">' + icon(P.nav) + 'Navigate</a>' + (SET.map ? '<button class="btn mini" data-find-stop="' + i + '">' + icon(P.flag) + 'Stop here</button>' : '') + '</div></div>';
+      }).join('');
+    }
+    $('findSheetIn').innerHTML = '<h1>' + k.title + (dir != null ? ' ahead' : ' nearby') + '</h1><p>' +
+      (dir != null ? 'On your way, best first.' : "Nearest first. Once you're riding, only the ones ahead show.") + '</p><div style="margin-top:6px">' + body + '</div>' +
+      (r && F.provider ? '<p class="note" style="font-size:12px">Search by ' + F.provider + '.</p>' : '') + '<div class="field"><button class="btn" id="findClose">Close</button></div>';
+  }
+  /** "Stop here": a regroup point at that place, for everyone. */
+  function stopAtFound(i) {
+    const a = F.results && F.results.list[i], k = FIND[F.kind];
+    if (!a || !SET.map) return;
+    $('findSheet').classList.add('hidden'); F.token = null;
+    setRegroup(a.place.lat, a.place.lon, k.stop);
+    banner('Regroup point set: ' + k.stop + ' at ' + a.place.name);
+  }
+
+  // Low fuel: the best pump ahead, said once, then at 2 km and 500 m; passed pumps skipped; off after a stop at a pump.
+  function startLowFuel() {
+    if (!SET.finder || !S.room || F.low) return;
+    Object.assign(F, { low: true, target: null, pumps: [], skipped: new Set(), searchedAt: 0, from: null, failed: false, said2k: false, said500: false, noneSaid: false, stopSince: null });
+    send(T.fuel, { t: 'low', name: S.name, on: true });
+    speak('Looking for petrol ahead');
+    startLocation(); renderRoad(); renderRiders();
+    if (G.me) fuelSearch();
+  }
+  function endLowFuel(tell) {
+    if (!F.low) return;
+    Object.assign(F, { low: false, target: null, pumps: [], stopSince: null });
+    if (tell && S.room) send(T.fuel, { t: 'low', name: S.name, on: false });
+    if (!needLocation()) stopLocation();
+    renderRoad(); renderRiders();
+  }
+  async function fuelSearch() {
+    if (!F.low || F.searching || !G.me) return;
+    const me = { lat: G.me.lat, lon: G.me.lon };
+    F.searching = true; F.searchedAt = Date.now(); F.from = me;
+    renderRoad();
+    try {
+      const list = await findPlaces('fuel', me, travelDir());
+      if (F.low) { F.pumps = list; F.failed = false; }
+    } catch (e) { F.failed = true; }
+    F.searching = false;
+    pickPump();
+  }
+  /** The best pump ahead: said when it's a new one ("Next …" after passing one); "none found" once until one turns up. */
+  function pickPump(passed) {
+    if (!F.low || !G.me) return;
+    const dir = travelDir(), was = F.target || passed;
+    const best = placesAhead(G.me, dir, F.pumps.filter((p) => !F.skipped.has(p.id)))[0] || null;
+    F.target = best ? best.place : null;
+    if (best && (!was || was.id !== best.place.id)) {
+      F.said2k = best.d < 2000; F.said500 = best.d < 500; F.noneSaid = false;
+      speak((was ? 'Next' : 'Nearest') + ' petrol pump ' + (dir != null ? 'ahead' : 'nearby') + ': ' + best.place.name + ', ' + fuelDist(best.d));
+    } else if (!best && !F.noneSaid && F.searchedAt && !F.searching) {
+      F.noneSaid = true;
+      speak(F.failed ? "Couldn't search for petrol pumps. I'll keep trying." : "No petrol pump found in the next 20 kilometres. I'll keep looking.");
+    }
+    renderRoad();
+  }
+  function lowFuelFix() {
+    if (!F.low || !G.me) return;
+    if (!F.searchedAt) { fuelSearch(); return; }
+    if (F.searching) return;
+    const now = Date.now(), me = G.me, dir = travelDir(), t = F.target;
+    if (t) {
+      const a = placeInfo(me, dir, t);
+      if (a.delta != null && Math.abs(a.delta) > 100 && a.d > 150) { F.skipped.add(t.id); F.target = null; pickPump(t); }
+      else if (a.d < 500 && !F.said500) {
+        F.said500 = F.said2k = true;
+        speak('Petrol pump in ' + (a.d >= 350 ? '500 metres' : fuelDist(a.d)) + (a.side ? ', on your ' + a.side : ''));
+        vibrate([150, 80, 150]);
+      } else if (a.d < 2000 && !F.said2k) {
+        F.said2k = true;
+        speak('Petrol pump in ' + (a.d >= 1500 ? '2 kilometres' : fuelDist(a.d)));
+      }
+    }
+    // Stopped for 90 s within 120 m of a pump: filled up.
+    if (F.kmh < 5 && F.pumps.some((p) => dist(me.lat, me.lon, p.lat, p.lon) <= 120)) {
+      if (F.stopSince == null) F.stopSince = now;
+      else if (now - F.stopSince >= 90000) { speak('Low fuel is off'); endLowFuel(true); return; }
+    } else F.stopSince = null;
+    // Search again after 8 km, or when nothing is ahead (at most once a minute).
+    const far = F.from && dist(me.lat, me.lon, F.from.lat, F.from.lon) >= 8000;
+    if ((far || !F.target) && now - F.searchedAt >= 60000) fuelSearch();
+  }
+  setInterval(lowFuelFix, 5000);
+  function onFuel(o, from) {
+    if (!SET.finder || !isRider(from) || o.t !== 'low') return;
+    const name = o.name || nameOf(from);
+    if (o.on) { F.others.add(from); speak(name + ' is low on fuel'); vibrate([80, 60, 80]); }
+    else { F.others.delete(from); speak(name + ' has filled up'); }
+    renderRiders();
+  }
+  /** The "On the road ahead" card: Fuel / Food / Mechanic and Low fuel (with low fuel on, the pump it's taking me to). */
+  function renderRoad() {
+    const box = $('roadCard');
+    let html = '';
+    if (SET.finder && S.room) {
+      let panel = '';
+      if (F.low) {
+        const t = F.target, dir = travelDir(), a = t && G.me ? placeInfo(G.me, dir, t) : null;
+        const name = t ? esc(t.name) : F.searching || !F.searchedAt ? 'Looking for petrol ahead…' : 'No petrol pump ahead yet';
+        const sub = a ? shortDist(a.d) + (dir != null ? ' ahead' : ' away') + (a.side ? ' · on your ' + a.side : '')
+          : t ? '' : !G.me ? 'Finding your location…' : F.searching || !F.searchedAt ? 'Searching…' : F.failed ? "Couldn't search. Check your internet." : 'Nothing within 20 km. Still looking.';
+        panel = '<div class="fuelpanel"><div class="row"><div class="ic" style="background:var(--amber);color:#2A1E05">' + icon(P.fuel) + '</div><div class="grow"><div class="label">Low fuel</div>' +
+          '<div class="rname">' + name + '</div>' + (sub ? '<div class="rsub ahead">' + sub + '</div>' : '') + '</div></div>' +
+          (t ? '<div class="grid2 wide"><a class="btn primary" target="_blank" rel="noopener" href="' + directions(t.lat, t.lon) + '">' + icon(P.pin) + 'Navigate</a><button class="btn go" id="gotFuel">Got fuel</button></div>'
+            : '<div class="field" style="margin-top:12px"><button class="btn go" id="gotFuel">Got fuel</button></div>') + '</div>';
+      }
+      html = '<div class="card' + (F.low ? ' fuel' : '') + '">' + panel + '<div class="label">On the road ahead</div><div class="finds">' +
+        Object.entries(FIND).map(([k, v]) => '<button class="btn ' + v.cls + '" data-find="' + k + '">' + icon(v.icon) + v.label + '</button>').join('') + '</div>' +
+        (F.low ? '' : '<button class="btn lowfuel" id="lowFuel">' + icon(P.fuel) + 'Low fuel</button>') + '</div>';
+    }
+    // Only when something changed, so the card doesn't flicker with every GPS fix.
+    if (box.__html !== html) { box.__html = html; box.innerHTML = html; }
+  }
+
+  // ---- Rain alerts: every 15 minutes, Open-Meteo for here and 25 km ahead (only rough positions leave the phone) ----
+  const RAIN = { at: 0, busy: false, said: { here: 0, ahead: 0 }, now: null };
+  function rainTick() {
+    if (!SET.rain || !S.room || !G.me || RAIN.busy || Date.now() - RAIN.at < 15 * 60000) return;
+    rainCheck();
+  }
+  setInterval(() => { rainTick(); renderRain(); }, 30000);
+  async function rainCheck() {
+    RAIN.busy = true; RAIN.at = Date.now();
+    const me = { lat: G.me.lat, lon: G.me.lon }, dir = travelDir();
+    let ahead = null, km = 0;
+    if (dir != null) {
+      const toDest = SET.dest && D.dest ? dist(me.lat, me.lon, D.dest.lat, D.dest.lon) : Infinity;
+      ahead = toDest < 25000 ? { lat: D.dest.lat, lon: D.dest.lon } : destPoint(me.lat, me.lon, dir, 25000);
+      km = Math.round(Math.min(toDest, 25000) / 1000);
+      if (km < 1) ahead = null;
+    }
+    const pts = ahead ? [me, ahead] : [me], r2 = (v) => v.toFixed(2);
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + pts.map((p) => r2(p.lat)).join(',') + '&longitude=' + pts.map((p) => r2(p.lon)).join(',') +
+      '&minutely_15=precipitation&hourly=precipitation_probability&forecast_minutely_15=8&forecast_hours=3&timezone=GMT';
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('weather ' + res.status);
+      let data = await res.json();
+      if (!Array.isArray(data)) data = [data];
+      applyRain(rainIn(data[0]), ahead ? rainIn(data[1]) : null, km);
+    } catch (e) { RAIN.at = Date.now() - 13 * 60000; } // try again in 2 minutes
+    finally { RAIN.busy = false; }
+  }
+  /** One place's forecast: raining now, and when rain is expected (a 15-minute step in the next 2 hours with 0.3 mm or more, in an hour with a 40 % chance or more). */
+  function rainIn(o) {
+    const m = o && o.minutely_15, h = o && o.hourly;
+    if (!m || !h || !m.time || !h.time) return null;
+    const chance = {};
+    h.time.forEach((t, i) => { chance[String(t).slice(0, 13)] = (h.precipitation_probability || [])[i]; });
+    const now = Date.now(), wet = (i) => ((m.precipitation || [])[i] || 0) >= 0.3;
+    let at = null;
+    for (let i = 0; i < m.time.length && i < 8; i++) {
+      const t = Date.parse(String(m.time[i]).replace(/Z?$/, 'Z'));
+      if (!(t <= now + 2 * 3600000)) break;
+      if (wet(i) && (chance[String(m.time[i]).slice(0, 13)] || 0) >= 40) { at = t; break; }
+    }
+    return { raining: wet(0), at };
+  }
+  const rainMins = (ms) => Math.max(15, Math.round(ms / 900000) * 15);
+  const rainWhen = (ms) => 'about ' + rainMins(ms) + ' minutes';
+  function applyRain(here, there, km) {
+    const now = Date.now();
+    RAIN.now = null;
+    // Already raining here: no need to say it.
+    if (!(here && here.raining)) {
+      if (here && here.at != null) RAIN.now = { kind: 'here', at: here.at };
+      else if (there && there.at != null) RAIN.now = { kind: 'ahead', at: there.at, km };
+    }
+    const r = RAIN.now;
+    if (r && now - RAIN.said[r.kind] >= 45 * 60000) {
+      RAIN.said[r.kind] = now;
+      speak(r.kind === 'here' ? 'Rain expected here in ' + rainWhen(r.at - now)
+        : 'Rain ahead in the next ' + (r.at - now <= 3600000 ? 'hour' : '2 hours') + ', about ' + r.km + ' kilometres on');
+      vibrate([80, 60, 80]);
+    }
+    renderRain();
+  }
+  /** "Rain in ~30 min" or "Rain ahead" next to the connection status while it applies. */
+  function renderRain() {
+    const pill = $('rainPill'), r = SET.rain && S.room ? RAIN.now : null;
+    const live = !!r && Date.now() < r.at + (r.kind === 'here' ? 30 : 60) * 60000;
+    pill.classList.toggle('hidden', !live);
+    if (!live) { pill.innerHTML = ''; return; }
+    const m = Math.round((r.at - Date.now()) / 900000) * 15;
+    pill.innerHTML = icon(P.rain) + '<span>' + (r.kind === 'ahead' ? 'Rain ahead' : m <= 0 ? 'Rain expected now' : 'Rain in ~' + (m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : ''))) + '</span>';
+  }
+
   // ---- Lock rides to my group: passes from the private ride server, which checks the group key ----
   function renderServerBox() {
     $('serverBox').innerHTML = '<label class="setting"><div class="grow"><div class="t">Lock rides to my group</div><div class="d">Only riders with your group key can join. ' +
@@ -2917,7 +3308,8 @@
       const privateTo = me ? (W.to ? W.toName : null) : whisperingTo(p.identity);
       const sub = privateTo ? 'Talking only to ' + esc(privateTo) : (call ? 'On a phone call' : muted ? 'Mic off' : talking ? 'Talking' : 'Listening') + heard + (away ? ' · ' + distText(away) : '');
       const subCls = privateTo ? 'whisper' : call ? 'call' : talking ? 'talking' : '';
-      const batTag = bat && !bat.charging && bat.level <= 30 ? '<span class="tag' + (bat.level <= 10 ? ' low' : '') + '">' + bat.level + '%</span>' : '';
+      const batTag = (bat && !bat.charging && bat.level <= 30 ? '<span class="tag' + (bat.level <= 10 ? ' low' : '') + '">' + bat.level + '%</span>' : '') +
+        ((me ? F.low : F.others.has(p.identity)) && SET.finder ? '<span class="tag" title="Low on fuel" aria-label="Low on fuel">' + icon(P.fuel) + '</span>' : '');
       const name = esc(p.name || 'Rider') + (me ? ' (you)' : '');
       const avatar = '<div class="avatar' + (me ? ' me' : '') + (privateTo ? ' whisper' : talking ? ' talking' : '') + '"' +
         (photo ? ' style="background-image:url(' + photo + ')"' : '') + '>' + (photo ? '' : esc((p.name || 'R').charAt(0).toUpperCase())) + '</div>';
@@ -3033,7 +3425,7 @@
       else if (o.t === 'stop') { S.music = null; $('music').classList.add('hidden'); }
     });
     text(T.hazard, onHazard); text(T.role, onRole);
-    text(T.whisper, onWhisper); text(T.dest, onDest); text(T.home, onHome);
+    text(T.whisper, onWhisper); text(T.dest, onDest); text(T.home, onHome); text(T.fuel, onFuel);
     room.registerByteStreamHandler(T.avatar, async (reader, info) => {
       try {
         const chunks = await reader.readAll();
@@ -3083,7 +3475,7 @@
     if (SET.hazards) send(T.hazard, { t: 'sync' });
     if (SET.dest) send(T.dest, { t: 'sync' });
     if (HS.unsent) send(T.home, { t: 'home', name: S.name }).then((ok) => { if (ok) HS.unsent = false; });
-    renderHazards(); renderDest(); renderHome(); renderBreak();
+    renderHazards(); renderDest(); renderHome(); renderBreak(); renderRoad(); renderRain();
     // Song files are for the Android app; this browser doesn't download them.
     send(T.music, { t: 'saving', on: true });
     renderAll();
@@ -3191,6 +3583,8 @@
     W.board.clear(); W.fromMe = null; W.hushed = new Set(); clearInterval(W.tick); W.tick = null; renderWhisper();
     D.dest = null; if (D.mark) { D.mark.remove(); D.mark = null; } renderDest();
     HS.home.clear(); HS.leftNot.clear(); renderHome(); BW.due = false; renderBreak(); renderCheckIn();
+    endLowFuel(false); F.others.clear(); F.dir = null; F.last = null; F.token = null; $('findSheet').classList.add('hidden'); renderRoad();
+    RAIN.now = null; RAIN.at = 0; renderRain();
     try { S.wakeLock && S.wakeLock.release(); } catch (e) {}
     $('ride').classList.add('hidden'); $('dock').classList.add('hidden'); $('join').classList.remove('hidden');
     applyLook();
@@ -3275,6 +3669,14 @@
     if (pdel && confirm('Delete this planned ride from this phone?')) dropPlan(pdel.dataset.planDel);
     if (e.target.closest('#planSetDest')) { const p = planFor(S.code); if (p && p.dest) setDest(p.dest.lat, p.dest.lon, p.dest.name); }
     if (e.target.closest('#placeHere')) pickMyLocation();
+    // On the road ahead: petrol, food, mechanics, low fuel
+    const fd = e.target.closest('[data-find]');
+    if (fd) openFinder(fd.dataset.find);
+    const fst = e.target.closest('[data-find-stop]');
+    if (fst) stopAtFound(Number(fst.dataset.findStop));
+    if (e.target.closest('#findClose')) { $('findSheet').classList.add('hidden'); F.token = null; }
+    if (e.target.closest('#lowFuel')) startLowFuel();
+    if (e.target.closest('#gotFuel')) { endLowFuel(true); banner('Low fuel off'); }
     // Ride history
     const rd = e.target.closest('[data-ride]');
     if (rd) openRide(rd.dataset.ride);
@@ -3299,7 +3701,7 @@
     if (e.target.id === 'planTitle') PL.draft.title = e.target.value;
     if (e.target.id === 'planWhen') PL.draft.at = fromInput(e.target.value);
   });
-  ['destDialog', 'leaveSheet', 'shareSheet', 'ridesSheet'].forEach((id) => $(id).addEventListener('click', (e) => { if (e.target.id === id) $(id).classList.add('hidden'); }));
+  ['destDialog', 'leaveSheet', 'shareSheet', 'ridesSheet', 'findSheet'].forEach((id) => $(id).addEventListener('click', (e) => { if (e.target.id === id) $(id).classList.add('hidden'); }));
   // Talk to one rider: hold a "Hold to talk / reply" button, or hold a rider's row for half a second.
   let held = false, holdTimer = null;
   document.addEventListener('pointerdown', (e) => {

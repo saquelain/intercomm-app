@@ -22,6 +22,16 @@ mute, a fake signal drop with `goOffline()` / `goOnline()`). GPS is faked too: `
   up, faded old positions, weak network, dropped and rejoined, the ride ended, typing a code) and the ride page's
   side (watchers not counted or announced, "Family watching: Ammi", positions and SOS reach family only with
   "Family can watch" on, the Share choice and family link, "the lowest id answers" ignoring watchers).
+- `road.test.js`: on the road ahead and rain. The Fuel / Food / Mechanic finder (only places ahead: one behind or off to
+  the side is left out even when closer; "on your left / right"; nearest in any direction when standing still, or towards
+  the destination; Navigate; "Stop here" sets a regroup point for everyone; nothing found; all three OpenStreetMap servers
+  down, then only the first), low fuel (the best pump ahead said, "in 2 kilometres", "in 500 metres, on your right" with a
+  buzz, a passed pump skipped for the next, no pump found, searching again after a minute and after 8 km, off by itself
+  after 90 s stopped at a pump, Got fuel, leaving; the other rider hears "Asha is low on fuel" / "has filled up", watchers
+  and check-ins ignored), Google Places with a stand-in key and a stand-in `google.maps.importLibrary('places')` (two
+  searches merged) and its fall-back to OpenStreetMap for the rest of the visit, rain alerts (the Open-Meteo request,
+  already raining, rain here in 30 minutes with the pill, not repeated, rain ahead, an unlikely shower, one place when
+  there's no direction, switched off) and both Settings switches. Overpass, Google and Open-Meteo are all faked by routes.
 - `gmap.test.js`: the Group map on Google Maps (Google's real script in keyless mode, served a stand-in key),
   long press, tap a rider, dark map, switching to OpenStreetMap in Settings, and a refused key falling back.
 
@@ -41,6 +51,7 @@ node tools/webtest/more.test.js
 node tools/webtest/gmap.test.js
 node tools/webtest/plans.test.js
 node tools/webtest/watch.test.js
+node tools/webtest/road.test.js
 ```
 
 In the Claude cloud container Playwright lives at `/opt/node22/lib/node_modules/playwright` (set
