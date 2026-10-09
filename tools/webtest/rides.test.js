@@ -120,7 +120,9 @@ fs.mkdirSync(OUT, { recursive: true });
   await b.click('[data-open-settings]:visible');
   await b.click('label:has([data-setting="map"])');
   await b.click('#settingsClose');
-  await a.waitForTimeout(800);
+  // Bilal's first position reaches Asha's page within a moment; give it up to 8 s on a busy machine.
+  await a.waitForFunction(() => document.getElementById('mapCard').textContent.includes('2 of 2 riders on the map') &&
+    /Bilal[\s\S]*2\.\d km/.test(document.getElementById('riders').textContent), null, { timeout: 8000 }).catch(() => {});
   check('A map card shows both riders', (await a.textContent('#mapCard')).includes('2 of 2 riders on the map'));
   check('A sees Bilal\'s distance on his card', /Bilal[\s\S]*2\.\d km/.test(await a.textContent('#riders')));
   await a.click('[data-open-map]');
