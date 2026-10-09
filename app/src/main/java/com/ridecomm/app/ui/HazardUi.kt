@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -135,10 +136,11 @@ fun HazardPicker(onPick: (HazardKind) -> Unit, onCancel: () -> Unit) {
                     ) {
                         HazardBadge(kind, 42.dp)
                         Spacer(Modifier.height(6.dp))
-                        Text(
-                            kind.label,
-                            style = MaterialTheme.typography.labelLarge.copy(lineHeight = 18.sp),
-                            maxLines = 2,
+                        // One word per line, shrunk to fit: never "Pothol-e" on a narrow phone.
+                        FitText(
+                            kind.label.replace(' ', '\n'),
+                            MaterialTheme.typography.labelLarge.copy(lineHeight = 18.sp),
+                            Modifier.padding(horizontal = 4.dp),
                             textAlign = TextAlign.Center,
                         )
                     }

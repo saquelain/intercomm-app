@@ -6,7 +6,7 @@
 const { chromium } = require(process.env.PLAYWRIGHT || '/opt/node22/lib/node_modules/playwright');
 const fs = require('fs');
 const fake = fs.readFileSync(__dirname + '/fake-livekit.js', 'utf8');
-const OUT = __dirname + '/out/';
+const OUT = __dirname + '/out/' + (process.env.OUT_SUB ? process.env.OUT_SUB + '/' : '');
 fs.mkdirSync(OUT, { recursive: true });
 
 (async () => {
@@ -14,7 +14,7 @@ fs.mkdirSync(OUT, { recursive: true });
   const SITE = 'https://saquelain.github.io/intercomm-app/ride/';
   const run = async (googleKey, keyless, site) => {
     const base = site ? SITE : 'http://127.0.0.1:8765/ride/';
-    const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 400, height: 860 }, deviceScaleFactor: 2 });
+    const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: +(process.env.VIEW_W || 400), height: +(process.env.VIEW_H || 860) }, deviceScaleFactor: 2 });
     const pass = (b) => JSON.stringify({ server_url: 'wss://fake', participant_token: Buffer.from(JSON.stringify({ identity: b.participant_identity, name: b.participant_name })).toString('base64') });
     await ctx.route(/livekit-client/, (r) => r.fulfill({ contentType: 'application/javascript', body: fake }));
     await ctx.route(/sandbox\/connection-details/, (r) => r.fulfill({ contentType: 'application/json', body: pass(JSON.parse(r.request().postData())) }));

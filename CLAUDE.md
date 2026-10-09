@@ -67,6 +67,9 @@ Links the owner uses:
 - Screenshots of screens (Robolectric + Roborazzi, real OSM tiles from `app/src/test/resources/maptiles`):
   `./gradlew recordRoborazziDebug --tests '*ScreenshotTest*'` → `app/screenshots/*.png` (gitignored).
   Add a test in `ScreenshotTest.kt` for every new screen and look at the PNG before pushing.
+  `SmallScreenTest` re-renders all of them on a 320 dp phone with text at 130% (`app/screenshots/small/`):
+  the owner's phone uses big text, so check those too. Labels that may not fit use `FitText` (shrinks,
+  never splits a word), pairs of buttons use `ButtonRow` (stacks them when narrow).
 - Tests that need `org.json` must run with `@RunWith(RobolectricTestRunner::class)`.
 - Web page: serve `docs/` with `python3 -m http.server 8765` and drive it with Playwright
   (`/opt/node22/lib/node_modules/playwright`, launch Chromium with

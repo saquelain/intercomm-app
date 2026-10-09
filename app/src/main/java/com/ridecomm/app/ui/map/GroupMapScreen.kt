@@ -42,9 +42,12 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.ridecomm.app.R
 import com.ridecomm.app.group.RideRolesState
@@ -64,6 +67,7 @@ import com.ridecomm.app.ui.GlassCard
 import com.ridecomm.app.ui.GlassDialog
 import com.ridecomm.app.ui.GlassIconButton
 import com.ridecomm.app.ui.GlassTextField
+import com.ridecomm.app.ui.FitText
 import com.ridecomm.app.ui.Ico
 import com.ridecomm.app.ui.Palette
 import com.ridecomm.app.ui.PrimaryButton
@@ -110,6 +114,10 @@ internal fun GroupMapScreen(
 ) {
     BackHandler(onBack = onClose)
     val context = LocalContext.current
+    // Smaller top-bar buttons on a narrow phone or with large text, so the title keeps some room.
+    val compact = LocalConfiguration.current.screenWidthDp < 360 || LocalDensity.current.fontScale > 1.15f
+    val barButton = if (compact) 40.dp else 46.dp
+    val barGap = if (compact) 4.dp else 8.dp
     var follow by remember { mutableStateOf(false) }
     var focus by remember { mutableStateOf<Spot?>(null) }
     var fitKey by remember { mutableIntStateOf(0) }
@@ -188,28 +196,28 @@ internal fun GroupMapScreen(
                 .padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            GlassIconButton(R.drawable.ms_arrow_back, "Back", size = 46.dp, iconSize = 22.dp, onClick = onClose)
+            GlassIconButton(R.drawable.ms_arrow_back, "Back", size = barButton, iconSize = 22.dp, onClick = onClose)
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text("Group map", style = MaterialTheme.typography.titleMedium)
+                FitText("Group map", MaterialTheme.typography.titleMedium, min = 13.sp)
                 val onMap = group.positions.size + if (group.me != null) 1 else 0
-                Text("$onMap of ${riders.size.coerceAtLeast(1)} riders on the map", style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
+                Text("$onMap of ${riders.size.coerceAtLeast(1)} on the map", style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary, maxLines = 2)
             }
-            GlassIconButton(if (dark) R.drawable.ms_light_mode else R.drawable.ms_dark_mode, if (dark) "Light map" else "Dark map", size = 46.dp, iconSize = 22.dp) {
+            GlassIconButton(if (dark) R.drawable.ms_light_mode else R.drawable.ms_dark_mode, if (dark) "Light map" else "Dark map", size = barButton, iconSize = 22.dp) {
                 dark = !dark
                 Prefs.setMapDark(context, dark)
             }
-            Spacer(Modifier.width(8.dp))
-            GlassIconButton(R.drawable.ms_zoom_out_map, "Show everyone", size = 46.dp, iconSize = 22.dp) {
+            Spacer(Modifier.width(barGap))
+            GlassIconButton(R.drawable.ms_zoom_out_map, "Show everyone", size = barButton, iconSize = 22.dp) {
                 follow = false
                 focus = null
                 fitKey++
             }
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(barGap))
             GlassIconButton(
                 R.drawable.ms_my_location,
                 if (follow) "Stop following me" else "Follow me",
-                size = 46.dp,
+                size = barButton,
                 iconSize = 22.dp,
                 tint = if (follow) Palette.Orange else Color.White,
             ) { follow = !follow }

@@ -13,6 +13,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -58,8 +60,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.isSpecified
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.composed
 import androidx.compose.runtime.CompositionLocalProvider
@@ -194,6 +200,55 @@ fun Ico(@DrawableRes icon: Int, size: Dp = 24.dp, tint: Color = Palette.TextPrim
     Icon(painterResource(icon), description, Modifier.size(size), tint = tint)
 }
 
+/**
+ * Text on [lines] lines (one by default) that shrinks to fit instead of being cut off or breaking a
+ * word in two: phones with a small screen or large text (Display size / Font size in Android settings).
+ * To allow two lines, put a line break in [text]: lines only ever break there.
+ */
+@Composable
+fun FitText(
+    text: String,
+    style: TextStyle,
+    modifier: Modifier = Modifier,
+    color: Color = Color.Unspecified,
+    textAlign: TextAlign? = null,
+    min: TextUnit = 9.sp,
+) {
+    val lines = text.count { it == '\n' } + 1
+    Text(
+        text,
+        modifier,
+        color = color,
+        style = style,
+        maxLines = lines,
+        softWrap = false,
+        textAlign = textAlign,
+        autoSize = TextAutoSize.StepBased(min, style.fontSize.takeIf { it.isSpecified && it > min } ?: 16.sp),
+    )
+}
+
+/** Where [ButtonRow]'s buttons sit: [share] gives each its part of the row, or the whole width when stacked. */
+class ButtonRowScope internal constructor(private val row: RowScope?) {
+    fun Modifier.share(weight: Float = 1f): Modifier = row?.run { this@share.weight(weight) } ?: fillMaxWidth()
+}
+
+/**
+ * [count] buttons side by side, or one under the other when the space is too narrow for their
+ * labels (a small phone, or large text in Android settings). Buttons use `Modifier.share()`.
+ */
+@Composable
+fun ButtonRow(count: Int, minEach: Dp = 125.dp, content: @Composable ButtonRowScope.() -> Unit) {
+    val fontScale = LocalDensity.current.fontScale
+    BoxWithConstraints {
+        val gap = 10.dp
+        if (count <= 1 || maxWidth >= minEach * fontScale.coerceAtLeast(1f) * count + gap * (count - 1)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(gap)) { ButtonRowScope(this).content() }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(gap)) { ButtonRowScope(null).content() }
+        }
+    }
+}
+
 /** Main call to action: bright gradient pill. */
 @Composable
 fun PrimaryButton(
@@ -240,9 +295,8 @@ fun PrimaryButton(
             Ico(icon, if (glassLook) 25.dp else 24.dp, contentColor)
             Spacer(Modifier.width(if (glassLook) 12.dp else 10.dp))
         }
-        // Long labels on narrow buttons shrink a little instead of being cut off.
-        val style = MaterialTheme.typography.labelLarge
-        Text(text, style = style, color = contentColor, maxLines = 1, softWrap = false, autoSize = TextAutoSize.StepBased(12.sp, style.fontSize))
+        // Long labels on narrow buttons shrink instead of being cut off.
+        FitText(text, MaterialTheme.typography.labelLarge, color = contentColor)
     }
 }
 
@@ -285,7 +339,7 @@ fun GlassButton(
             Spacer(Modifier.width(if (glassLook) 10.dp else 8.dp))
         }
         val style = if (glassLook) MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold) else MaterialTheme.typography.labelLarge
-        Text(text, style = style, color = contentColor, maxLines = 1, softWrap = false, autoSize = TextAutoSize.StepBased(12.sp, style.fontSize))
+        FitText(text, style, color = contentColor)
     }
 }
 
@@ -517,7 +571,8 @@ fun ActionRow(
         }
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), maxLines = 1)
+            // Two lines rather than cut short ("Where are we heading?" on a small phone).
+            Text(title, style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (subtitle != null) {
                 Text(subtitle, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, color = if (soft) NeuTokens.InkMuted else GlassTokens.Muted), maxLines = 2)
             }

@@ -39,7 +39,10 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w400dp-h880dp-xxhdpi")
-class ScreenshotTest {
+open class ScreenshotTest {
+    /** Where the PNGs go (the small-screen run uses its own folder). */
+    protected open val dir = "screenshots"
+
 
     private val riders = listOf(
         Rider("me", "Saquelain", isMe = true, isSpeaking = false, isMuted = false, signal = Signal.GOOD),
@@ -49,7 +52,7 @@ class ScreenshotTest {
     )
     private val ride = RideState(status = RideStatus.CONNECTED, code = "XCQGCW", riders = riders)
 
-    private fun shot(name: String, night: Boolean = false, content: @Composable () -> Unit) = captureRoboImage("screenshots/$name.png") {
+    private fun shot(name: String, night: Boolean = false, content: @Composable () -> Unit) = captureRoboImage("$dir/$name.png") {
         RideCommTheme {
             GlassBackground(Modifier.nightFilter(night)) { Box(Modifier.fillMaxSize().padding(top = 24.dp)) { content() } }
         }
@@ -144,7 +147,7 @@ class ScreenshotTest {
     }
 
     @Test
-    fun groupMapDestination() = captureRoboImage("screenshots/34_map_destination.png") {
+    fun groupMapDestination() = captureRoboImage("$dir/34_map_destination.png") {
         RideCommTheme {
             com.ridecomm.app.ui.map.GroupMapScreen(
                 sampleGroup, riders, emptyMap(), onClose = {},
@@ -201,7 +204,7 @@ class ScreenshotTest {
 
     // ---- Glass look ----
 
-    private fun glassShot(name: String, style: GlassSceneStyle = GlassSceneStyle.HOME, content: @Composable () -> Unit) = captureRoboImage("screenshots/$name.png") {
+    private fun glassShot(name: String, style: GlassSceneStyle = GlassSceneStyle.HOME, content: @Composable () -> Unit) = captureRoboImage("$dir/$name.png") {
         RideCommTheme {
             GlassScene(style = style) { Box(Modifier.fillMaxSize().padding(top = 24.dp)) { LookScope(UiLook.GLASS) { content() } } }
         }
@@ -211,7 +214,7 @@ class ScreenshotTest {
 
     // ---- Soft look (neumorphism) ----
 
-    private fun softShot(name: String, content: @Composable () -> Unit) = captureRoboImage("screenshots/$name.png") {
+    private fun softShot(name: String, content: @Composable () -> Unit) = captureRoboImage("$dir/$name.png") {
         RideCommTheme {
             NeuScene { Box(Modifier.fillMaxSize().padding(top = 24.dp)) { LookScope(UiLook.NEU) { content() } } }
         }
@@ -279,7 +282,7 @@ class ScreenshotTest {
     }
 
     @Test
-    fun groupMapSoft() = captureRoboImage("screenshots/67_map_soft.png") {
+    fun groupMapSoft() = captureRoboImage("$dir/67_map_soft.png") {
         RideCommTheme {
             LookScope(UiLook.NEU) {
                 com.ridecomm.app.ui.map.GroupMapScreen(sampleGroup, riders, emptyMap(), onClose = {}, hazards = hazards.hazards, roles = roles, mapContent = mapStandIn(dark = false))
@@ -334,7 +337,7 @@ class ScreenshotTest {
     fun destinationDialogGlass() = glassShot("49_destination_glass", GlassSceneStyle.RIDE) { DestinationDialog({}, {}) }
 
     @Test
-    fun groupMapGlass() = captureRoboImage("screenshots/50_map_glass.png") {
+    fun groupMapGlass() = captureRoboImage("$dir/50_map_glass.png") {
         RideCommTheme {
             LookScope(UiLook.GLASS) {
                 com.ridecomm.app.ui.map.GroupMapScreen(
@@ -408,7 +411,7 @@ class ScreenshotTest {
         view.draw(canvas)
         canvas.restore()
         canvas.restore()
-        bitmap.captureRoboImage("screenshots/10_speakers_strip.png")
+        bitmap.captureRoboImage("$dir/10_speakers_strip.png")
     }
 
     /** The ✕ while dragging the floating button: idle on the left, with the button over it on the right. */
@@ -448,7 +451,7 @@ class ScreenshotTest {
             canvas.restore()
             canvas.restore()
         }
-        bitmap.captureRoboImage("screenshots/14_dismiss_target.png")
+        bitmap.captureRoboImage("$dir/14_dismiss_target.png")
     }
 
     @Test
@@ -624,12 +627,12 @@ class ScreenshotTest {
     }
 
     @Test
-    fun groupMapDark() = captureRoboImage("screenshots/17_group_map_dark.png") {
+    fun groupMapDark() = captureRoboImage("$dir/17_group_map_dark.png") {
         RideCommTheme { com.ridecomm.app.ui.map.GroupMapScreen(sampleGroup, riders, emptyMap(), onClose = {}, mapContent = mapStandIn(dark = true)) }
     }
 
     @Test
-    fun groupMapHazardsRoles() = captureRoboImage("screenshots/27_map_hazards_roles.png") {
+    fun groupMapHazardsRoles() = captureRoboImage("$dir/27_map_hazards_roles.png") {
         RideCommTheme {
             // My own photo shows on my marker too.
             val me = android.graphics.Bitmap.createBitmap(96, 96, android.graphics.Bitmap.Config.ARGB_8888).apply {
@@ -642,7 +645,7 @@ class ScreenshotTest {
     }
 
     @Test
-    fun groupMapLight() = captureRoboImage("screenshots/18_group_map_light.png") {
+    fun groupMapLight() = captureRoboImage("$dir/18_group_map_light.png") {
         RideCommTheme {
             com.ridecomm.app.ui.map.GroupMapScreen(sampleGroup.copy(regroup = null), riders, emptyMap(), onClose = {}, mapContent = mapStandIn(dark = false))
         }
@@ -717,6 +720,6 @@ class ScreenshotTest {
         // Stand-in for the app underneath (e.g. Maps).
         canvas.drawColor(android.graphics.Color.rgb(0xDD, 0xE6, 0xD8))
         menu.draw(canvas)
-        bitmap.captureRoboImage("screenshots/$name.png")
+        bitmap.captureRoboImage("$dir/$name.png")
     }
 }

@@ -174,9 +174,9 @@ fun BreakCard(due: BreakDue, onAsk: () -> Unit, onNotNow: () -> Unit) {
                 Text("${TripSpeech.duration(due.ridingMs).replaceFirstChar { it.uppercase() }} of riding since the last stop", style = MaterialTheme.typography.bodyMedium)
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PrimaryButton("Ask for a break", R.drawable.ms_coffee, Modifier.weight(1.3f), height = 52.dp, onClick = onAsk)
-            GlassButton("Not now", modifier = Modifier.weight(0.8f), height = 52.dp, onClick = onNotNow)
+        ButtonRow(2) {
+            PrimaryButton("Ask for a break", R.drawable.ms_coffee, Modifier.share(1.3f), height = 52.dp, onClick = onAsk)
+            GlassButton("Not now", modifier = Modifier.share(0.8f), height = 52.dp, onClick = onNotNow)
         }
     }
 }

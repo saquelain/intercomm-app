@@ -43,6 +43,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -74,7 +77,15 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ridecomm.app.R
@@ -208,7 +219,7 @@ fun RideContent(
                             style = MaterialTheme.typography.displayMedium,
                             maxLines = 1,
                             softWrap = false,
-                            autoSize = TextAutoSize.StepBased(minFontSize = 24.sp, maxFontSize = 40.sp),
+                            autoSize = TextAutoSize.StepBased(minFontSize = 16.sp, maxFontSize = 40.sp),
                         )
                     }
                     GlassIconButton(R.drawable.ms_settings, "Settings", size = 52.dp, iconSize = 24.dp) { showSettings = true }
@@ -415,6 +426,7 @@ private fun RidersCard(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RiderRow(
     rider: Rider,
@@ -462,12 +474,15 @@ private fun RiderRow(
     Row(Modifier.clip(RoundedCornerShape(18.dp)).then(gestures), verticalAlignment = Alignment.CenterVertically) {
         Avatar(rider.name, 54.dp, if (rider.isMe) Palette.Brand else OthersGradient, ring, photo)
         Spacer(Modifier.width(14.dp))
+        // Name on top; status and the little badges flow underneath and wrap on a narrow phone,
+        // so nothing squeezes the name or the status into a sliver.
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     if (rider.isMe) "${rider.name} (you)" else rider.name,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false),
                 )
                 if (role != null) {
@@ -481,36 +496,35 @@ private fun RiderRow(
                 volume.volume != 1f -> " · ${(volume.volume * 100).roundToInt()}%"
                 else -> ""
             }
-            Text(
-                when {
-                    privateTo != null -> "Talking only to $privateTo"
-                    onPhoneCall -> "On a phone call"
-                    rider.isMuted -> "Mic off"
-                    rider.isSpeaking -> "Talking"
-                    else -> "Listening"
-                } + heard,
-                style = MaterialTheme.typography.bodyMedium,
-                color = when {
-                    privateTo != null -> WhisperColor
-                    onPhoneCall -> Palette.Amber
-                    rider.isSpeaking -> Palette.Go
-                    else -> Palette.TextSecondary
-                },
-            )
-        }
-        if (rider.isMuted) {
-            Ico(R.drawable.ms_mic_off, 20.dp, Palette.Stop, "Mic off")
-            Spacer(Modifier.width(10.dp))
-        }
-        if (battery != null && !battery.charging && battery.level <= BatteryWatch.SHOW_AT_OR_BELOW) {
-            LowBattery(battery.level)
-            Spacer(Modifier.width(10.dp))
-        }
-        SignalIcon(rider.signal)
-        if (position != null) {
-            Spacer(Modifier.width(10.dp))
-            DistanceChip(position) {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(GroupTracker.mapsLink(position))))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    when {
+                        privateTo != null -> "Talking only to $privateTo"
+                        onPhoneCall -> "On a phone call"
+                        rider.isMuted -> "Mic off"
+                        rider.isSpeaking -> "Talking"
+                        else -> "Listening"
+                    } + heard,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = when {
+                        privateTo != null -> WhisperColor
+                        onPhoneCall -> Palette.Amber
+                        rider.isSpeaking -> Palette.Go
+                        else -> Palette.TextSecondary
+                    },
+                )
+                if (rider.isMuted) Ico(R.drawable.ms_mic_off, 20.dp, Palette.Stop, "Mic off")
+                if (battery != null && !battery.charging && battery.level <= BatteryWatch.SHOW_AT_OR_BELOW) LowBattery(battery.level)
+                SignalIcon(rider.signal)
+                if (position != null) {
+                    DistanceChip(position) {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(GroupTracker.mapsLink(position))))
+                    }
+                }
             }
         }
     }
@@ -521,28 +535,26 @@ private fun RiderRow(
 private fun DistanceChip(position: RiderPosition, onClick: () -> Unit) {
     val distance = position.distanceM
     val far = distance != null && distance >= 1_000
-    Column(
+    Row(
         Modifier
-            .glass(RoundedCornerShape(16.dp), tint = if (far) Palette.Amber else Color.White, fillAlpha = if (far) 0.18f else 0.08f)
+            .glass(RoundedCornerShape(14.dp), tint = if (far) Palette.Amber else Color.White, fillAlpha = if (far) 0.18f else 0.08f)
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Ico(R.drawable.ms_location_on, 14.dp, if (far) Palette.Amber else Palette.Cyan)
-            Spacer(Modifier.width(3.dp))
-            Text(
-                distance?.let { GroupMath.shortDistance(it) } ?: "Map",
-                style = MaterialTheme.typography.labelSmall,
-                color = Palette.TextPrimary,
-            )
-        }
+        Ico(R.drawable.ms_location_on, 14.dp, if (far) Palette.Amber else Palette.Cyan)
+        Spacer(Modifier.width(3.dp))
+        Text(
+            distance?.let { GroupMath.shortDistance(it) } ?: "Map",
+            style = MaterialTheme.typography.labelSmall,
+            color = Palette.TextPrimary,
+        )
         val label = when (position.relation) {
             Relation.AHEAD -> "ahead"
             Relation.BEHIND -> "behind"
             Relation.NEARBY -> if (distance != null && distance < GroupMath.TOGETHER_M) "with you" else null
         }
-        if (label != null) Text(label, style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
+        if (label != null) Text(" · $label", style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
     }
 }
 
@@ -598,12 +610,8 @@ private fun TripTile(
                 Ico(icon, 20.dp, softIcon)
             }
             Spacer(Modifier.height(10.dp))
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(value, style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, letterSpacing = 0.sp), maxLines = 1)
-                Spacer(Modifier.width(4.dp))
-                Text(unit, style = MaterialTheme.typography.labelSmall.copy(fontSize = 14.sp), modifier = Modifier.padding(bottom = 3.dp))
-            }
-            Text(label, style = MaterialTheme.typography.bodyMedium)
+            TripValue(value, unit, MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, letterSpacing = 0.sp), NeuTokens.InkMuted)
+            FitText(label, MaterialTheme.typography.bodyMedium)
         }
         return
     }
@@ -616,12 +624,8 @@ private fun TripTile(
         ) {
             Ico(icon, 20.dp, GlassTokens.StatIcon)
             Spacer(Modifier.height(6.dp))
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(value, style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, letterSpacing = 0.sp), maxLines = 1)
-                Spacer(Modifier.width(3.dp))
-                Text(unit, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(bottom = 4.dp))
-            }
-            Text(label, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, color = GlassTokens.Muted))
+            TripValue(value, unit, MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, letterSpacing = 0.sp), Color.White)
+            FitText(label, MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, color = GlassTokens.Muted))
         }
         return
     }
@@ -630,13 +634,24 @@ private fun TripTile(
             .glass(RoundedCornerShape(18.dp), fillAlpha = 0.06f, rimAlpha = 0.18f)
             .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(value, style = MaterialTheme.typography.titleLarge, maxLines = 1)
-            Spacer(Modifier.width(4.dp))
-            Text(unit, style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary, modifier = Modifier.padding(bottom = 3.dp))
-        }
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Palette.TextTertiary)
+        TripValue(value, unit, MaterialTheme.typography.titleLarge, Palette.TextSecondary)
+        FitText(label, MaterialTheme.typography.labelSmall, color = Palette.TextTertiary)
     }
+}
+
+/** "42 km/h" on one line: the small unit follows the number, and both shrink together on a narrow tile. */
+@Composable
+private fun TripValue(value: String, unit: String, style: TextStyle, unitColor: Color) {
+    Text(
+        buildAnnotatedString {
+            append(value)
+            withStyle(SpanStyle(fontSize = 0.55.em, color = unitColor, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp)) { append(" $unit") }
+        },
+        style = style,
+        maxLines = 1,
+        softWrap = false,
+        autoSize = TextAutoSize.StepBased(10.sp, style.fontSize),
+    )
 }
 
 /** Battery icon with "18%", amber when low and red when nearly empty. */
@@ -689,16 +704,24 @@ private fun Dock(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        if (look == UiLook.NEU) {
-            SoftDockSide(R.drawable.ms_logout, "Leave", NeuTokens.Stop, NeuTokens.LeaveTint, onLeave)
-        } else {
-            DockSide(R.drawable.ms_logout, "Leave", Palette.Stop, onLeave, if (glassLook) GlassTokens.Leave else null)
+        // Leave and Share each get the same room at the sides; the mic's label wraps in the middle
+        // instead of pushing them off a narrow screen.
+        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+            if (look == UiLook.NEU) {
+                SoftDockSide(R.drawable.ms_logout, "Leave", NeuTokens.Stop, NeuTokens.LeaveTint, onLeave)
+            } else {
+                DockSide(R.drawable.ms_logout, "Leave", Palette.Stop, onLeave, if (glassLook) GlassTokens.Leave else null)
+            }
         }
-        if (pushToTalk) TalkButton(talking, latched, muted) else MicButton(muted, speaking, filterStatus)
-        if (look == UiLook.NEU) {
-            SoftDockSide(R.drawable.ms_share, "Share", NeuTokens.InkMuted, NeuTokens.ShareTint, onShare)
-        } else {
-            DockSide(R.drawable.ms_share, "Share", Color.White, onShare, if (glassLook) GlassTokens.Share else null)
+        Box(Modifier.widthIn(max = 150.dp), contentAlignment = Alignment.Center) {
+            if (pushToTalk) TalkButton(talking, latched, muted) else MicButton(muted, speaking, filterStatus)
+        }
+        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+            if (look == UiLook.NEU) {
+                SoftDockSide(R.drawable.ms_share, "Share", NeuTokens.InkMuted, NeuTokens.ShareTint, onShare)
+            } else {
+                DockSide(R.drawable.ms_share, "Share", Color.White, onShare, if (glassLook) GlassTokens.Share else null)
+            }
         }
     }
 }
@@ -715,7 +738,7 @@ private fun SoftDockSide(icon: Int, label: String, iconColor: Color, fill: Color
             contentAlignment = Alignment.Center,
         ) { Ico(icon, 28.dp, iconColor, label) }
         Spacer(Modifier.height(8.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 14.sp), color = Palette.TextSecondary)
+        FitText(label, MaterialTheme.typography.labelSmall.copy(fontSize = 14.sp), color = Palette.TextSecondary)
     }
 }
 
@@ -728,7 +751,7 @@ private fun DockSide(icon: Int, label: String, tint: Color, onClick: () -> Unit,
             GlassIconButton(icon, label, size = 56.dp, tint = tint, onClick = onClick)
         }
         Spacer(Modifier.height(6.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
+        FitText(label, MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
     }
 }
 
@@ -786,7 +809,7 @@ private fun MicButton(muted: Boolean, speaking: Boolean, filterStatus: GateStatu
             filterStatus == GateStatus.VOICE -> "Mic on · sending" to if (soft) NeuTokens.Blue else if (glassLook) GlassTokens.MicLabel else Palette.Go
             else -> "Mic on" to if (soft) NeuTokens.Blue else if (glassLook) GlassTokens.MicLabel else Palette.Go
         }
-        Text(label, style = MaterialTheme.typography.labelSmall, color = color)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = color, textAlign = TextAlign.Center)
     }
 }
 
@@ -855,6 +878,6 @@ private fun TalkButton(talking: Boolean, latched: Boolean, muted: Boolean) {
             muted -> "Hold to talk · mic off" to Palette.Stop
             else -> "Hold to talk · tap to lock" to Palette.TextSecondary
         }
-        Text(label, style = MaterialTheme.typography.labelSmall, color = color)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = color, textAlign = TextAlign.Center)
     }
 }

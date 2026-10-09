@@ -164,19 +164,14 @@ fun HomeScreen(state: RideState) {
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 if (glassLook) {
-                    Text(
-                        "RideComm",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontSize = 32.sp, letterSpacing = (-1.4).sp),
-                        maxLines = 1,
-                    )
-                    Text(
+                    FitText("RideComm", MaterialTheme.typography.headlineMedium.copy(fontSize = 32.sp, letterSpacing = (-1.4).sp))
+                    FitText(
                         "Group intercom for riders",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp),
+                        MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp),
                         color = Color(0xFFD2C9FF),
-                        maxLines = 1,
                     )
                 } else {
-                    Text("RideComm", style = MaterialTheme.typography.headlineMedium)
+                    FitText("RideComm", MaterialTheme.typography.headlineMedium)
                     Text("Group intercom for riders", style = MaterialTheme.typography.bodyMedium)
                 }
             }
@@ -329,12 +324,12 @@ internal fun HomeCheckInCard(ride: RecentRide, myName: String, onDismiss: () -> 
             }
             GlassIconButton(R.drawable.ms_close, "Dismiss", size = 40.dp, iconSize = 18.dp, onClick = onDismiss)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        ButtonRow(if (result == null) 2 else 1) {
             if (result == null) {
                 PrimaryButton(
                     if (sending) "Telling them…" else "I'm home safe",
                     R.drawable.ms_home,
-                    Modifier.weight(1.3f),
+                    Modifier.share(1.3f),
                     brush = Palette.GoGradient,
                     contentColor = Color(0xFF052E1F),
                     height = 52.dp,
@@ -353,7 +348,7 @@ internal fun HomeCheckInCard(ride: RecentRide, myName: String, onDismiss: () -> 
                     }
                 }
             }
-            GlassButton("Share", R.drawable.ms_share, Modifier.weight(0.8f), height = 52.dp, onClick = share)
+            GlassButton("Share", R.drawable.ms_share, Modifier.share(0.8f), height = 52.dp, onClick = share)
         }
     }
 }
@@ -373,9 +368,9 @@ internal fun RejoinCard(ride: RecentRide, nowMs: Long, onDismiss: () -> Unit, on
                 )
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            GlassButton("Not now", modifier = Modifier.weight(1f), onClick = onDismiss)
-            PrimaryButton("Rejoin", R.drawable.ms_replay, Modifier.weight(1f), height = 56.dp, onClick = onRejoin)
+        ButtonRow(2) {
+            GlassButton("Not now", modifier = Modifier.share(), onClick = onDismiss)
+            PrimaryButton("Rejoin", R.drawable.ms_replay, Modifier.share(), height = 56.dp, onClick = onRejoin)
         }
     }
 }
@@ -872,11 +867,11 @@ internal fun <T> OptionChips(title: String, description: String, options: List<T
                         .clickable { onChange(option) },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
+                    FitText(
                         label(option),
-                        style = MaterialTheme.typography.labelLarge,
+                        MaterialTheme.typography.labelLarge,
+                        Modifier.padding(horizontal = 4.dp),
                         color = if (selected) Color.White else Palette.TextSecondary,
-                        maxLines = 1,
                     )
                 }
             }
@@ -1060,11 +1055,11 @@ internal fun RideUpdatesSetting(value: UpdateEvery, onChange: (UpdateEvery) -> U
                         .clickable { onChange(option) },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
+                    FitText(
                         option.label,
-                        style = MaterialTheme.typography.labelLarge,
+                        MaterialTheme.typography.labelLarge,
+                        Modifier.padding(horizontal = 4.dp),
                         color = if (selected) Color.White else Palette.TextSecondary,
-                        maxLines = 1,
                     )
                 }
             }
@@ -1152,10 +1147,10 @@ private fun ProfileRow(name: String, photo: Bitmap?, glassLook: Boolean = false,
         Column(Modifier.weight(1f)) {
             SectionLabel("Riding as")
             if (glassLook) Spacer(Modifier.height(5.dp))
-            Text(
+            FitText(
                 name,
-                style = if (glassLook) MaterialTheme.typography.titleLarge.copy(fontSize = 25.sp, letterSpacing = (-0.8).sp) else MaterialTheme.typography.titleLarge,
-                maxLines = 1,
+                if (glassLook) MaterialTheme.typography.titleLarge.copy(fontSize = 25.sp, letterSpacing = (-0.8).sp) else MaterialTheme.typography.titleLarge,
+                min = 14.sp,
             )
         }
         GlassIconButton(

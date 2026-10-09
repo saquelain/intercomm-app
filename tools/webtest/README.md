@@ -15,6 +15,9 @@ mute, a fake signal drop with `goOffline()` / `goOnline()`). GPS is faked too: `
 - `gmap.test.js`: the Group map on Google Maps (Google's real script in keyless mode, served a stand-in key),
   long press, tap a rider, dark map, switching to OpenStreetMap in Settings, and a refused key falling back.
 
+Set `VIEW_W=320 VIEW_H=640 OUT_SUB=small` to run any of them on the smallest iPhone width, with
+screenshots in `out/small/`.
+
 Each prints `PASS` / `FAIL` lines and ends with "No page errors". Screenshots go to `out/`.
 
 ```sh

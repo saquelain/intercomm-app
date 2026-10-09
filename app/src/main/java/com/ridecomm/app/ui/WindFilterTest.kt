@@ -16,6 +16,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -386,6 +388,7 @@ private fun LevelBar(label: String, db: Float?, color: Color, marker: Float? = n
  * The recording as two bar waveforms, one bar per 50 ms: what the mic heard (coloured by what
  * the filter decided) and what the group would hear.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ClipView(clip: FloatArray, analysis: GateAnalysis, playhead: Float?) {
     val micPeaks = remember(clip) { peaks(clip, analysis.frames.size) }
@@ -405,7 +408,7 @@ internal fun ClipView(clip: FloatArray, analysis: GateAnalysis, playhead: Float?
         }
         Text("The group hears", style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
         Waveform(sentPeaks, 64.dp, playhead) { go }
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Legend(Palette.Go, "Voice: sent")
             Legend(Palette.Amber, "Noise: blocked")
             Legend(Color.White.copy(alpha = 0.3f), "Quiet")
@@ -530,11 +533,11 @@ internal fun GateChips(value: GateSettings?, onChange: (GateSettings?) -> Unit) 
                     .clickable(onClick = onClick),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
+                FitText(
                     label,
-                    style = MaterialTheme.typography.labelLarge,
+                    MaterialTheme.typography.labelLarge,
+                    Modifier.padding(horizontal = 4.dp),
                     color = if (selected) Color.White else Palette.TextSecondary,
-                    maxLines = 1,
                 )
             }
         }

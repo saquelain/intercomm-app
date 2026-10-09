@@ -446,6 +446,18 @@
   .place .n { font-weight: 600; font-size: 17px; } .place .dd { color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pin.dest .head, .pin.dest .stem, .pin.dest .tip { background: var(--go); }
   .pin.dest .head { color: #042A1B; }
+  /* Small phones (iPhone SE and narrower) and large text: nothing overlaps or spills out of its card. */
+  .grow { min-width: 0; }
+  .btn { min-width: 0; }
+  @media (max-width: 380px) {
+    .code-big, html.look-glass .code-big, html.look-neu .code-big { font-size: clamp(24px, 9vw, 38px); letter-spacing: 2px; }
+    .btn { font-size: 16px; gap: 8px; padding-left: 10px; padding-right: 10px; }
+    .grid2.wide { grid-template-columns: 1fr; }
+    .row3 { grid-template-columns: 1fr 50px 50px; }
+    .mapbar { gap: 6px; }
+    .mapbar .iconbtn { width: 40px; height: 40px; }
+    .mapbar .rname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  }
 </style>
 </head>
 <body>
@@ -1536,7 +1548,7 @@
     else G.map.fit(pts);
   }
   function renderMapBar() {
-    $('mapSub').textContent = (G.pos.size + (G.me ? 1 : 0)) + ' of ' + riderIds().length + ' riders on the map';
+    $('mapSub').textContent = (G.pos.size + (G.me ? 1 : 0)) + ' of ' + riderIds().length + ' on the map';
     $('mapFollow').classList.toggle('on', G.follow);
   }
   function renderMapBox() {

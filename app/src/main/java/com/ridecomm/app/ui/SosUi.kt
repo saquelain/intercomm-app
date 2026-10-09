@@ -100,17 +100,17 @@ private fun HelperCard() {
         if (info.isEmpty) {
             Text("Add blood group, allergies and an emergency contact in Settings.", style = MaterialTheme.typography.bodyMedium)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        ButtonRow(if (info.contactPhone.isNotBlank()) 2 else 1) {
             if (info.contactPhone.isNotBlank()) {
                 PrimaryButton(
                     "Call ${info.contactName.ifBlank { "contact" }}",
                     R.drawable.ms_call,
-                    Modifier.weight(1f),
+                    Modifier.share(),
                     brush = Palette.GoGradient,
                     height = 58.dp,
                 ) { dial(context, info.contactPhone) }
             }
-            GlassButton("Call $EMERGENCY_NUMBER", R.drawable.ms_call, Modifier.weight(1f), height = 58.dp) {
+            GlassButton("Call $EMERGENCY_NUMBER", R.drawable.ms_call, Modifier.share(), height = 58.dp) {
                 dial(context, EMERGENCY_NUMBER)
             }
         }
@@ -163,12 +163,12 @@ private fun AlertCard(alert: SosAlert) {
                 ) { dial(context, info.contactPhone) }
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        ButtonRow(if (SosManager.mapsUri(alert) != null) 2 else 1) {
             SosManager.mapsUri(alert)?.let { uri ->
                 PrimaryButton(
                     "Open map",
                     R.drawable.ms_map,
-                    Modifier.weight(1f),
+                    Modifier.share(),
                     brush = Brush.linearGradient(listOf(Color.White, Color(0xFFFFE3E8))),
                     contentColor = Color(0xFFC2185B),
                     height = 58.dp,
@@ -177,7 +177,7 @@ private fun AlertCard(alert: SosAlert) {
                     context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                 }
             }
-            GlassButton("Dismiss", R.drawable.ms_close, Modifier.weight(1f), height = 58.dp) {
+            GlassButton("Dismiss", R.drawable.ms_close, Modifier.share(), height = 58.dp) {
                 SosManager.dismiss(alert.identity)
             }
         }

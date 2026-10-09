@@ -3,12 +3,12 @@ const { chromium } = require(process.env.PLAYWRIGHT || '/opt/node22/lib/node_mod
 const fs = require('fs');
 const fake = fs.readFileSync(__dirname + '/fake-livekit.js', 'utf8');
 // Screenshots go to tools/webtest/out/ (gitignored).
-const OUT = __dirname + '/out/';
+const OUT = __dirname + '/out/' + (process.env.OUT_SUB ? process.env.OUT_SUB + '/' : '');
 fs.mkdirSync(OUT, { recursive: true });
 
 (async () => {
   const browser = await chromium.launch({ args: ['--proxy-server=https=' + process.env.HTTPS_PROXY] });
-  const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 400, height: 860 }, deviceScaleFactor: 2 });
+  const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: +(process.env.VIEW_W || 400), height: +(process.env.VIEW_H || 860) }, deviceScaleFactor: 2 });
   // The page's Google key only works on the real site: test the OpenStreetMap map here (gmap.test.js does Google).
   await ctx.route(/127\.0\.0\.1:8765\/ride\/(\?|$)/, async (r) => {
     const res = await r.fetch();
