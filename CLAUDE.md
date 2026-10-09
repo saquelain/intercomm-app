@@ -47,11 +47,11 @@ Links the owner uses:
 
 ## Git and CI
 
-- Development is on `ccr-3351f022-4fqzov` (the newest work; see HANDOFF.md "Where things stand").
+- Development is on the newest `ccr-…` branch (see HANDOFF.md "Where things stand").
   GitHub Pages serves `docs/` from `claude/laughing-fermat-oevz8c`, so iPhone riders, invite, family and
   privacy pages only change when that branch is fast-forwarded to the work branch
   (`git push origin HEAD:claude/laughing-fermat-oevz8c`), and **only when the owner says "publish the
-  web"**. A new session may be given a different branch: start it from `ccr-3351f022-4fqzov`.
+  web"**. A new session may be given a different branch: start it from the branch with the newest commit.
 - Pushes also build the APK; pushing the Pages branch builds one too (same code).
 - Never open a pull request unless asked.
 - Commit messages: a short title, a plain-language body, then the attribution lines the session asks for.

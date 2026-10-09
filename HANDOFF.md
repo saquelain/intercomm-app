@@ -7,14 +7,12 @@ so far and what's next.
 
 ## Where things stand right now (read this first)
 
-- **Branches:** development happens on `ccr-3351f022-4fqzov` (head `3db2877`, build #51). GitHub Pages
-  serves `claude/laughing-fermat-oevz8c`, last fast-forwarded to `dc8fcc8` ("publish the web", owner's
-  OK on 9 Oct). A new chat may get yet another branch: start it from `ccr-3351f022-4fqzov`.
-- **Web not yet published:** the fuel & food finder, low fuel and rain alerts on the iPhone page
-  (commit `3db2877`). When the owner says "publish the web", fast-forward:
-  `git push origin HEAD:claude/laughing-fermat-oevz8c` (check it's a fast-forward first), then wait for
-  `https://saquelain.github.io/intercomm-app/watch/` etc. to serve the new files (about 1–2 min).
-  Never publish without the owner saying so.
+- **Branches:** development continues on the newest `ccr-…` branch a chat is given (fourth chat:
+  `ccr-fd3621d0-ybje5a`, started from `ccr-3351f022-4fqzov`). Start a new chat from whichever branch has
+  the newest commit (`git log --all --oneline | head`). GitHub Pages serves `claude/laughing-fermat-oevz8c`,
+  last fast-forwarded to `751010a` on 9 Oct (owner said "publish the web"): the finder, low fuel, rain
+  alerts and the privacy page are live. To publish later web changes, only when the owner says so:
+  `git push origin HEAD:claude/laughing-fermat-oevz8c` (check it's a fast-forward first).
 - **Waiting on the owner** (nothing to build until they do):
   1. *Google Places for the finder:* enable **Places API (New)** in Google Cloud and tick it on both
      keys' API restrictions. Until then the finder uses OpenStreetMap automatically.
@@ -23,6 +21,8 @@ so far and what's next.
      `RIDE_SERVER` in `docs/ride/index.html` (also used by the watch page), and turn off the sandbox.
   3. *Play Store:* developer account, upload key secrets, closed test with 12 testers for 14 days
      (all in `PLAY_STORE.md`). Claude offered to generate the upload key file and send it.
+- **Play Store:** on 9 Oct the owner asked how to put the app on the Play Store; they got the steps
+  from `PLAY_STORE.md` in plain words. Next step is theirs (developer account, upload key).
 - **Owner's last feedback:** Google Maps group map "working fine"; small-screen fixes, history, planner,
   family, finder, rain not yet reported on from a real ride. The owner's phone uses big text: check
   `app/screenshots/small/` for every new screen.
@@ -105,9 +105,9 @@ fake-LiveKit web tests but has not been confirmed on a ride yet.
 | Looks: Classic / Glass / Soft (Settings → Look) on every screen | app + web | owner-tested Glass |
 | Google Maps group map (Settings → Map: Google / OpenStreetMap), dark style, marker pictures | app + web | owner-tested |
 | Small phones / large text (`FitText`, `ButtonRow`, `SmallScreenTest`, 320 px web CSS) | app + web | built (owner's screenshot fixed) |
-| Fuel & food finder ("On the road ahead": fuel / food / mechanic, never behind you, left/right, Stop here) | app + web | built; web not published |
-| Low fuel guide (button or "RideComm, low fuel"; rc-fuel; warns at 2 km / 500 m; ends at the pump) | app + web | built, needs a road test; web not published |
-| Rain alerts (Open-Meteo here + 25 km ahead, off by default) | app + web | built; web not published |
+| Fuel & food finder ("On the road ahead": fuel / food / mechanic, never behind you, left/right, Stop here) | app + web | built |
+| Low fuel guide (button or "RideComm, low fuel"; rc-fuel; warns at 2 km / 500 m; ends at the pump) | app + web | built, needs a road test |
+| Rain alerts (Open-Meteo here + 25 km ahead, off by default) | app + web | built |
 | Play Store groundwork (targetSdk 36, `play` build + CI bundle, privacy page, store pictures, guide) | app | ready; owner's steps pending |
 
 Chronology (git log): step 1 voice call → music → floating button → votes → SOS → glass redesign →
