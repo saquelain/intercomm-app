@@ -1,5 +1,7 @@
 package com.ridecomm.app.ride
 
+import com.ridecomm.app.weather.RainWatch
+import com.ridecomm.app.nearby.LowFuel
 import android.content.Context
 import android.os.SystemClock
 import android.util.Log
@@ -102,6 +104,7 @@ object RideManager {
         RideHistory.begin(appContext, code)
         TripTracker.start(appContext)
         BreakReminder.start(appContext)
+        RainWatch.start(appContext)
         HomeSafe.start(appContext)
         RideService.start(appContext)
         CrashDetector.start(appContext)
@@ -164,6 +167,7 @@ object RideManager {
         GroupTracker.release()
         RideRoles.release()
         RideDestination.release()
+        LowFuel.release()
         Hazards.release()
         ProfileSync.release()
         RiderAlerts.release()
@@ -178,6 +182,7 @@ object RideManager {
         RideHistory.finish()
         TripTracker.stop()
         BreakReminder.stop()
+        RainWatch.stop()
         stopWatchingPhoneCalls()
         CrashDetector.stop()
         _state.value = RideState()
@@ -370,6 +375,7 @@ object RideManager {
         GroupTracker.attach(appContext, r)
         RideRoles.attach(appContext, r)
         RideDestination.attach(appContext, r)
+        LowFuel.attach(appContext, r)
         Hazards.attach(appContext, r)
         ProfileSync.attach(appContext, r)
         RiderAlerts.attach(r)
@@ -461,6 +467,7 @@ object RideManager {
             GroupTracker.detach()
             RideRoles.detach()
             RideDestination.detach()
+            LowFuel.detach()
             Hazards.detach()
             ProfileSync.detach()
             RiderAlerts.detach()
@@ -519,6 +526,7 @@ object RideManager {
         GroupTracker.release()
         RideRoles.release()
         RideDestination.release()
+        LowFuel.release()
         Hazards.release()
         ProfileSync.release()
         RiderAlerts.release()
@@ -533,6 +541,7 @@ object RideManager {
         RideHistory.finish()
         TripTracker.stop()
         BreakReminder.stop()
+        RainWatch.stop()
         stopWatchingPhoneCalls()
         CrashDetector.stop()
         _state.value = RideState(error = message)

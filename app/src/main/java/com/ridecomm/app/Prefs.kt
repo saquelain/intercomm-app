@@ -67,6 +67,8 @@ object Prefs {
     private const val KEY_RIDE_HISTORY = "ride_history"
     private const val KEY_PLANNER = "ride_planner"
     private const val KEY_PLANS = "ride_plans"
+    private const val KEY_FINDER = "finder"
+    private const val KEY_RAIN = "rain_alerts"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -383,4 +385,14 @@ object Prefs {
     fun plansJson(context: Context): String = prefs(context).getString(KEY_PLANS, "") ?: ""
 
     fun setPlansJson(context: Context, json: String) = prefs(context).edit().putString(KEY_PLANS, json).apply()
+
+    /** Fuel & food finder and low fuel alerts. On by default (searches only when asked). */
+    fun finder(context: Context): Boolean = prefs(context).getBoolean(KEY_FINDER, true)
+
+    fun setFinder(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_FINDER, on).apply()
+
+    /** Rain alerts from the forecast here and ahead. Off by default: my rough location goes to a weather service. */
+    fun rainAlerts(context: Context): Boolean = prefs(context).getBoolean(KEY_RAIN, false)
+
+    fun setRainAlerts(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_RAIN, on).apply()
 }

@@ -14,6 +14,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      HAS_UPLOAD_KEY: ${{ secrets.UPLOAD_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -42,6 +44,32 @@ jobs:
         with:
           name: RideComm-${{ github.run_number }}
           path: RideComm*.apk
+
+      # For the Play Store: an app bundle signed with the private upload key, only when its secrets are set
+      # (UPLOAD_KEYSTORE_BASE64, UPLOAD_KEYSTORE_PASSWORD, UPLOAD_KEY_ALIAS, UPLOAD_KEY_PASSWORD; see PLAY_STORE.md).
+      # Kept as a download on the run's page only, not on the public release.
+      - name: Play Store bundle
+        if: env.HAS_UPLOAD_KEY == 'true'
+        env:
+          LIVEKIT_TOKEN_SERVER_ID: ${{ secrets.LIVEKIT_TOKEN_SERVER_ID }}
+          RIDE_SERVER_URL: ${{ secrets.RIDE_SERVER_URL }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+          UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+          UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+        run: |
+          echo "$UPLOAD_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          UPLOAD_KEYSTORE_FILE="$RUNNER_TEMP/upload.jks" ./gradlew bundlePlay --console=plain
+          rm -f "$RUNNER_TEMP/upload.jks"
+          mv app/build/outputs/bundle/play/app-play.aab RideComm-play-${{ github.run_number }}.aab
+
+      - uses: actions/upload-artifact@v4
+        if: env.HAS_UPLOAD_KEY == 'true'
+        with:
+          name: RideComm-play-${{ github.run_number }}
+          path: RideComm-play-*.aab
 
       # A fixed "latest" pre-release gives one link to download the newest APK on a phone.
       - name: Publish to "latest" release

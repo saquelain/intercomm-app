@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy · RideComm</title>
+<meta name="description" content="What RideComm does with your voice, location and other data.">
+<meta name="theme-color" content="#070A14">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --night: #070A14; --deep: #0E0B22; --text: rgba(255,255,255,.94); --muted: rgba(255,255,255,.72); --orange: #FF8A1F; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Outfit, system-ui, sans-serif; color: var(--text); background: linear-gradient(var(--night), var(--deep)); min-height: 100vh; padding: 24px 16px 48px; line-height: 1.55; }
+  main { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 30px; margin: 8px 0 4px; }
+  h2 { font-size: 20px; margin: 28px 0 6px; color: #fff; }
+  p, li { color: var(--muted); font-size: 16px; }
+  li { margin: 6px 0; }
+  strong { color: var(--text); }
+  a { color: var(--orange); }
+  .updated { font-size: 14px; color: rgba(255,255,255,.5); }
+</style>
+</head>
+<body>
+<main>
+  <h1>RideComm privacy policy</h1>
+  <p class="updated">Last updated: 9 October 2026</p>
+  <p>RideComm is a group intercom for motorbike riders: an Android app and a web page for iPhone riders. There are no
+    accounts, no ads and no tracking, and nothing is sold. This page explains what the app sends and where.</p>
+
+  <h2>Your voice</h2>
+  <p>While you're in a ride, your microphone audio is sent live to the other riders in the same ride through
+    <strong>LiveKit</strong> (the voice service), encrypted in transit. It is not recorded or stored by RideComm.</p>
+
+  <h2>Your name and photo</h2>
+  <p>The name you type and the profile photo you pick are kept on your phone and shown to the riders in your rides.</p>
+
+  <h2>Your location</h2>
+  <ul>
+    <li><strong>Group map</strong> (off unless you switch it on): your position is shared with the riders in the ride
+      while you're in it.</li>
+    <li><strong>SOS</strong>: when you send an SOS, your position goes to the riders in the ride, and in a text message
+      to the emergency numbers you chose.</li>
+    <li><strong>Family can watch</strong> (off unless you switch it on): family members you send the watch link to
+      can see your position and SOS during the ride.</li>
+    <li><strong>Speed, distance and ride history</strong> use your GPS on your phone only. Ride history (routes, times,
+      stops) is kept only on your phone and you can delete it in Settings.</li>
+    <li><strong>Fuel &amp; food finder</strong>: when you search, your position is sent to Google Maps (Google Places)
+      or OpenStreetMap to find places near you.</li>
+    <li><strong>Rain alerts</strong> (off unless you switch it on): every 15 minutes in a ride, a rough position (about
+      1 km) is sent to the Open-Meteo weather service.</li>
+    <li><strong>Destination search</strong> sends what you type to OpenStreetMap's search.</li>
+    <li>Maps are shown by <strong>Google Maps</strong> or <strong>OpenStreetMap</strong>, which receive the area of the
+      map being shown.</li>
+  </ul>
+
+  <h2>Messages in a ride</h2>
+  <p>Votes, quick messages, hazards, regroup points, destinations, battery levels and similar ride messages go to
+    the riders in the same ride through LiveKit and are not stored after the ride.</p>
+
+  <h2>On your phone</h2>
+  <p>Settings, emergency information, ride plans and ride history are stored on your phone. Uninstalling the app (or
+    clearing the browser's data on iPhone) deletes them.</p>
+
+  <h2>Services used</h2>
+  <ul>
+    <li><a href="https://livekit.io/legal/privacy-policy">LiveKit</a> (voice and ride messages)</li>
+    <li><a href="https://policies.google.com/privacy">Google Maps Platform</a> (maps and places)</li>
+    <li><a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy">OpenStreetMap</a> (maps, search, places)</li>
+    <li><a href="https://open-meteo.com/en/terms">Open-Meteo</a> (weather, only with Rain alerts on)</li>
+    <li>GitHub Pages hosts the web pages.</li>
+  </ul>
+
+  <h2>Children</h2>
+  <p>RideComm is meant for adult riders and isn't directed at children.</p>
+
+  <h2>Contact</h2>
+  <p>Questions or requests: open an issue at
+    <a href="https://github.com/saquelain/intercomm-app/issues">github.com/saquelain/intercomm-app</a>.</p>
+</main>
+</body>
+</html>

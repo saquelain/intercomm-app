@@ -1,5 +1,6 @@
 package com.ridecomm.app.voice
 
+import com.ridecomm.app.nearby.LowFuel
 import android.content.Context
 import android.content.Intent
 import android.media.AudioFormat
@@ -282,6 +283,7 @@ object VoiceCommands {
                 }
             }
             is VoiceCommand.Quick -> VoteManager.sendQuick(command.message)
+            is VoiceCommand.LowFuel -> if (Prefs.finder(appContext)) LowFuel.start() else say("Turn on Fuel and food finder in Settings")
             is VoiceCommand.Mute -> {
                 if (RideManager.state.value.micMuted != command.muted) RideManager.toggleMute()
                 say(if (command.muted) "Mic off" else "Mic on")

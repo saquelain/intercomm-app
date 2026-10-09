@@ -20,6 +20,8 @@ sealed interface VoiceCommand {
     data object WhereIsEveryone : VoiceCommand
     data object RegroupHere : VoiceCommand
     data class Hazard(val kind: HazardKind) : VoiceCommand
+    /** "Low fuel": guide me to the next petrol pump ahead. */
+    data object LowFuel : VoiceCommand
     /** Said "RideComm" but nothing we know after it. */
     data object Unknown : VoiceCommand
 }
@@ -38,7 +40,7 @@ object CommandParser {
 
     /** Words the recogniser is nudged towards. */
     val BIASING = listOf(
-        "RideComm", "break", "fuel", "food", "yes", "no", "slow down", "wait for me", "mute", "unmute",
+        "RideComm", "break", "fuel", "low fuel", "food", "yes", "no", "slow down", "wait for me", "mute", "unmute",
         "next song", "music off", "music on", "SOS", "cancel", "who's here", "battery", "speed", "how far", "where is everyone", "regroup here",
         "pothole", "speed breaker", "slippery", "police", "accident", "animal",
     )
@@ -61,6 +63,8 @@ object CommandParser {
         listOf("music on", "play music", "start music", "resume music") to VoiceCommand.Music(on = true),
         listOf("unmute", "un mute", "mic on") to VoiceCommand.Mute(muted = false),
         listOf("mute", "mic off") to VoiceCommand.Mute(muted = true),
+        // Before the Fuel vote: "low fuel" is about my tank, not a stop for everyone.
+        listOf("low fuel", "low petrol", "fuel low", "petrol low", "reserve", "need petrol", "need fuel", "fuel is low", "petrol is low") to VoiceCommand.LowFuel,
         listOf("fuel", "petrol", "gas", "diesel") to VoiceCommand.StartVote(VoteKind.FUEL),
         listOf("food", "lunch", "dinner", "breakfast", "eat", "hungry") to VoiceCommand.StartVote(VoteKind.FOOD),
         listOf("break", "tea", "chai", "coffee", "rest", "stop") to VoiceCommand.StartVote(VoteKind.BREAK),

@@ -166,9 +166,23 @@ The owner asked where data would live: **only on each phone** (their choice over
   (`SosManager.broadcast`) go only to riders unless "Family can watch" is on. Web: `docs/watch/index.html`.
 - `SmallScreenTest` covers the new screens too (320 dp, text at 130%).
 
+## Road ahead, rain alerts, Play Store (Oct 2026)
+
+- `nearby/AheadLogic.kt` (pure: "ahead" cone 40°, ranking along + 2 × across, left/right, parsers),
+  `nearby/PoiSearch.kt` (Google Places (New) REST with the Android key's package/cert headers, falls back to
+  Overpass on 3 servers; a 400–403 from Google switches to OSM until restart), `nearby/LowFuel.kt`
+  (`TravelDirection`, low fuel guide, `rc-fuel` message), `ui/RoadUi.kt`. Voice: "RideComm, low fuel".
+  Google Places needs the owner to enable **Places API (New)** and add it to both keys' API restrictions;
+  until then OSM is used (5,000 free searches a month on Google).
+- `weather/RainWatch.kt` (`RainLogic` pure + manager polling Open-Meteo every 15 min).
+- Play Store: `PLAY_STORE.md` (owner's steps, listing text, data safety answers), `docs/privacy/`,
+  `design/play/` (store pictures from `StoreShotTest`, run with `STORE_SHOTS=1`), build type `play`
+  signed with the upload key from secrets, CI artifact `RideComm-play-N.aab`. targetSdk is 36; Robolectric
+  runs tests on SDK 35 (`app/src/test/resources/robolectric.properties`) because SDK 36 needs JDK changes.
+
 ## Ideas not built yet (from the last "what next" list)
 
-- **Fuel range reminder**: set the bike's range; warn at 80% and offer a Fuel vote.
+- **Fuel range reminder**: set the bike's range; warn at 80% and offer a Fuel vote (Low fuel exists).
 - **Rider chat log**: scrollable history of the ride's messages, votes and alerts.
 - **Private ride server**: everything is ready (app switch, web settings, keys in invite links, CORS); the
   owner still has to add the Cloudflare/LiveKit secrets, run "Deploy ride server", put the address in

@@ -1,5 +1,6 @@
 package com.ridecomm.app.ui
 
+import com.ridecomm.app.nearby.LowFuel
 import kotlin.math.roundToInt
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Slider
@@ -564,6 +565,8 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var familyWatch by remember { mutableStateOf(Prefs.familyWatch(context)) }
     var rideHistory by remember { mutableStateOf(Prefs.rideHistory(context)) }
     var planner by remember { mutableStateOf(Prefs.planner(context)) }
+    var finder by remember { mutableStateOf(Prefs.finder(context)) }
+    var rainAlerts by remember { mutableStateOf(Prefs.rainAlerts(context)) }
     val googleMaps = remember { GoogleMapSetup.available(context) }
     // Android 13+: the lock screen note is a notification, which needs permission.
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -772,6 +775,18 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             { it.label },
         ) { breakEvery = it }
         SettingSwitch(
+            "Fuel & food finder",
+            "Find petrol, food or a mechanic on the road ahead, and tap Low fuel (or say \"RideComm, low fuel\") to be " +
+                "warned at the next petrol pump ahead. Searches send your location to Google Maps or OpenStreetMap only when you use them.",
+            finder,
+        ) { finder = it }
+        SettingSwitch(
+            "Rain alerts",
+            "Hear when rain is expected where you are or on the road ahead. Every 15 minutes in a ride your rough " +
+                "location (about 1 km) goes to the free Open-Meteo weather service. Off unless you switch it on.",
+            rainAlerts,
+        ) { rainAlerts = it }
+        SettingSwitch(
             "Ride history",
             "Keeps a summary of each ride on this phone: route, distance, time, speeds and stops. " +
                 "Nothing is shared unless you share it.",
@@ -813,6 +828,9 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setFamilyWatch(context, familyWatch)
                 Prefs.setRideHistory(context, rideHistory)
                 Prefs.setPlanner(context, planner)
+                Prefs.setFinder(context, finder)
+                if (!finder) LowFuel.stop(filled = false)
+                Prefs.setRainAlerts(context, rainAlerts)
                 RidePlans.applySettings(context)
                 Prefs.setKeepOtherMusic(context, keepMusic)
                 if (riderName.isNotBlank()) Prefs.setRiderName(context, riderName.trim())

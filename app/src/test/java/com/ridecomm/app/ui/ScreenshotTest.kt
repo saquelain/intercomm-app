@@ -796,4 +796,32 @@ open class ScreenshotTest {
         java.io.File(dir).mkdirs()
         java.io.File("$dir/78_share_picture.png").outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     }
+
+    // ---- On the road ahead ----
+
+    private val pumps = listOf(
+        com.ridecomm.app.nearby.AheadPoi(com.ridecomm.app.nearby.Poi("a", "Indian Oil, Hinjewadi Phase 2", 18.6, 73.7), 6200.0, 8.0, null),
+        com.ridecomm.app.nearby.AheadPoi(com.ridecomm.app.nearby.Poi("b", "HP Petrol Pump", 18.61, 73.71), 1400.0, -25.0, "left"),
+    )
+
+    @Composable
+    private fun RoadCards() {
+        androidx.compose.foundation.layout.Column(Modifier.padding(20.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+            RoadAheadCard(com.ridecomm.app.nearby.LowFuelState(), {}, {}, {})
+            RoadAheadCard(com.ridecomm.app.nearby.LowFuelState(active = true, target = pumps[1], haveDirection = true), {}, {}, {})
+            RoadAheadCard(com.ridecomm.app.nearby.LowFuelState(active = true, searching = true, note = "No petrol pump found in the next 20 km. Still looking."), {}, {}, {})
+        }
+    }
+
+    @Test
+    fun roadAhead() = shot("80_road_ahead") { RoadCards() }
+
+    @Test
+    fun roadAheadGlass() = glassShot("81_road_ahead_glass", GlassSceneStyle.RIDE) { RoadCards() }
+
+    @Test
+    fun roadAheadSoft() = softShot("82_road_ahead_soft") { RoadCards() }
+
+    @Test
+    fun finderResults() = softShot("83_finder_soft") { FinderDialog(com.ridecomm.app.nearby.PoiKind.FUEL, groupMapOn = true, onClose = {}, preset = pumps) }
 }

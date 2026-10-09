@@ -190,6 +190,15 @@ between phones).
   Share, Calendar, Delete) with a reminder an hour before and at the start (app notifications; on iPhone through
   the calendar). In the ride a "Today's plan" card gives directions to each place and can make the end the
   group's destination.
+- **Fuel & food finder** (Settings, on): an "On the road ahead" card finds petrol, food or a mechanic in the
+  direction you're riding (never one behind you; "on your left/right"), with Navigate and "Stop here" (a regroup
+  point for everyone). **Low fuel** (button, or "RideComm, low fuel"): the group hears "Asha is low on fuel"; the app
+  picks the next pump ahead, says how far, and warns at 2 km and 500 m. A pump you pass is skipped; it ends when
+  you stop at a pump or tap "Got fuel". Places from Google Maps (Places API, when the key allows it) or
+  OpenStreetMap; distances are straight-line.
+- **Rain alerts** (Settings, off): every 15 minutes in a ride, the forecast for here and 25 km ahead (or the
+  destination) from Open-Meteo, with a rough location: "Rain expected here in about 30 minutes", and a pill on
+  the ride screen.
 - **Family can watch** (Settings, off): Share → "Family link" gives family at home a page
   (`…/watch/?code=ABCDEF`) with a live map of the riders, the regroup point, destination and any SOS (with an
   alarm). Each rider decides: with the switch off, their position and SOS never reach the family page. Family

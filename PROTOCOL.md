@@ -162,3 +162,33 @@ web page `…/ride/?code=ABCDEF#p=…&k=…`. Each phone keeps its upcoming plan
 Kept only on each phone (app: SQLite `rides.db`; web: localStorage `rc-web-rides`, newest 30). Routes are
 stored as Google encoded polylines (5 decimals). Nothing is sent to anyone unless the rider shares the
 summary picture.
+
+## `rc-fuel`: low fuel (only with Fuel & food finder on)
+
+| `t` | Fields | Meaning |
+|---|---|---|
+| `low` | `name`, `on` | I'm low on fuel (`on: true`; riders hear "Asha is low on fuel") or I've filled up (`on: false`) |
+
+Each phone finds petrol pumps itself; nothing about places is sent to the group.
+
+## Places ahead and rain (no messages; same rules in app and web)
+
+- **Search**: Google Places (New) Nearby Search when the Maps key allows it (`gas_station`;
+  `restaurant`+`cafe`; `car_repair`), otherwise OpenStreetMap Overpass (`amenity=fuel`;
+  `amenity~restaurant|fast_food|cafe|food_court`; `shop~car_repair|motorcycle|motorcycle_repair|tyres`), tried on
+  overpass-api.de, overpass.kumi.systems, maps.mail.ru in turn. Radius 20 km (food 10 km). Google: one search
+  around me (3 km) plus one centred 9 km ahead (9 km), ranked by distance, 20 results each.
+- **Direction of travel**: GPS bearing while moving ≥ 10 km/h (kept 5 min after stopping), else the bearing to
+  the shared destination, else none ("nearest", any direction).
+- **Ahead**: a place is ahead when it's within 40° of the direction of travel, or within 400 m and 90°.
+  Ranked by `along + 2 × across` (metres along the direction, plus twice the sideways distance).
+  "On your left/right" when it's 30 m or more to the side and under 2 km away.
+- **Low fuel**: picks the best pump ahead; says it ("Nearest petrol pump ahead: Indian Oil, 6 kilometres"),
+  then "Petrol pump in 2 kilometres" and "Petrol pump in 500 metres, on your left" (with a buzz). A pump
+  behind you (more than 100° off and over 150 m away) is skipped for the next. Searches again after 8 km or
+  when nothing is ahead (at most once a minute). Ends by itself after 90 s stopped within 120 m of a pump,
+  or with "Got fuel".
+- **Rain**: every 15 minutes while riding, Open-Meteo for here and for 25 km ahead (or the destination if
+  closer), coordinates rounded to 0.01°: `minutely_15=precipitation&hourly=precipitation_probability`. Rain is
+  expected when a 15-minute step in the next 2 hours has ≥ 0.3 mm and that hour's probability is ≥ 40 %.
+  Not said if it's already raining here; the same alert isn't repeated within 45 minutes.

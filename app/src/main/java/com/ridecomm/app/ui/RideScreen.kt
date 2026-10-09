@@ -1,5 +1,8 @@
 package com.ridecomm.app.ui
 
+import com.ridecomm.app.weather.RainWatch
+import com.ridecomm.app.nearby.PoiKind
+import com.ridecomm.app.nearby.LowFuel
 import com.ridecomm.app.plan.RidePlans
 import com.ridecomm.app.ui.map.GroupMapCard
 import com.ridecomm.app.ui.map.GroupMapScreen
@@ -184,6 +187,7 @@ fun RideContent(
     var showSettings by remember { mutableStateOf(false) }
     var showMap by remember { mutableStateOf(false) }
     var pickDestination by remember { mutableStateOf(false) }
+    var findKind by remember { mutableStateOf<PoiKind?>(null) }
 
     // An invite tapped while already riding: same ride → nothing to do; another ride → say how.
     val invite by InviteLink.pending.collectAsStateWithLifecycle()
@@ -242,6 +246,11 @@ fun RideContent(
                     PlanRideCard(plan, onSetDestination = if (destination.enabled) { p -> RideDestination.set(p.lat, p.lon, p.name) } else null)
                 }
                 if (group.enabled) GroupMapCard(group, state.riders.size) { showMap = true }
+                // Petrol, food or a mechanic on the road ahead, and "Low fuel".
+                if (Prefs.finder(context)) {
+                    val lowFuel by LowFuel.state.collectAsStateWithLifecycle()
+                    RoadAheadCard(lowFuel, onFind = { findKind = it }, onLowFuel = LowFuel::start, onGotFuel = { LowFuel.stop() })
+                }
                 if (hazards.enabled) {
                     HazardCard(hazards.hazards, System.currentTimeMillis(), onMark = { pickHazard = true }, onRemove = Hazards::remove)
                 }
@@ -316,6 +325,8 @@ fun RideContent(
     }
 
     if (showSettings) SettingsDialog(onClose = { showSettings = false }, inRide = true)
+
+    findKind?.let { FinderDialog(it, groupMapOn = group.enabled, onClose = { findKind = null }) }
 
     if (chooseShare) {
         ShareChoiceDialog(
@@ -406,6 +417,11 @@ private fun StatusLine(state: RideState, dataUsed: Long?) {
                     "Connected · $count ${if (count == 1) "rider" else "riders"}$data" + if (saver) " · Data saver" else "",
                     if (saver) Palette.Amber else Palette.Go,
                 )
+                val rain by RainWatch.state.collectAsStateWithLifecycle()
+                when {
+                    rain.hereInMin != null -> StatusPill("Rain in ~${rain.hereInMin} min", Palette.Cyan)
+                    rain.aheadInMin != null -> StatusPill("Rain ahead", Palette.Cyan)
+                }
                 if (state.watchers.isNotEmpty()) {
                     // Family following the map from home; they only see me if I allowed it.
                     val seen = Prefs.familyWatch(LocalContext.current)

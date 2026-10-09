@@ -81,4 +81,11 @@ class CommandParserTest {
         assertEquals(VoiceCommand.Unknown, p("RideComm"))
         assertEquals(VoiceCommand.Unknown, p("RideComm what's the weather"))
     }
+
+    @Test
+    fun lowFuelIsntAFuelVote() {
+        assertEquals(VoiceCommand.LowFuel, p("RideComm low fuel"))
+        assertEquals(VoiceCommand.LowFuel, p("ride comm petrol is low"))
+        assertEquals(VoiceCommand.StartVote(com.ridecomm.app.vote.VoteKind.FUEL), p("RideComm fuel"))
+    }
 }

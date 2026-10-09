@@ -23,6 +23,10 @@ val mapsApiKey: String = System.getenv("GOOGLE_MAPS_API_KEY")
     ?: (project.findProperty("googleMapsApiKey") as String?)
     ?: ""
 
+// Play Store upload key (kept secret, never in the repo): CI writes it from the UPLOAD_KEYSTORE_BASE64
+// secret to a file and passes the path and passwords here. Without it, no Play bundle is signed.
+val uploadKeystore: String = System.getenv("UPLOAD_KEYSTORE_FILE") ?: ""
+
 // CI sets BUILD_NUMBER so every APK installs as an update over the previous one.
 val buildNumber: Int = System.getenv("BUILD_NUMBER")?.toIntOrNull() ?: 1
 
@@ -33,7 +37,8 @@ android {
     defaultConfig {
         applicationId = "com.ridecomm.app"
         minSdk = 26
-        targetSdk = 35
+        // Google Play asks new apps and updates to target Android 16 (API 36) from 31 August 2026.
+        targetSdk = 36
         versionCode = buildNumber
         versionName = "0.1.$buildNumber"
         buildConfigField("String", "DEFAULT_TOKEN_SERVER_ID", "\"$tokenServerId\"")
@@ -51,6 +56,14 @@ android {
             keyAlias = "ridecomm"
             keyPassword = "ridecomm"
         }
+        if (uploadKeystore.isNotBlank()) {
+            create("upload") {
+                storeFile = file(uploadKeystore)
+                storePassword = System.getenv("UPLOAD_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("UPLOAD_KEY_ALIAS")
+                keyPassword = System.getenv("UPLOAD_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -64,6 +77,14 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("ridecomm")
         }
+        // For the Play Store: the release app signed with the private upload key (Google re-signs it
+        // with the Play key). Built as an .aab with bundlePlay. Phones with the sideloaded APK must
+        // uninstall it before installing from Play (different signature).
+        create("play") {
+            initWith(getByName("release"))
+            matchingFallbacks += "release"
+            signingConfig = signingConfigs.findByName("upload")
+        }
         // Same app without R8, published as a fallback in case shrinking breaks something on a phone.
         create("unshrunk") {
             initWith(getByName("release"))
@@ -76,7 +97,8 @@ android {
     // One APK per CPU type, each with only its own WebRTC native libraries. Real phones only.
     splits {
         abi {
-            isEnable = true
+            // Play bundles split by CPU type themselves (and can't be built with splits on).
+            isEnable = gradle.startParameter.taskNames.none { it.contains("bundle", ignoreCase = true) }
             reset()
             include("arm64-v8a", "armeabi-v7a")
             isUniversalApk = false

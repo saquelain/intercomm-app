@@ -62,7 +62,8 @@ Links the owner uses:
   `https://maven-central.storage-download.googleapis.com/maven2/` (recreate it in a new container; the
   content is in HANDOFF.md).
 - Compile: `./gradlew compileDebugKotlin`
-- Unit tests (about 170, all must pass): `./gradlew testDebugUnitTest`
+- Unit tests (about 320, all must pass): `./gradlew testDebugUnitTest` (Robolectric runs them on SDK 35,
+  see `app/src/test/resources/robolectric.properties`; the app targets 36)
 - Same as CI: `./gradlew testReleaseUnitTest assembleRelease`
 - Lint: `./gradlew lintDebug`
 - Screenshots of screens (Robolectric + Roborazzi, real OSM tiles from `app/src/test/resources/maptiles`):
@@ -97,7 +98,8 @@ Links the owner uses:
   `whisper/` (talk to one rider), `home/` (home safe), `group/RideDestination` (shared destination),
   `trip/BreakReminder`, `sos/LockScreenInfo`, `trip/RideHistory` + `RideLog` (history on the phone),
   `plan/` (ride planner), `ride/Riders` (who is a rider: family watchers `watch-…` and check-ins `…~home`
-  are not; use `room.riderIds()`, never raw `remoteParticipants`).
+  are not; use `room.riderIds()`, never raw `remoteParticipants`), `nearby/` (fuel & food ahead, low fuel),
+  `weather/` (rain alerts). Play Store: `PLAY_STORE.md`, build type `play`, `design/play/`.
 - Pattern: pure logic in a plain-Kotlin class/object (unit-tested, e.g. `HazardLogic`, `RoleWatch`,
   `SunTimes`, `TalkButton`), and a manager object with `attach(room)` / `detach()` / `release()` /
   `requestSync()` / `onRiderJoined()` that sends JSON over a LiveKit text-stream topic.
