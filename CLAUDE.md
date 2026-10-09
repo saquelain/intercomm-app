@@ -12,10 +12,11 @@ the owner, who rides with it on real phones and reports back.
   as the fallback.
   minSdk 26, target 35. Package `com.ridecomm.app`.
 - **iPhone / browser version** (`docs/ride/index.html`): one self-contained page (HTML + CSS + vanilla JS,
-  LiveKit JS 2.22.3 from jsdelivr, Leaflet 1.9.4 from cdnjs), served by GitHub Pages. iPhones can't
+  LiveKit JS 2.22.3 from jsdelivr, Google Maps JS with Leaflet 1.9.4 as the fallback), served by GitHub Pages. iPhones can't
   install the APK, so this is how iPhone riders join. It must stay compatible with the app.
 - **Invite page** (`docs/join/index.html`): opens the app on Android, the web ride on iPhone, shows a ride plan.
 - **Family watch page** (`docs/watch/index.html`): family at home follow the ride on a map (no audio).
+- **Privacy policy** (`docs/privacy/index.html`) for the Play Store; Play steps in `PLAY_STORE.md`.
 - **Private ride server** (`server/token-worker/`, Cloudflare Worker): written but not deployed. Rides
   currently use the LiveKit Cloud *sandbox* token server `ridecomm-xnnn94` (anyone with the ID can join).
 
@@ -46,15 +47,22 @@ Links the owner uses:
 
 ## Git and CI
 
-- All work so far is on the branch `claude/laughing-fermat-oevz8c` (the repo's only branch; GitHub Pages
-  serves its `docs/` folder). A new session may be given a different branch: start it from this one, and
-  remember Pages only updates from `claude/laughing-fermat-oevz8c`, so web changes on another branch must
-  be merged there (or the Pages source changed) before iPhone riders see them.
+- Development is on `ccr-3351f022-4fqzov` (the newest work; see HANDOFF.md "Where things stand").
+  GitHub Pages serves `docs/` from `claude/laughing-fermat-oevz8c`, so iPhone riders, invite, family and
+  privacy pages only change when that branch is fast-forwarded to the work branch
+  (`git push origin HEAD:claude/laughing-fermat-oevz8c`), and **only when the owner says "publish the
+  web"**. A new session may be given a different branch: start it from `ccr-3351f022-4fqzov`.
+- Pushes also build the APK; pushing the Pages branch builds one too (same code).
 - Never open a pull request unless asked.
 - Commit messages: a short title, a plain-language body, then the attribution lines the session asks for.
 - Every push runs `.github/workflows/build-apk.yml`: `testReleaseUnitTest assembleRelease assembleUnshrunk`,
   then replaces the `latest` pre-release with the three APKs. A failing unit test means no new APK.
 - `LIVEKIT_TOKEN_SERVER_ID` / `RIDE_SERVER_URL` / `GOOGLE_MAPS_API_KEY` come from repo secrets; `versionCode` is the run number.
+  With the `UPLOAD_KEYSTORE_*` secrets, CI also builds the Play bundle (`bundlePlay`) as a run artifact.
+- The web page's Google key (`GMAPS_KEY` in `docs/ride/index.html` and `docs/watch/index.html`) is public by
+  design and only works on `saquelain.github.io`; tests blank it out via a route.
+- Big jobs went faster with a background helper agent doing the web side (docs/ + tools/webtest only)
+  from a written spec in PROTOCOL.md while the main session did `app/`; review and rerun its tests.
 
 ## Build, test, look (in the cloud container)
 

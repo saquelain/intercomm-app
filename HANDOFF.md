@@ -1,8 +1,33 @@
 # RideComm handoff: where we are, how to carry on
 
-Last updated 8 Oct 2026, after the "talk to one rider / destination / home safe / break / lock screen /
-locked rides" round (second chat). Read `CLAUDE.md` first (how to build, test and work with
-the owner); this file is the project's story so far and what's next.
+Last updated 9 Oct 2026, at **build #51**, end of the third chat (looks, Google Maps, small screens, ride
+history, planner, family watching, fuel & food finder, low fuel, rain alerts, Play Store groundwork).
+Read `CLAUDE.md` first (how to build, test and work with the owner); this file is the project's story
+so far and what's next.
+
+## Where things stand right now (read this first)
+
+- **Branches:** development happens on `ccr-3351f022-4fqzov` (head `3db2877`, build #51). GitHub Pages
+  serves `claude/laughing-fermat-oevz8c`, last fast-forwarded to `dc8fcc8` ("publish the web", owner's
+  OK on 9 Oct). A new chat may get yet another branch: start it from `ccr-3351f022-4fqzov`.
+- **Web not yet published:** the fuel & food finder, low fuel and rain alerts on the iPhone page
+  (commit `3db2877`). When the owner says "publish the web", fast-forward:
+  `git push origin HEAD:claude/laughing-fermat-oevz8c` (check it's a fast-forward first), then wait for
+  `https://saquelain.github.io/intercomm-app/watch/` etc. to serve the new files (about 1–2 min).
+  Never publish without the owner saying so.
+- **Waiting on the owner** (nothing to build until they do):
+  1. *Google Places for the finder:* enable **Places API (New)** in Google Cloud and tick it on both
+     keys' API restrictions. Until then the finder uses OpenStreetMap automatically.
+  2. *Private ride server:* Cloudflare account + 6 secrets, then run "Deploy ride server" and send the
+     address (steps in README "Private ride server"). Then set `RIDE_SERVER_URL` (secret) and
+     `RIDE_SERVER` in `docs/ride/index.html` (also used by the watch page), and turn off the sandbox.
+  3. *Play Store:* developer account, upload key secrets, closed test with 12 testers for 14 days
+     (all in `PLAY_STORE.md`). Claude offered to generate the upload key file and send it.
+- **Owner's last feedback:** Google Maps group map "working fine"; small-screen fixes, history, planner,
+  family, finder, rain not yet reported on from a real ride. The owner's phone uses big text: check
+  `app/screenshots/small/` for every new screen.
+- **Last "what next" offer** (not picked yet): Hindi language, replay of voice missed in a dead zone,
+  ride chat log, fuel range reminder.
 
 ## Starting a new chat (for the owner)
 
@@ -76,7 +101,14 @@ fake-LiveKit web tests but has not been confirmed on a ride yet.
 | Lock rides to my group (switch, key in invite links, worker CORS for the web page) | app + web | ready; server not deployed |
 | Ride history & summary (SQLite / localStorage, route map, share picture) | app + web | built |
 | Ride planner (plan in the invite link, Upcoming rides, reminders, calendar, Today's plan card) | app + web | built |
-| Family can watch (watch page, per-rider switch, watchers never count as riders) | app + web | built |
+| Family can watch (watch page, per-rider switch, watchers never count as riders) | app + web | built (page published) |
+| Looks: Classic / Glass / Soft (Settings → Look) on every screen | app + web | owner-tested Glass |
+| Google Maps group map (Settings → Map: Google / OpenStreetMap), dark style, marker pictures | app + web | owner-tested |
+| Small phones / large text (`FitText`, `ButtonRow`, `SmallScreenTest`, 320 px web CSS) | app + web | built (owner's screenshot fixed) |
+| Fuel & food finder ("On the road ahead": fuel / food / mechanic, never behind you, left/right, Stop here) | app + web | built; web not published |
+| Low fuel guide (button or "RideComm, low fuel"; rc-fuel; warns at 2 km / 500 m; ends at the pump) | app + web | built, needs a road test; web not published |
+| Rain alerts (Open-Meteo here + 25 km ahead, off by default) | app + web | built; web not published |
+| Play Store groundwork (targetSdk 36, `play` build + CI bundle, privacy page, store pictures, guide) | app | ready; owner's steps pending |
 
 Chronology (git log): step 1 voice call → music → floating button → votes → SOS → glass redesign →
 group tracking → Spotify ducking → crash detection, photos → invite links → private ride server →
@@ -84,9 +116,11 @@ headset button → wind gate → R8 + split APKs → rejoin → rider alerts →
 fine-tune + drag-to-hide → speed & trip → data saver, catch-up, phone calls → web version for iPhone →
 group map + regroup → web photo/map/settings → hazards, lead & sweep, PTT, volume, night, emergency info
 (app, then web) → own photo on the map → talk to one rider, shared destination, home safe, break
-reminder, lock-screen emergency info, lock rides to the group (app and web together).
+reminder, lock-screen emergency info, lock rides to the group (app and web together) → (third chat)
+Glass look, Soft look, Google Maps group map, small-screen fixes, ride history / planner / family watching,
+fuel & food finder + low fuel + rain alerts, Play Store groundwork.
 
-## Glass look (in progress)
+## Glass look
 
 The owner asked for a second look: **Settings → Look: Classic / Glass** (app and web). They design each
 screen with ChatGPT (a mock-up image + one HTML file) and send it; Claude turns it into the Glass version of
@@ -182,15 +216,16 @@ The owner asked where data would live: **only on each phone** (their choice over
 
 ## Ideas not built yet (from the last "what next" list)
 
+- **Hindi language**: app, web page and spoken alerts in Hindi (a Settings choice).
+- **Missed voice replay**: what was said while you were in a dead zone plays when you're back
+  (catch-up today only covers open votes and SOS).
 - **Fuel range reminder**: set the bike's range; warn at 80% and offer a Fuel vote (Low fuel exists).
 - **Rider chat log**: scrollable history of the ride's messages, votes and alerts.
-- **Private ride server**: everything is ready (app switch, web settings, keys in invite links, CORS); the
-  owner still has to add the Cloudflare/LiveKit secrets, run "Deploy ride server", put the address in
-  `RIDE_SERVER_URL` (APK) and `RIDE_SERVER` (web page), and switch off the LiveKit sandbox token server.
-  Important before sharing the app widely: the sandbox token server lets anyone with the ID join.
-- Smaller: a "Hazard" option on the floating button, voice commands on the web page, emergency info on
-  the lock screen, night mode for the floating overlays, Play Store release (needs a signing setup and
-  privacy policy).
+- **Private ride server**: everything is ready (app switch, web settings, keys in invite links, CORS,
+  watch page); the owner still has to deploy it (see "Where things stand"). Important before sharing the
+  app widely: the sandbox token server lets anyone with the ID join.
+- Smaller: a "Hazard" option on the floating button, voice commands on the web page, night mode for the
+  floating overlays.
 
 Ideas looked at and dropped: Bluetooth or Wi-Fi Direct voice instead of the internet (10–100 m range,
 phones can't do a mesh group call; voice is only ~10 MB an hour anyway).
@@ -202,8 +237,12 @@ phones can't do a mesh group call; voice is only ~10 MB an hour anyway).
 - The sandbox token server is open to anyone with its ID (see Private ride server above).
 - SOS by SMS opens Messages with the text ready; the rider taps Send (silent SMS needs SEND_SMS, which
   Play Protect blocks for sideloaded apps).
-- The web page only follows location for hazards after someone marks one (to avoid a location prompt
-  for everyone), and only on the phone itself.
+- The web page asks for location when joining (Ride history is on by default); if refused, everything
+  else still works without a route.
+- Places search distances are straight-line, and the public OpenStreetMap search servers are sometimes
+  busy (three are tried in turn). A pump on the far side of a divided highway can still be picked.
+- A family link to a ride locked to the group can't connect until the private ride server is deployed.
+- Robolectric runs the unit tests on SDK 35 (it can't simulate 36 on this JDK); the app targets 36.
 - Talk to one rider is enforced by the listeners' phones (they silence the talker), not by the server: fine
   for a group of friends, not a secret channel. Riders on an old app version still hear everything.
 - Nothing can be tested against real LiveKit from the cloud container; every feature is tested with unit
@@ -228,6 +267,8 @@ phones can't do a mesh group call; voice is only ~10 MB an hour anyway).
    (`commandlinetools-linux-*_latest.zip` from dl.google.com), then
    `sdkmanager "platforms;android-36" "platform-tools" "build-tools;35.0.0"` and write
    `sdk.dir=$HOME/android-sdk` to `local.properties` (gitignored).
-3. `./gradlew testDebugUnitTest` should pass (about 170 tests).
-4. Web tests: see `tools/webtest/README.md`.
-5. GitHub access goes through the GitHub MCP tools (no `gh` CLI in the container).
+3. `./gradlew testDebugUnitTest` should pass (about 385 tests).
+4. Store pictures (only when needed): `STORE_SHOTS=1 ./gradlew recordRoborazziDebug --tests '*StoreShotTest*'`.
+5. Web tests: see `tools/webtest/README.md` (7 suites: rides, features, more, gmap, plans, watch, road;
+   all print "No page errors").
+6. GitHub access goes through the GitHub MCP tools (no `gh` CLI in the container).
