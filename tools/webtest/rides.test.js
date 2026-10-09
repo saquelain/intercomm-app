@@ -9,6 +9,11 @@ fs.mkdirSync(OUT, { recursive: true });
 (async () => {
   const browser = await chromium.launch({ args: ['--proxy-server=https=' + process.env.HTTPS_PROXY] });
   const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 400, height: 860 }, deviceScaleFactor: 2 });
+  // The page's Google key only works on the real site: test the OpenStreetMap map here (gmap.test.js does Google).
+  await ctx.route(/127\.0\.0\.1:8765\/ride\/(\?|$)/, async (r) => {
+    const res = await r.fetch();
+    r.fulfill({ response: res, body: (await res.text()).replace(/const GMAPS_KEY = '[^']*';/, "const GMAPS_KEY = '';") });
+  });
   // Same browser context: both tabs share the BroadcastChannel "ride".
   await ctx.route(/livekit-client/, (r) => r.fulfill({ contentType: 'application/javascript', body: fake }));
   await ctx.route(/sandbox\/connection-details/, async (r) => {

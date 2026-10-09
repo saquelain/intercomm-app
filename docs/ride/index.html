@@ -631,8 +631,9 @@
     whisper: 'rc-whisper', dest: 'rc-dest', home: 'rc-home' };
   // The group's private ride server (Cloudflare Worker), once it's deployed. Riders can also type it in Settings.
   const RIDE_SERVER = '';
-  // Google Maps JavaScript key, restricted to this site in Google Cloud. Empty: the map is OpenStreetMap.
-  const GMAPS_KEY = '';
+  // Google Maps JavaScript key, restricted to https://saquelain.github.io/* in Google Cloud (public by design;
+  // it works nowhere else). Empty: the map is OpenStreetMap.
+  const GMAPS_KEY = 'AIzaSyBR672NmW5DM29g3s6JfyWc2IBbCEdZ7lk';
   /** A rider who already left, checking in "home safe" for a moment: not shown or announced as a rider. */
   const isCheckIn = (id) => /~home$/.test(id || '');
   const VOTE_TIMEOUT_MS = 45000, RESULT_SHOWN_MS = 6000, BYE_VALID_MS = 30000;

@@ -140,6 +140,8 @@ without a key.
   with the same `.mk` / `.pin` / `.mkhz` HTML, long press is timed by the page, and the map ends above the
   bottom panel so Google's logo shows. If Google refuses the key (`gm_authFailure`) the page switches to
   OpenStreetMap and says so. Test: `tools/webtest/gmap.test.js` (Google's real map in keyless mode).
+- Keys are in (Oct 2026): the owner added `GOOGLE_MAPS_API_KEY` (Android) to the repo secrets, and the web key
+  is in the page (checked: Google accepts it at the github.io address and refuses it elsewhere).
 - Cost: Android maps are free; the web map has a free monthly allowance (cap it with a quota in Google
   Cloud). Place search still uses OpenStreetMap (Nominatim), Navigate still opens the Google Maps app.
 

@@ -1,7 +1,8 @@
 // Run from the repo root with the docs/ folder served on :8765 (see README.md here).
 // The Group map on Google Maps: the page is served with a stand-in key, and Google's script is loaded
 // without it (Google's keyless "for development purposes only" map), so the real Google map draws.
-// Then a key Google refuses: the map falls back to OpenStreetMap by itself.
+// Then a key Google refuses: the map falls back to OpenStreetMap by itself. Last, the page's real key, with
+// the page served at its real address (the key only works there): the actual Google map, as riders see it.
 const { chromium } = require(process.env.PLAYWRIGHT || '/opt/node22/lib/node_modules/playwright');
 const fs = require('fs');
 const fake = fs.readFileSync(__dirname + '/fake-livekit.js', 'utf8');
@@ -10,14 +11,17 @@ fs.mkdirSync(OUT, { recursive: true });
 
 (async () => {
   const browser = await chromium.launch({ args: ['--proxy-server=https=' + process.env.HTTPS_PROXY] });
-  const run = async (googleKey, keyless) => {
+  const SITE = 'https://saquelain.github.io/intercomm-app/ride/';
+  const run = async (googleKey, keyless, site) => {
+    const base = site ? SITE : 'http://127.0.0.1:8765/ride/';
     const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 400, height: 860 }, deviceScaleFactor: 2 });
     const pass = (b) => JSON.stringify({ server_url: 'wss://fake', participant_token: Buffer.from(JSON.stringify({ identity: b.participant_identity, name: b.participant_name })).toString('base64') });
     await ctx.route(/livekit-client/, (r) => r.fulfill({ contentType: 'application/javascript', body: fake }));
     await ctx.route(/sandbox\/connection-details/, (r) => r.fulfill({ contentType: 'application/json', body: pass(JSON.parse(r.request().postData())) }));
-    await ctx.route(/127\.0\.0\.1:8765\/ride\/(\?|$)/, async (r) => {
-      const res = await r.fetch();
-      r.fulfill({ response: res, body: (await res.text()).replace("const GMAPS_KEY = '';", "const GMAPS_KEY = '" + googleKey + "';") });
+    await ctx.route((u) => u.href.startsWith(base) && !u.pathname.endsWith('.png'), async (r) => {
+      const res = await r.fetch({ url: 'http://127.0.0.1:8765/ride/' });
+      const html = await res.text();
+      r.fulfill({ contentType: 'text/html', body: googleKey == null ? html : html.replace(/const GMAPS_KEY = '[^']*';/, "const GMAPS_KEY = '" + googleKey + "';") });
     });
     if (keyless) {
       await ctx.route(/maps\.googleapis\.com\/maps\/api\/js\?/, (r) => r.continue({ url: r.request().url().replace(/key=[^&]*&/, '') }));
@@ -47,7 +51,7 @@ fs.mkdirSync(OUT, { recursive: true });
         localStorage.setItem('rc-web-id', i);
         localStorage.setItem('rc-web-settings', s);
       }, [id, JSON.stringify(settings)]);
-      await page.goto('http://127.0.0.1:8765/ride/?code=GMAPTS');
+      await page.goto(base + '?code=GMAPTS');
       await page.fill('#nameIn', name);
       await page.click('#joinBtn');
       await page.waitForSelector('#ride:not(.hidden)', { timeout: 10000 });
@@ -140,9 +144,25 @@ fs.mkdirSync(OUT, { recursive: true });
     await a.waitForSelector('#map .leaflet-marker-icon', { timeout: 30000 });
     await a.waitForTimeout(500);
     check('Refused key: OpenStreetMap instead', await a.evaluate(() => !document.querySelector('#map .gm-style') && !!document.querySelector('#map.leaflet-container')));
-    check('Refused key: rider told', (await a.textContent('body')).includes("didn't accept this page's key"));
+    check('Refused key: rider told', (await a.textContent('#banner')).includes("didn't accept this page's key"));
     await a.screenshot({ path: OUT + 'w53_refused_key.png' });
     check('No page errors (refused key)', errors.length === 0);
+    if (errors.length) console.log(errors.join('\n'));
+    await ctx.close();
+  }
+  // ---- The page's own key, at the real address: Google's normal map ----
+  {
+    const { ctx, a, errors } = await run(null, false, true);
+    await a.click('[data-open-map]');
+    await a.waitForSelector('#map .gm-style', { timeout: 20000 });
+    await a.waitForSelector('#map .mk.me', { timeout: 10000 });
+    await a.waitForTimeout(3500);
+    check('Real key: Google map, not refused', await a.evaluate(() => !!document.querySelector('#map .gm-style') && !document.getElementById('banner').textContent.includes("didn't accept")));
+    await a.screenshot({ path: OUT + 'w54_gmap_real.png' });
+    await a.click('#mapStyle');
+    await a.waitForTimeout(2500);
+    await a.screenshot({ path: OUT + 'w55_gmap_real_dark.png' });
+    check('No page errors (real key)', errors.length === 0);
     if (errors.length) console.log(errors.join('\n'));
     await ctx.close();
   }
