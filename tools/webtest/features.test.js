@@ -81,7 +81,8 @@ fs.mkdirSync(OUT, { recursive: true });
   await spoken(a); await spoken(b);
 
   // Hazards without the group map: A marks a pothole; B, 1 km behind, is warned as they get close.
-  await b.evaluate(() => { window.__fix = { latitude: 12.9626, longitude: 77.5946, accuracy: 8, speed: 15, heading: 0 }; });
+  // B's location is already on (Ride history records the route), so the fix arrives at once.
+  await b.evaluate(() => window.__move({ latitude: 12.9626, longitude: 77.5946, accuracy: 8, speed: 15, heading: 0 }));
   await a.click('[data-open-hazards]');
   await a.screenshot({ path: OUT + 'w13_hazard_picker.png' });
   await a.click('[data-hazard="POTHOLE"]');

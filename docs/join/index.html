@@ -40,6 +40,18 @@
   .secondary { margin-top: 12px; background: rgba(255,255,255,.1); }
   .hint { margin-top: 18px; font-size: 14px; }
   .bad .code, .bad .primary { display: none; }
+  /* A planned ride (from "#p=" in the link) */
+  .plan { text-align: left; margin: -6px 0 22px; padding: 16px 18px; border-radius: 22px; background: rgba(124,92,255,.18); border: 1px solid rgba(185,168,255,.5); }
+  .plan .title { font-size: 20px; font-weight: 800; overflow-wrap: anywhere; }
+  .plan .when { color: #fff; font-size: 17px; font-weight: 600; margin-top: 2px; }
+  .plan .by { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .stop { display: flex; gap: 12px; align-items: flex-start; margin-top: 12px; }
+  .stop .k { font-size: 12px; letter-spacing: 1.2px; color: rgba(255,255,255,.55); font-weight: 600; text-transform: uppercase; }
+  .stop a { color: var(--text); font-size: 17px; font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
+  .stop .dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 18px; flex: none; background: var(--orange); }
+  .stop .dot.s { background: #FFC93C; } .stop .dot.d { background: #34E89E; }
+  .cal { margin-top: 14px; height: 52px; font-size: 16px; background: rgba(255,255,255,.12); }
+  @media (max-width: 380px) { .card { padding: 24px 16px; } .code { font-size: 36px; letter-spacing: 5px; } }
 </style>
 </head>
 <body>
@@ -52,6 +64,7 @@
   <p id="sub">Your group is riding with RideComm.</p>
   <div class="label">RIDE CODE</div>
   <div class="code" id="code">······</div>
+  <div class="plan" id="plan" hidden></div>
   <a class="btn primary" id="open" href="#">Open in RideComm</a>
   <a class="btn secondary" id="get" href="https://github.com/saquelain/intercomm-app/releases/download/latest/RideComm.apk">Get the app (APK)</a>
   <a class="btn secondary" id="web" href="../ride/">Join in browser (iPhone)</a>
@@ -63,6 +76,27 @@
   // The group key (rides locked to the group) comes after "#k=", so it never reaches the web server.
   const hash = new URLSearchParams(location.hash.slice(1));
   const key = hash.get('k') || '';
+  // A planned ride (base64url JSON after "#p=", see PROTOCOL.md "Ride plans"): shown here and passed on.
+  const planRaw = /^[A-Za-z0-9_-]+$/.test(hash.get('p') || '') ? hash.get('p') : '';
+  const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const cut = (t, n) => String(t == null ? '' : t).trim().slice(0, n);
+  function place(p) {
+    if (!p || typeof p !== 'object' || p.lat == null || p.lon == null) return null;
+    const lat = Number(p.lat), lon = Number(p.lon);
+    return isFinite(lat) && isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? { name: cut(p.name, 60) || 'Pinned place', lat, lon } : null;
+  }
+  function readPlan(raw) {
+    try {
+      const bin = atob(raw.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((raw.length + 3) % 4));
+      const o = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
+      const at = Number(o.at), meet = place(o.meet);
+      if (!isFinite(at) || at <= 0 || !meet) return null;
+      return { title: cut(o.title, 60), at, meet, stops: (Array.isArray(o.stops) ? o.stops : []).map(place).filter(Boolean).slice(0, 5), dest: place(o.dest), by: cut(o.by, 60) };
+    } catch (e) { return null; }
+  }
+  const plan = planRaw ? readPlan(planRaw) : null;
+  /** The rest of the link after "#": the plan and the group key, passed on to the app or the web page. */
+  const pass = [plan ? 'p=' + planRaw : '', key ? 'k=' + encodeURIComponent(key) : ''].filter(Boolean).join('&');
   const raw = (params.get('code') || (location.hash.indexOf('=') < 0 ? location.hash.slice(1) : '') || '').toUpperCase();
   const code = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/.test(raw) ? raw : null;
   const apk = document.getElementById('get').href;
@@ -72,7 +106,8 @@
   } else {
     document.getElementById('code').textContent = code;
     const web = document.getElementById('web');
-    web.href = '../ride/?code=' + code + (key ? '#k=' + encodeURIComponent(key) : '');
+    web.href = '../ride/?code=' + code + (pass ? '#' + pass : '');
+    if (plan) showPlan();
     // iPhone and iPad can't install the APK: the browser version is the way in.
     if (/iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
       document.getElementById('open').style.display = 'none';
@@ -82,11 +117,49 @@
       document.getElementById('hint').textContent = 'Opens RideComm in Safari: talk, listen, votes and SOS. No app needed.';
     }
     // Android intent: opens the app if installed, otherwise falls back to the APK download.
-    const intent = 'intent://join/' + code + (key ? '?k=' + encodeURIComponent(key) : '') + '#Intent;scheme=ridecomm;package=com.ridecomm.app;' +
+    const intent = 'intent://join/' + code + (pass ? '?' + pass : '') + '#Intent;scheme=ridecomm;package=com.ridecomm.app;' +
       'S.browser_fallback_url=' + encodeURIComponent(apk) + ';end';
     const open = document.getElementById('open');
     open.href = intent;
     if (/Android/i.test(navigator.userAgent)) location.href = intent;
+  }
+
+  /** The plan under the code: name, day and time where the viewer is, meeting point, stops, destination. */
+  function showPlan() {
+    const p = plan, box = document.getElementById('plan');
+    const when = new Date(p.at).toLocaleString(undefined, { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' });
+    const maps = (pl) => 'https://www.google.com/maps/search/?api=1&query=' + pl.lat + ',' + pl.lon;
+    const row = (pl, k, cls) => '<div class="stop"><span class="dot ' + cls + '"></span><div><div class="k">' + k + '</div><a target="_blank" rel="noopener" href="' + maps(pl) + '">' + esc(pl.name) + '</a></div></div>';
+    box.innerHTML = '<div class="title">' + esc(p.title || 'Group ride') + '</div><div class="when">' + esc(when) + '</div>' + (p.by ? '<div class="by">Planned by ' + esc(p.by) + '</div>' : '') +
+      row(p.meet, 'Meet at', '') + p.stops.map((s, i) => row(s, 'Stop ' + (i + 1), 's')).join('') + (p.dest ? row(p.dest, 'Destination', 'd') : '') +
+      '<button class="btn cal" id="cal" type="button">Add to calendar</button>';
+    box.hidden = false;
+    document.getElementById('sub').textContent = (p.by || 'Your group') + ' planned a ride with RideComm.';
+    document.getElementById('cal').addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([ics(p)], { type: 'text/calendar;charset=utf-8' }));
+      a.download = 'ride-' + code + '.ics'; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    });
+  }
+  /** A calendar file: 3 hours from the start, a reminder an hour before, the stops and this invite (same as the ride page's). */
+  function ics(p) {
+    const link = 'https://saquelain.github.io/intercomm-app/join/?code=' + code + (pass ? '#' + pass : '');
+    const utc = (ms) => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const tx = (t) => String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+    const fold = (line) => {
+      const out = [];
+      while (line.length > 74) { let n = 74; if (/[\uDC00-\uDFFF]/.test(line.charAt(n))) n--; out.push(line.slice(0, n)); line = ' ' + line.slice(n); }
+      return out.concat(line).join('\r\n');
+    };
+    const title = p.title || 'RideComm ride';
+    const desc = ['Meet at ' + p.meet.name].concat(p.stops.length ? ['Stops: ' + p.stops.map((s) => s.name).join(', ')] : [],
+      p.dest ? ['Destination: ' + p.dest.name] : [], ['Ride code: ' + code, 'Join: ' + link]).join('\n');
+    return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//RideComm//Ride planner//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+      'BEGIN:VEVENT', 'UID:ride-' + code + '-' + p.at + '@ridecomm', 'DTSTAMP:' + utc(Date.now()), 'DTSTART:' + utc(p.at), 'DTEND:' + utc(p.at + 3 * 3600000),
+      'SUMMARY:' + tx(title), 'LOCATION:' + tx(p.meet.name), 'GEO:' + p.meet.lat.toFixed(6) + ';' + p.meet.lon.toFixed(6), 'DESCRIPTION:' + tx(desc), 'URL:' + link,
+      'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + tx(title + ' starts in an hour'), 'TRIGGER:-PT60M', 'END:VALARM',
+      'END:VEVENT', 'END:VCALENDAR'].map(fold).join('\r\n') + '\r\n';
   }
 </script>
 </body>

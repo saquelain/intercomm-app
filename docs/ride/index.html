@@ -334,6 +334,21 @@
   html.look-glass .banner { background: linear-gradient(135deg, #463fa6f2, #622b86f2); border-color: #ffffff8c; }
   /* Map */
   html.look-glass .mapbar, html.look-glass .mappanel .box, html.look-glass .chip { background: #302873e8; border-color: #ffffff69; }
+  /* Glass: plans, ride history, family watching */
+  html.look-glass #plansBox .card, html.look-glass #ridesBox .card, html.look-glass .rv-body .card {
+    border: 1.4px solid #ffffff7b; border-radius: 30px; background: linear-gradient(125deg, #ffffff3e, #ffffff12 55%, #ffffff22);
+    box-shadow: inset 0 1px 2px #ffffff70, 0 13px 40px #130e5d3d; backdrop-filter: blur(24px) saturate(135%); -webkit-backdrop-filter: blur(24px) saturate(135%); }
+  html.look-glass #plansBox .card.plan, html.look-glass #ride .card.plan { border-color: #c9bbffcc; background: linear-gradient(125deg, #8c6cff55, #ffffff12 55%, #7c5cff2a); }
+  html.look-glass .choice, html.look-glass .planitem + .planitem, html.look-glass .prow + .prow { border-color: #ffffff40; }
+  html.look-glass .choice { background: #ffffff1c; border-color: #ffffff60; }
+  html.look-glass .stat { border-color: #ffffff55; background: linear-gradient(145deg, #ffffff30, #ffffff0a); box-shadow: inset 0 1px 2px #ffffff40; }
+  html.look-glass .rideview { background: radial-gradient(ellipse at 0 60%, #454bfa 0, transparent 44%), radial-gradient(ellipse at 110% 90%, #b72ab9 0, transparent 45%),
+    linear-gradient(145deg, #192b8e, #251253 62%, #080d4b); }
+  html.look-glass .pill.fam { border-color: #9ff0ffaa; background: linear-gradient(135deg, #22d3ee40, #ffffff0c); }
+  html.look-glass .linkbtn { color: #ffd27a; }
+  html.look-glass .ride-row .ic { background: linear-gradient(135deg, #ff7ac3aa, #ff4d8daa); color: #fff; }
+  html.look-glass #planSetDest { border-color: #b8ffe4; background: linear-gradient(105deg, #17f4bcdd, #0cb5c3dd); color: #03362d; }
+  html.look-glass .rsub.plan-when, html.look-glass .prow .dd { color: #d0c7e8; }
 
 
   /* ---- Soft look (Settings → Look → Soft): light neumorphism, from the owner's screenshot and NeuKit ---- */
@@ -419,6 +434,21 @@
   /* Map */
   html.look-neu .mapbar, html.look-neu .mappanel .box, html.look-neu .chip { background: rgba(238,240,248,.95); border: 0; color: var(--text); box-shadow: var(--neu-out-sm); }
   html.look-neu .attrib { background: rgba(238,240,248,.9); color: var(--muted); }
+  /* Soft: plans, ride history, family watching */
+  html.look-neu .card.plan { background: linear-gradient(135deg, #f7f4ff, #e9e3fb); }
+  html.look-neu .choice { background: var(--neu-surface); border: 0; color: var(--text); box-shadow: var(--neu-out-sm); }
+  html.look-neu .choice .d, html.look-neu .prow .dd { color: var(--muted); }
+  html.look-neu .planitem + .planitem, html.look-neu .prow + .prow { border-top-color: #dcdfec; }
+  html.look-neu .ic.violet { background: #e6defd; color: #6d4aff; } html.look-neu .ic.cyan { background: #dcf1f7; color: #0b8db0; }
+  html.look-neu .ride-row .ic { background: #fde0ea; color: #d6336c; }
+  html.look-neu .pdot { background: #fde8d6; color: #e5670c; } html.look-neu .pdot.stop { background: #f8ecd0; color: #b7791f; } html.look-neu .pdot.dest { background: #d9f3e9; color: #0e9f73; }
+  html.look-neu .stat { background: var(--neu-surface); border: 0; box-shadow: var(--neu-out-sm); }
+  html.look-neu .rideview { background: var(--neu-page); }
+  html.look-neu .rv-map, html.look-neu #rideMap { background: #e6e9f4; }
+  html.look-neu .pill.fam { background: var(--neu-surface); border: 0; }
+  html.look-neu .pill.fam svg { color: #0b8db0; }
+  html.look-neu input[type=datetime-local] { color-scheme: light; }
+  html.look-neu .linkbtn { color: #2f6bff; }
 
   /* Talk to one rider (violet, never green like talking to everyone) */
   .wbar { position: fixed; left: 16px; right: 16px; z-index: 6; bottom: calc(150px + env(safe-area-inset-bottom)); max-width: 488px; margin: 0 auto;
@@ -446,6 +476,55 @@
   .place .n { font-weight: 600; font-size: 17px; } .place .dd { color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pin.dest .head, .pin.dest .stem, .pin.dest .tip { background: var(--go); }
   .pin.dest .head { color: #042A1B; }
+
+  /* Family watching, share choices */
+  .pill.fam { display: flex; width: fit-content; max-width: 100%; margin-top: 8px; color: var(--text); border-color: rgba(34,211,238,.45); background: rgba(34,211,238,.1); }
+  .pill.fam svg { width: 20px; height: 20px; color: var(--cyan); }
+  .pill.fam .fsub { color: var(--muted); }
+  .choice { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 14px 16px; margin-top: 10px; border-radius: 20px;
+    border: 1px solid var(--rim); background: rgba(255,255,255,.06); }
+  .choice .t { font-weight: 600; font-size: 18px; } .choice .d { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .choice .ic { background: rgba(255,138,31,.25); color: var(--orange); }
+  .choice.fam .ic { background: rgba(34,211,238,.2); color: var(--cyan); }
+
+  /* Ride planner: upcoming rides, the plan sheet, today's plan */
+  .card.plan { border-color: rgba(124,92,255,.6); background: linear-gradient(135deg, rgba(124,92,255,.2), rgba(124,92,255,.05)); }
+  .planitem + .planitem { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.1); }
+  .planitem .grid2 { margin-top: 10px; }
+  .planitem .btn, .btn.small { min-height: 48px; font-size: 16px; }
+  .ic.violet { background: rgba(124,92,255,.3); color: #B9A8FF; }
+  .ic.cyan { background: rgba(34,211,238,.2); color: var(--cyan); }
+  .prow { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+  .prow + .prow { border-top: 1px solid rgba(255,255,255,.08); }
+  .prow .n { font-weight: 600; font-size: 17px; overflow-wrap: anywhere; } .prow .dd { color: var(--muted); font-size: 13px; }
+  .pdot { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; flex: none; background: rgba(255,138,31,.25); color: var(--orange); }
+  .pdot svg { width: 20px; height: 20px; }
+  .pdot.stop { background: rgba(255,201,60,.22); color: var(--amber); } .pdot.dest { background: rgba(52,232,158,.22); color: var(--go); }
+  .btn.nav { width: auto; flex: none; min-height: 42px; padding: 0 14px; font-size: 15px; gap: 6px; }
+  .btn.nav svg { width: 18px; height: 18px; }
+  input[type=datetime-local] { font-size: 18px; color-scheme: dark; }
+  .linkbtn { background: none; border: 0; padding: 6px 0; color: var(--orange); font-weight: 600; font-size: 15px; }
+
+  /* Ride history: the list, one ride's summary */
+  .ride-row .ic { background: rgba(255,61,129,.22); color: var(--pink); width: 40px; height: 40px; }
+  .ride-row .ic svg { width: 22px; height: 22px; }
+  .rideview { position: fixed; inset: 0; z-index: 36; overflow-y: auto; background: linear-gradient(var(--night), var(--deep)); }
+  .rv-map { position: relative; height: 46vh; min-height: 240px; background: #10121C; }
+  #rideMap { position: absolute; inset: 0; background: #10121C; }
+  #rideMap.dark .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) saturate(.55) brightness(.85); }
+  #rideMap.light { background: #F2EFE9; }
+  .rv-map .attrib { position: absolute; right: 8px; bottom: 8px; z-index: 500; }
+  .rideview.google .rv-map .attrib { display: none; }
+  .rv-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); z-index: 400; pointer-events: none; text-align: center; padding: 0 30px; }
+  .rv-body { position: relative; max-width: 520px; margin: 0 auto; padding: 0 16px calc(24px + env(safe-area-inset-bottom)); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .stat { border-radius: 18px; padding: 12px 8px; text-align: center; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); min-width: 0; }
+  .stat .v { font-size: 22px; font-weight: 800; white-space: nowrap; } .stat .v small { font-size: 14px; font-weight: 600; color: var(--muted); }
+  .stat .l { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .rmk { width: 30px; height: 30px; border-radius: 50%; border: 3px solid #fff; display: grid; place-items: center; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
+  .rmk svg { width: 16px; height: 16px; }
+  .rmk.start { background: #0FB5A8; } .rmk.end { background: var(--pink); } .rmk.stop { background: var(--amber); color: #2A1E05; }
+
   /* Small phones (iPhone SE and narrower) and large text: nothing overlaps or spills out of its card. */
   .grow { min-width: 0; }
   .btn { min-width: 0; }
@@ -457,6 +536,13 @@
     .mapbar { gap: 6px; }
     .mapbar .iconbtn { width: 40px; height: 40px; }
     .mapbar .rname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .grid2.stack { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .btn.nav { padding: 0 10px; }
+    .btn.nav span { display: none; }
+    .choice { padding: 12px; gap: 10px; }
+    #plansBox .card { padding: 18px 14px; }
+    .planitem .ic.violet { display: none; }
   }
 </style>
 </head>
@@ -480,6 +566,8 @@
       <div class="error hidden" id="joinErr"></div>
       </div>
       <div id="checkIn"></div>
+      <div id="plansBox"></div>
+      <div id="ridesBox"></div>
       <p class="note">Use earphones or your helmet headset. Keep this page open while riding: on iPhone, locking the screen or switching apps can pause your mic. Shared music plays in the Android app only.</p>
     </div>
   </section>
@@ -495,9 +583,11 @@
       <button class="sos-btn" id="sosBtn" aria-label="SOS">SOS</button>
     </div>
     <div class="pill" id="status"><span class="dot" id="statusDot"></span><span id="statusText">Joining…</span></div>
+    <div class="pill fam hidden" id="famPill"></div>
     <div id="alerts"></div>
     <div id="breakCard"></div>
     <div id="destCard"></div>
+    <div id="planCard"></div>
     <div class="card hidden" id="mapCard"></div>
     <div id="hazCard"></div>
     <div class="card hidden" id="mySos">
@@ -606,11 +696,45 @@
   </div>
 </div>
 
+<!-- Planning a ride -->
+<div class="sheet hidden" id="planSheet"><div class="sheet-in" id="planSheetIn"></div></div>
+
+<!-- All rides in the history -->
+<div class="sheet hidden" id="ridesSheet"><div class="sheet-in" id="ridesSheetIn"></div></div>
+
+<!-- Share: invite riders, or a family link -->
+<div class="sheet hidden" id="shareSheet">
+  <div class="sheet-in">
+    <h1>Share</h1>
+    <button class="choice" id="shareRiders"><span class="ic"><svg class="i" viewBox="0 -960 960 960"><path d="M38-254q0-35 18-63.5t50-42.5q73-32 131.5-46T358-420q62 0 120 14t131 46q32 14 50.5 42.5T678-254v34q0 25-17.5 42.5T618-160H98q-25 0-42.5-17.5T38-220v-34Zm686 94q5-15 9.5-29.5T738-220v-34q0-63-29-101.5T622-420q69 8 130 22t99 34q33 19 52 47t19 63v34q0 25-17.5 42.5T862-160H724ZM358-481q-66 0-108-42t-42-108q0-66 42-108t108-42q66 0 108 42t42 108q0 66-42 108t-108 42Zm360-150q0 66-42 108t-108 42q-11 0-24.5-1.5T519-488q24-25 36.5-61.5T568-631q0-45-12.5-79.5T519-774q11-3 24.5-5t24.5-2q66 0 108 42t42 108Z"/></svg></span>
+      <span class="grow"><div class="t">Invite riders</div><div class="d">The ride code and a link to join and talk.</div></span></button>
+    <button class="choice fam" id="shareFamily"><span class="ic"><svg class="i" viewBox="0 -960 960 960"><path d="M480.12-330q70.88 0 120.38-49.62t49.5-120.5q0-70.88-49.62-120.38T479.88-670Q409-670 359.5-620.38T310-499.88q0 70.88 49.62 120.38t120.5 49.5Zm-.36-58q-46.76 0-79.26-32.74-32.5-32.73-32.5-79.5 0-46.76 32.74-79.26 32.73-32.5 79.5-32.5 46.76 0 79.26 32.74 32.5 32.73 32.5 79.5 0 46.76-32.74 79.26-32.73 32.5-79.5 32.5Zm.24 188q-135 0-245.5-76T57-470q-4-7.13-6-14.65-2-7.52-2-15.43 0-7.92 2-15.38 2-7.47 6-14.54 67-118 177.5-194T480-800q135 0 245.5 76T903-530q4 7.12 6 14.65 2 7.52 2 15.43 0 7.92-2 15.38-2 7.47-6 14.54-67 118-177.5 194T480-200Z"/></svg></span>
+      <span class="grow"><div class="t">Family link</div><div class="d">Family at home follow the ride on a live map. They can't hear the ride.</div></span></button>
+    <p class="note hidden" id="shareNote">Group map is off, so family can't see you yet. Turn it on in Settings.</p>
+    <div class="field"><button class="btn" id="shareCancel">Cancel</button></div>
+  </div>
+</div>
+
+<!-- One ride from the history -->
+<div class="rideview hidden" id="rideView">
+  <div class="rv-map">
+    <div id="rideMap" class="dark"></div>
+    <div class="rv-empty hidden" id="rideEmpty">No route was recorded on this ride (location was off).</div>
+    <div class="mapbar">
+      <button class="iconbtn" id="rideBack" aria-label="Back"><svg class="i" viewBox="0 -960 960 960"><path d="m313-440 196 196q12 12 11.5 28T508-188q-12 11-28 11.5T452-188L188-452q-6-6-8.5-13t-2.5-15q0-8 2.5-15t8.5-13l264-264q11-11 27.5-11t28.5 11q12 12 12 28.5T508-715L313-520h447q17 0 28.5 11.5T800-480q0 17-11.5 28.5T760-440H313Z"/></svg></button>
+      <div class="grow"><div class="rname" style="font-size:17px" id="rideTitle"></div><div class="rsub" style="font-size:13px" id="rideSub"></div></div>
+    </div>
+    <div class="attrib">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</div>
+  </div>
+  <div class="rv-body" id="rideBody"></div>
+</div>
+
 <!-- Where the group is heading -->
 <div class="sheet hidden" id="destDialog">
   <div class="sheet-in">
-    <h1>Where are we heading?</h1>
-    <p>Everyone hears it, sees how far it is and gets a Navigate button. Type a place, or paste coordinates or a Google Maps link.</p>
+    <h1 id="destTitle">Where are we heading?</h1>
+    <p id="destText">Everyone hears it, sees how far it is and gets a Navigate button. Type a place, or paste coordinates or a Google Maps link.</p>
+    <div class="field hidden" id="placeHereWrap"><button class="btn" id="placeHere"><svg class="i" viewBox="0 -960 960 960"><path d="M450-72v-45q-137-14-228-105T117-450H72q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32Q59.25-510 72-510h45q14-137 105-228t228-105v-45q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v45q137 14 228 105t105 228h45q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5h-45q-14 137-105 228T510-117v45q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63Q450-59.25 450-72Zm30-104q125 0 214.5-89.5T784-480q0-125-89.5-214.5T480-784q-125 0-214.5 89.5T176-480q0 125 89.5 214.5T480-176Zm0-154q-63 0-106.5-43.5T330-480q0-63 43.5-106.5T480-630q63 0 106.5 43.5T630-480q0 63-43.5 106.5T480-330Z"/></svg>Use my location</button></div>
     <div class="field"><div class="label">Place</div><input id="destQuery" maxlength="200" placeholder="e.g. Lonavala" enterkeyhint="search" autocomplete="off"></div>
     <div class="field"><button class="btn primary" id="destSearch">Search</button></div>
     <div id="destResults"></div>
@@ -648,6 +772,10 @@
   const GMAPS_KEY = 'AIzaSyBR672NmW5DM29g3s6JfyWc2IBbCEdZ7lk';
   /** A rider who already left, checking in "home safe" for a moment: not shown or announced as a rider. */
   const isCheckIn = (id) => /~home$/.test(id || '');
+  /** Family at home following the ride map (the watch page): never listed, counted or announced as riders. */
+  const isWatcher = (id) => /^watch-/.test(id || '');
+  const isRider = (id) => !isCheckIn(id) && !isWatcher(id);
+  const SITE = 'https://saquelain.github.io/intercomm-app/';
   const VOTE_TIMEOUT_MS = 45000, RESULT_SHOWN_MS = 6000, BYE_VALID_MS = 30000;
   const P = {
     mic: 'M395-435q-35-35-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35q-50 0-85-35Zm45 275v-83q-92-13-157.5-78T203-479q-2-17 9-29t28-12q17 0 28.5 11.5T284-480q14 70 69.5 115T480-320q72 0 127-45.5T676-480q4-17 15.5-28.5T720-520q17 0 28 12t9 29q-14 91-79 157t-158 79v83q0 17-11.5 28.5T480-120q-17 0-28.5-11.5T440-160Z',
@@ -677,8 +805,21 @@
     search: 'M378-329q-108.16 0-183.08-75Q120-479 120-585t75-181q75-75 181.5-75t181 75Q632-691 632-584.85 632-542 618-502q-14 40-42 75l242 240q9 8.56 9 21.78T818-143q-9 9-22.22 9-13.22 0-21.78-9L533-384q-30 26-69.96 40.5Q423.08-329 378-329Zm-1-60q81.25 0 138.13-57.5Q572-504 572-585t-56.87-138.5Q458.25-781 377-781q-82.08 0-139.54 57.5Q180-666 180-585t57.46 138.5Q294.92-389 377-389Z',
     edit: 'M160-120q-17 0-28.5-11.5T120-160v-97q0-16 6-30.5t17-25.5l505-504q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L313-143q-11 11-25.5 17t-30.5 6h-97Zm544-528 56-56-56-56-56 56 56 56Z',
     note: 'M400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-382q0-17 11.5-28.5T520-840h160q17 0 28.5 11.5T720-800v80q0 17-11.5 28.5T680-680H560v400q0 66-47 113t-113 47Z',
+    eye: 'M480.12-330q70.88 0 120.38-49.62t49.5-120.5q0-70.88-49.62-120.38T479.88-670Q409-670 359.5-620.38T310-499.88q0 70.88 49.62 120.38t120.5 49.5Zm-.36-58q-46.76 0-79.26-32.74-32.5-32.73-32.5-79.5 0-46.76 32.74-79.26 32.73-32.5 79.5-32.5 46.76 0 79.26 32.74 32.5 32.73 32.5 79.5 0 46.76-32.74 79.26-32.73 32.5-79.5 32.5Zm.24 188q-135 0-245.5-76T57-470q-4-7.13-6-14.65-2-7.52-2-15.43 0-7.92 2-15.38 2-7.47 6-14.54 67-118 177.5-194T480-800q135 0 245.5 76T903-530q4 7.12 6 14.65 2 7.52 2 15.43 0 7.92-2 15.38-2 7.47-6 14.54-67 118-177.5 194T480-200Z',
+    route: 'M355-120q-65 0-110-45.5T200-275v-349q-35-13-57.5-41.5T120-730q0-46 32.5-78t77.5-32q46 0 78 32t32 78q0 36-22.5 64.5T260-624v349q0 39 27.5 67t67.5 28q41 0 68-28t27-67v-410q0-65 45-110t110-45q65 0 110 45t45 110v349q35 13 57.5 41.5T840-230q0 45-32 77.5T730-120q-45 0-77.5-32.5T620-230q0-36 22.5-65t57.5-41v-349q0-40-27.5-67.5T605-780q-40 0-67.5 27.5T510-685v410q0 64-45 109.5T355-120Z',
+    event: 'M596.82-220Q556-220 528-248.18q-28-28.19-28-69Q500-358 528.18-386q28.19-28 69-28Q638-414 666-385.82q28 28.19 28 69Q694-276 665.82-248q-28.19 28-69 28ZM180-80q-24 0-42-18t-18-42v-620q0-24 18-42t42-18h65v-28q0-13.6 9.2-22.8 9.2-9.2 22.8-9.2 14.02 0 23.51 9.2Q310-861.6 310-848v28h340v-28q0-13.6 9.2-22.8 9.2-9.2 22.8-9.2 14.03 0 23.51 9.2Q715-861.6 715-848v28h65q24 0 42 18t18 42v620q0 24-18 42t-42 18H180Zm0-60h600v-430H180v430Z',
+    calAdd: 'M700-200h-90q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h90v-90q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v90h90q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5h-90v90q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63Q700-97.25 700-110v-90Zm-520 40q-24 0-42-18t-18-42v-540q0-24 18-42t42-18h65v-28q0-13.6 9.2-22.8 9.2-9.2 22.8-9.2 14.02 0 23.51 9.2Q310-861.6 310-848v28h260v-28q0-13.6 9.2-22.8 9.2-9.2 22.8-9.2 14.03 0 23.51 9.2Q635-861.6 635-848v28h65q24 0 42 18t18 42v269q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37v-79H180v350h290q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H180Z',
+    share: 'M686-80q-47.5 0-80.75-33.25T572-194q0-8 5-34L278-403q-16.28 17.34-37.64 27.17Q219-366 194-366q-47.5 0-80.75-33.25T80-480q0-47.5 33.25-80.75T194-594q24 0 45 9.3 21 9.29 37 25.7l301-173q-2-8-3.5-16.5T572-766q0-47.5 33.25-80.75T686-880q47.5 0 80.75 33.25T800-766q0 47.5-33.25 80.75T686-652q-23.27 0-43.64-9Q622-670 606-685L302-516q3 8 4.5 17.5t1.5 18q0 8.5-1 16t-3 15.5l303 173q16-15 36.09-23.5 20.1-8.5 43.07-8.5Q734-308 767-274.75T800-194q0 47.5-33.25 80.75T686-80Z',
+    del: 'M261-120q-24.75 0-42.37-17.63Q201-155.25 201-180v-570h-11q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h158q0-13 8.63-21.5 8.62-8.5 21.37-8.5h204q12.75 0 21.38 8.62Q612-822.75 612-810h158q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5h-11v570q0 24.75-17.62 42.37Q723.75-120 699-120H261Zm136.18-146q12.82 0 21.32-8.63 8.5-8.62 8.5-21.37v-339q0-12.75-8.68-21.38-8.67-8.62-21.5-8.62-12.82 0-21.32 8.62-8.5 8.63-8.5 21.38v339q0 12.75 8.68 21.37 8.67 8.63 21.5 8.63Zm166 0q12.82 0 21.32-8.63 8.5-8.62 8.5-21.37v-339q0-12.75-8.68-21.38-8.67-8.62-21.5-8.62-12.82 0-21.32 8.62-8.5 8.63-8.5 21.38v339q0 12.75 8.68 21.37 8.67 8.63 21.5 8.63Z',
+    myLoc: 'M450-72v-45q-137-14-228-105T117-450H72q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32Q59.25-510 72-510h45q14-137 105-228t228-105v-45q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v45q137 14 228 105t105 228h45q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5h-45q-14 137-105 228T510-117v45q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63Q450-59.25 450-72Zm30-104q125 0 214.5-89.5T784-480q0-125-89.5-214.5T480-784q-125 0-214.5 89.5T176-480q0 125 89.5 214.5T480-176Zm0-154q-63 0-106.5-43.5T330-480q0-63 43.5-106.5T480-630q63 0 106.5 43.5T630-480q0 63-43.5 106.5T480-330Z',
+    nav: 'M480-252 207-128q-9.75 5-18.37 2.5Q180-128 174-133.89q-6-5.88-8.5-14.71-2.5-8.83 2.5-18.4l285-650q3.65-9 11.3-13.5 7.66-4.5 15.68-4.5t15.69 4.5Q503.35-826 507-817l285 650q5 9.57 2.5 18.4-2.5 8.83-8.5 14.71-6 5.89-14.62 8.39-8.63 2.5-18.38-2.5L480-252Z',
+    image: 'M180-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h600q24 0 42 18t18 42v600q0 24-18 42t-42 18H180Zm86-157h429q9 0 13-8t-1-16L590-457q-5-6-12-6t-12 6L446-302l-81-111q-5-6-12-6t-12 6l-86 112q-6 8-2 16t13 8Z',
+    start: 'M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-147q106 0 179.5-73.5T733-480q0-106-73.5-179.5T480-733q-106 0-179.5 73.5T227-480q0 106 73.5 179.5T480-227Z',
+    cup: 'M442-242q-116 0-199-80t-83-195v-263q0-25 17.5-42.5T220-840h529q54 0 92.5 37t38.5 91q0 60-37 106t-94 46h-25v43q0 115-83 195t-199 80ZM220-620h444v-160H220v160Zm504 0h25q33 0 52-28.5t19-63.5q0-29-21-48.5T749-780h-25v160ZM190-120q-13 0-21.5-8.5T160-150q0-13 8.5-21.5T190-180h580q13 0 21.5 8.5T800-150q0 13-8.5 21.5T770-120H190Z',
   };
   const icon = (d) => '<svg class="i" viewBox="0 -960 960 960"><path d="' + d + '"/></svg>';
+  /** The RideComm motorbike (the logo), also drawn on the shared ride picture. */
+  const BIKE = document.querySelector('.joinhead .logo path').getAttribute('d');
   const KINDS = {
     BREAK: { label: 'Break', asking: 'wants a break', stop: 'Break', icon: P.coffee },
     FUEL: { label: 'Fuel', asking: 'wants to stop for fuel', stop: 'Fuel stop', icon: P.fuel },
@@ -708,7 +849,7 @@
 
   // ---- Settings: every extra can be switched on or off at any time, also mid-ride ----
   const DEFAULTS = { map: false, voice: true, vibrate: true, awake: true, darkMap: false, hazards: true, roles: true, talk: 'open', night: 'off', shareInfo: true,
-    whisper: true, dest: true, home: true, breakEvery: '120', look: 'classic', mapKind: 'google', locked: !!RIDE_SERVER, server: RIDE_SERVER };
+    whisper: true, dest: true, home: true, history: true, planner: true, family: false, breakEvery: '120', look: 'classic', mapKind: 'google', locked: !!RIDE_SERVER, server: RIDE_SERVER };
   const SET = Object.assign({}, DEFAULTS, (() => { try { return JSON.parse(store.get('rc-web-settings') || '{}'); } catch (e) { return {}; } })());
   const saveSettings = () => store.set('rc-web-settings', JSON.stringify(SET));
   const TOGGLES = [
@@ -721,6 +862,9 @@
     ['whisper', 'Talk to one rider', 'Hold a rider\'s name to talk only to them (lead to sweep, say). The others don\'t hear you while you hold. Private between RideComm phones, not encrypted.'],
     ['dest', 'Shared destination', 'Set where the group is heading: everyone hears it, sees how far it is, and gets one Navigate button. Search uses OpenStreetMap. Your own location isn\'t shared.'],
     ['home', 'Home safe check-in', 'At the end of the ride tap "I\'m home safe" and the riders still on the road hear it. With home saved, it happens by itself when you get there (keep this page open).'],
+    ['history', 'Ride history', 'Keeps a summary of each ride on this phone: route, distance, time, speeds and stops. Nothing is shared unless you share it.'],
+    ['planner', 'Ride planner', 'Plan a ride ahead: start time, meeting point and stops travel in the invite link, with a reminder in your calendar.'],
+    ['family', 'Family can watch', 'Family at home can follow you on a live map with a link you share (Share → Family link). Needs Group map on. They can\'t hear the ride, and you see when they\'re watching.'],
   ];
   const CHOICES = [
     ['look', 'Look', [['classic', 'Classic'], ['glass', 'Glass'], ['neu', 'Soft']], {
@@ -751,7 +895,7 @@
     if (key === 'map') {
       if (on) { startLocation(); banner('Group map on: the group can see where you are'); }
       else { if (!needLocation()) stopLocation(); closeMap(); }
-      renderMapCard(); renderRiders();
+      renderMapCard(); renderRiders(); renderStatus();
     } else if (key === 'awake') {
       if (on) keepAwake(); else { try { S.wakeLock && S.wakeLock.release(); } catch (e) {} S.wakeLock = null; }
     } else if (key === 'hazards') {
@@ -772,6 +916,11 @@
     else if (key === 'dest') { if (on) send(T.dest, { t: 'sync' }); else { D.dest = null; if (!needLocation()) stopLocation(); } renderDest(); renderMapView(); }
     else if (key === 'home') { renderHome(); renderSettings(); if (!needLocation()) stopLocation(); else startLocation(); }
     else if (key === 'breakEvery') { BW.remindedAt = null; renderBreak(); renderSettings(); }
+    else if (key === 'history') {
+      if (on) startRecording(); else { stopRecording(); if (!needLocation()) stopLocation(); }
+      renderRides(); renderSettings();
+    } else if (key === 'planner') { renderPlans(); renderPlanCard(); }
+    else if (key === 'family') { renderStatus(); if (on && SET.map) sendPosition(); }
     else if (key === 'locked') renderSettings();
   }
   function renderSettings() {
@@ -779,7 +928,8 @@
     renderPhotoPreview();
     $('toggles').innerHTML = TOGGLES.map(([k, t, d]) =>
       '<label class="setting"><div class="grow"><div class="t">' + t + '</div><div class="d">' + d + '</div></div>' +
-      '<span class="switch"><input type="checkbox" data-setting="' + k + '"' + (SET[k] ? ' checked' : '') + '><span></span></span></label>').join('');
+      '<span class="switch"><input type="checkbox" data-setting="' + k + '"' + (SET[k] ? ' checked' : '') + '><span></span></span></label>' +
+      (k === 'history' && rideCount() ? '<button class="btn small" style="margin:0 0 14px" id="historyClear">' + icon(P.del) + 'Clear ride history (' + rideCount() + ')</button>' : '')).join('');
     $('choices').innerHTML = CHOICES.map(([k, t, opts, desc]) =>
       '<div class="setting" style="display:block"><div class="t">' + t + '</div><div class="d">' + desc[SET[k]] + '</div><div class="seg">' +
       opts.map(([v, l]) => '<button class="' + (SET[k] === v ? 'sel' : '') + '" data-choice="' + k + '" data-value="' + v + '">' + l + '</button>').join('') +
@@ -829,7 +979,7 @@
     const p = S.room && S.room.remoteParticipants.get(identity);
     return (p && p.name) || 'A rider';
   };
-  const riderCount = () => (S.room ? Array.from(S.room.remoteParticipants.keys()).filter((id) => !isCheckIn(id)).length + 1 : 1);
+  const riderCount = () => (S.room ? Array.from(S.room.remoteParticipants.keys()).filter(isRider).length + 1 : 1);
 
   // ---- Votes (same rules as the app) ----
   function outcome(yes, no, riders, timedOut) {
@@ -945,14 +1095,14 @@
   }
   async function sendSos() {
     S.mySos = { at: Date.now(), lat: null, lon: null };
-    S.mySosDelivered = await send(T.sos, sosMsg());
+    S.mySosDelivered = await sendMine(T.sos, sosMsg());
     renderMySos();
     speak(S.mySosDelivered ? 'SOS sent to the group' : 'No connection. Your SOS will go out when you are back online.');
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((p) => {
         if (!S.mySos) return;
         S.mySos.lat = p.coords.latitude; S.mySos.lon = p.coords.longitude;
-        send(T.sos, sosMsg(S.mySos.lat, S.mySos.lon)).then((ok) => { if (ok) S.mySosDelivered = true; renderMySos(); });
+        sendMine(T.sos, sosMsg(S.mySos.lat, S.mySos.lon)).then((ok) => { if (ok) S.mySosDelivered = true; renderMySos(); });
       }, () => {}, { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 });
     }
   }
@@ -975,7 +1125,7 @@
       if (!S.alerts.has(from)) return;
       S.alerts.delete(from); renderAlerts(); speak(o.name + ' is OK');
     } else if (o.t === 'catchup') {
-      if (S.mySos) send(T.sos, sosMsg(S.mySos.lat, S.mySos.lon), [from]);
+      if (S.mySos) sendMine(T.sos, sosMsg(S.mySos.lat, S.mySos.lon), [from]);
     }
   }
 
@@ -995,7 +1145,8 @@
   }
   function onJoined(p) {
     const id = p.identity;
-    if (isCheckIn(id)) return;
+    if (!isRider(id)) return;
+    noteRider(p.name);
     HS.seen.set(id, p.name || 'A rider'); HS.leftNot.delete(id); renderHome();
     if (shouldShareDest()) sendDest([id]);
     S.byes.delete(id);
@@ -1011,7 +1162,7 @@
   }
   function onLeft(p) {
     const id = p.identity, name = p.name || 'A rider';
-    if (isCheckIn(id)) return;
+    if (!isRider(id)) return;
     W.board.delete(id); if (W.to === id) stopWhisper(); refreshWhisper();
     if (SET.home && !HS.home.has(id)) { HS.leftNot.set(id, HS.seen.get(id) || name); renderHome(); }
     S.batteries.delete(id); S.onCall.delete(id); RW.ahead.delete(id); RW.behind.delete(id);
@@ -1115,7 +1266,7 @@
   const spokenDist = (m) => (m < 1000 ? Math.round(m / 10) * 10 + ' meters' : (m / 1000).toFixed(1) + ' kilometers');
   const where = (rel) => (rel === 'ahead' ? ' ahead' : rel === 'behind' ? ' behind' : ' away');
   function sayMap(t) { if (SET.map) speak(t); }
-  function riderIds() { return (S.room ? Array.from(S.room.remoteParticipants.keys()).filter((id) => !isCheckIn(id)) : []).concat(myId); }
+  function riderIds() { return (S.room ? Array.from(S.room.remoteParticipants.keys()).filter(isRider) : []).concat(myId); }
   function toMe(lat, lon) {
     if (!G.me) return null;
     const d = dist(G.me.lat, G.me.lon, lat, lon);
@@ -1126,7 +1277,7 @@
   function startLocation() {
     if (G.watch != null || !needLocation() || !S.room || !navigator.geolocation) return;
     G.watch = navigator.geolocation.watchPosition(onFix, (e) => {
-      if (e.code === 1) { G.denied = true; renderMapCard(); renderMapBox(); banner('Location is blocked for this site. Allow it in your browser settings.'); }
+      if (e.code === 1) { G.denied = true; renderMapCard(); renderMapBox(); if (SET.map) banner('Location is blocked for this site. Allow it in your browser settings.'); }
     }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 30000 });
   }
   function stopLocation() {
@@ -1140,20 +1291,21 @@
     if (c.heading != null && !isNaN(c.heading) && (c.speed || 0) >= 2) G.heading = c.heading;
     else if (prev && dist(prev.lat, prev.lon, G.me.lat, G.me.lon) > 30) G.heading = bearing(prev.lat, prev.lon, G.me.lat, G.me.lon);
     if (!prev) sendPosition();
+    recordFix(c);
     checkHazards(); checkDest(); checkHomeArrival();
     recompute(true);
   }
-  /** Location is used for the group map, and (only on this phone) to warn about hazards others marked. */
+  /** Location is used for the group map, and (only on this phone) to warn about hazards others marked and for the ride history. */
   function needLocation() {
-    return SET.map || (SET.hazards && Array.from(H.list.values()).some((h) => h.by !== myId)) || (SET.dest && !!D.dest) || (SET.home && !!HOMESPOT);
+    return SET.map || !!REC.ride || (SET.hazards && Array.from(H.list.values()).some((h) => h.by !== myId)) || (SET.dest && !!D.dest) || (SET.home && !!HOMESPOT);
   }
-  function sendPosition() {
+  function sendPosition(to) {
     if (!SET.map || !G.me || !S.room) return;
-    G.lastSent = Date.now();
+    if (!to) G.lastSent = Date.now();
     const o = { name: S.name, lat: G.me.lat, lon: G.me.lon, at: Date.now() };
     if (G.me.speed != null) o.spd = Math.round(G.me.speed * 3.6);
     if (G.heading != null) o.hdg = Math.round(G.heading);
-    send(T.loc, o);
+    sendMine(T.loc, o, to);
   }
   // Every 5 s while moving, every 15 s otherwise; riders silent for 2 minutes drop off the map.
   setInterval(() => {
@@ -1198,6 +1350,8 @@
       checkAll(); recompute(false);
     } else if (o.t === 'sync') {
       if (shouldShareRegroup()) sendRegroup([from]);
+      // Family who just opened the map see me at once (only if I let them).
+      if (isWatcher(from) && SET.family) sendPosition([from]);
     }
   }
   function adopt(g) { S.regroup = g; G.at = false; G.near = false; G.all = false; clearTimeout(G.clearTimer); }
@@ -1205,7 +1359,7 @@
   function shouldShareRegroup() {
     const g = S.regroup; if (!g || !S.room) return false;
     if (g.by === myId) return true;
-    const present = Array.from(S.room.remoteParticipants.keys());
+    const present = Array.from(S.room.remoteParticipants.keys()).filter(isRider);
     if (present.includes(g.by)) return false;
     return present.concat(myId).sort()[0] === myId;
   }
@@ -1317,6 +1471,7 @@
         const open = !$('mapView').classList.contains('hidden');
         resetMap();
         if (open) openMap();
+        if (RV.ride && !$('rideView').classList.contains('hidden')) openRide(RV.ride.id);
       };
       const js = document.createElement('script');
       js.async = true;
@@ -1340,14 +1495,20 @@
       view: (lat, lon, z) => map.setView([lat, lon], z),
       pan: (lat, lon) => map.panTo([lat, lon]),
       zoom: () => map.getZoom(),
-      // Room for the top bar and the bottom panel, which lie over the map.
-      fit: (pts) => map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [40, 110], paddingBottomRight: [40, 280], maxZoom: 17 }),
+      // Room for the top bar and the bottom panel, which lie over the map (or as given: t, b, s in pixels).
+      fit: (pts, pad) => map.fitBounds(L.latLngBounds(pts), pad ? { paddingTopLeft: [pad.s, pad.t], paddingBottomRight: [pad.s, pad.b], maxZoom: 17 }
+        : { paddingTopLeft: [40, 110], paddingBottomRight: [40, 280], maxZoom: 17 }),
       resize: () => map.invalidateSize(),
       dark: (on) => shade(el, on),
       marker(lat, lon, i, z, onClick) {
         const m = L.marker([lat, lon], { icon: di(i), zIndexOffset: z || 0 }).addTo(map);
         if (onClick) m.on('click', onClick);
         return { move: (a, b) => m.setLatLng([a, b]), icon: (n) => m.setIcon(di(n)), remove: () => m.remove() };
+      },
+      /** A route: [[lat, lon], …] as a line. */
+      line(points, color, weight) {
+        const l = L.polyline(points, { color, weight: weight || 5, opacity: 1, lineJoin: 'round', lineCap: 'round', interactive: false }).addTo(map);
+        return { remove: () => l.remove() };
       },
       onLongPress: (cb) => map.on('contextmenu', (e) => cb(e.latlng.lat, e.latlng.lng)),
       onDrag: (cb) => map.on('dragstart', cb),
@@ -1412,10 +1573,10 @@
       pan: (lat, lon) => map.panTo({ lat, lng: lon }),
       zoom: () => map.getZoom(),
       // The map ends above the bottom panel here (so Google's logo shows), so less room is needed below.
-      fit(pts) {
+      fit(pts, pad) {
         const b = new g.LatLngBounds();
         pts.forEach((p) => b.extend({ lat: p[0], lng: p[1] }));
-        map.fitBounds(b, { top: 110, left: 40, right: 40, bottom: 40 });
+        map.fitBounds(b, pad ? { top: pad.t, left: pad.s, right: pad.s, bottom: pad.b } : { top: 110, left: 40, right: 40, bottom: 40 });
         g.event.addListenerOnce(map, 'idle', () => { if (map.getZoom() > 17) map.setZoom(17); });
       },
       resize: () => {},
@@ -1423,6 +1584,12 @@
       marker(lat, lon, i, z, onClick) {
         const m = new Html(lat, lon, i, z, onClick);
         return { move: (a, b) => m.rcMove(a, b), icon: (n) => m.rcIcon(n), remove: () => m.setMap(null) };
+      },
+      line(points, color, weight) {
+        const rgba = /rgba?\(([^)]+)\)/.exec(color), parts = rgba ? rgba[1].split(',').map((v) => v.trim()) : null;
+        const l = new g.Polyline({ map, clickable: false, path: points.map((p) => ({ lat: p[0], lng: p[1] })), strokeWeight: weight || 5,
+          strokeColor: parts ? 'rgb(' + parts.slice(0, 3).join(',') + ')' : color, strokeOpacity: parts && parts[3] != null ? Number(parts[3]) : 1 });
+        return { remove: () => l.setMap(null) };
       },
       // Long press with a finger (Google has no such event), or a right click with a mouse.
       onLongPress(cb) {
@@ -1693,7 +1860,7 @@
   function shouldShareRoles() {
     if (!ROLES.at || !S.room) return false;
     if (ROLES.by === myId) return true;
-    const present = Array.from(S.room.remoteParticipants.keys());
+    const present = Array.from(S.room.remoteParticipants.keys()).filter(isRider);
     if (present.includes(ROLES.by)) return false;
     return present.concat(myId).sort()[0] === myId;
   }
@@ -2000,7 +2167,7 @@
   function shouldShareDest() {
     const d = D.dest; if (!d || !S.room) return false;
     if (d.by === myId) return true;
-    const present = Array.from(S.room.remoteParticipants.keys()).filter((id) => !isCheckIn(id));
+    const present = Array.from(S.room.remoteParticipants.keys()).filter(isRider);
     if (present.includes(d.by)) return false;
     return present.concat(myId).sort()[0] === myId;
   }
@@ -2049,6 +2216,7 @@
     if (dist(G.me.lat, G.me.lon, d.lat, d.lon) < 300) { D.arrived = true; speak("You've reached " + d.label); }
   }
   function renderDest() {
+    renderPlanCard();
     const box = $('destCard');
     if (!SET.dest || !S.room) { box.innerHTML = ''; return; }
     const d = D.dest;
@@ -2067,7 +2235,10 @@
     const lat = Number(m[1]), lon = Number(m[2]);
     return Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? [lat, lon] : null;
   }
-  function openDest() { $('destQuery').value = ''; $('destResults').innerHTML = ''; $('destDialog').classList.remove('hidden'); setTimeout(() => $('destQuery').focus(), 50); }
+  function openDest() {
+    openPlacePicker({ title: 'Where are we heading?', text: 'Everyone hears it, sees how far it is and gets a Navigate button. Type a place, or paste coordinates or a Google Maps link.',
+      pick: (p) => setDest(p.lat, p.lon, p.name) });
+  }
   async function searchDest() {
     const q = $('destQuery').value.trim(); if (!q) return;
     const out = $('destResults'), btn = $('destSearch');
@@ -2128,7 +2299,7 @@
       return;
     }
     const homeNames = (HS.meHome ? ['You'] : []).concat(Array.from(HS.home.values()));
-    const onRoad = Array.from(S.room.remoteParticipants.values()).filter((p) => !isCheckIn(p.identity) && !HS.home.has(p.identity)).map((p) => p.name || 'Rider')
+    const onRoad = Array.from(S.room.remoteParticipants.values()).filter((p) => isRider(p.identity) && !HS.home.has(p.identity)).map((p) => p.name || 'Rider')
       .concat(Array.from(HS.leftNot.entries()).filter(([id]) => !HS.home.has(id)).map(([, n]) => n + ' (left the ride)'));
     box.innerHTML = '<div class="card home"><div class="row"><div class="ic" style="background:var(--go);color:#042A1B">' + icon(P.home) + '</div><div class="grow">' +
       '<div class="rname">Getting home</div>' +
@@ -2180,7 +2351,7 @@
       await new Promise((ok) => setTimeout(ok, 1000));
       await room.localParticipant.sendText(JSON.stringify({ t: 'home', name }), { topic: T.home });
       await new Promise((ok) => setTimeout(ok, 500));
-      heard = Array.from(room.remoteParticipants.keys()).filter((id) => !isCheckIn(id)).length;
+      heard = Array.from(room.remoteParticipants.keys()).filter(isRider).length;
       store.set('rc-web-checkin', '');
     } catch (e) { heard = null; }
     finally { try { room && room.disconnect(); } catch (e) {} }
@@ -2226,10 +2397,512 @@
       '<p class="note" style="margin-top:6px">Changes apply the next time you join.</p>');
   }
 
+  // ---- Family watching: family at home follow the ride map on the watch page (identities "watch-…") ----
+  const watcherNames = () => (S.room ? Array.from(S.room.remoteParticipants.values()).filter((p) => isWatcher(p.identity)).map((p) => p.name || 'Family') : []);
+  /** Who gets my position and my SOS: everyone ([]), only the riders while family watch and I haven't allowed it, or nobody (null). */
+  function audience() {
+    if (SET.family || !S.room) return [];
+    const ids = Array.from(S.room.remoteParticipants.keys());
+    if (!ids.some(isWatcher)) return [];
+    const riders = ids.filter(isRider);
+    return riders.length ? riders : null;
+  }
+  /** Sends my own position or SOS to the right people (see audience). Nobody to send it to counts as sent. */
+  function sendMine(topic, obj, to) {
+    let aud = to ? (SET.family ? to : to.filter((id) => !isWatcher(id))) : audience();
+    if (aud === null || (to && !aud.length)) return Promise.resolve(true);
+    return send(topic, obj, aud);
+  }
+  /** "Family watching: Ammi" under the connection status, and whether they can see me. */
+  function renderFamily() {
+    const names = watcherNames(), pill = $('famPill');
+    pill.classList.toggle('hidden', !names.length);
+    if (!names.length) return;
+    const sees = SET.family && SET.map;
+    pill.innerHTML = icon(P.eye) + '<span>Family watching: ' + esc(names.join(', ')) + '<span class="fsub"> · ' + (sees ? 'they see you on the map' : "they can't see you") + '</span></span>';
+  }
+  /** The invite: the join page link, with the plan and the group key after "#" (never sent to the web server). */
+  function groupKey() { return SET.locked && SET.server ? store.get('rc-web-key') || '' : ''; }
+  function inviteUrl(code) {
+    const plan = SET.planner ? planFor(code) : null, key = groupKey();
+    const hash = [plan ? 'p=' + planEncode(plan) : '', key ? 'k=' + encodeURIComponent(key) : ''].filter(Boolean).join('&');
+    return SITE + 'join/?code=' + code + (hash ? '#' + hash : '');
+  }
+  const familyUrl = (code) => SITE + 'watch/?code=' + code + (groupKey() ? '#k=' + encodeURIComponent(groupKey()) : '');
+  async function shareLink(text, url, copied) {
+    try {
+      if (navigator.share) await navigator.share({ title: 'RideComm', text, url });
+      else { await navigator.clipboard.writeText(text + ' ' + url); banner(copied); }
+    } catch (e) {}
+  }
+  const shareInvite = () => shareLink('Join my RideComm ride! Code: ' + S.code, inviteUrl(S.code), 'Invite link copied');
+  const shareFamily = () => shareLink('Follow our ride live on the map (you can\'t hear us). Ride ' + S.code, familyUrl(S.code), 'Family link copied');
+  function openShare() {
+    if (!SET.family) { shareInvite(); return; }
+    $('shareNote').classList.toggle('hidden', !!SET.map);
+    $('shareSheet').classList.remove('hidden');
+  }
+
+  // ---- Places: the search sheet picks a place for the destination or for a plan ----
+  const PICK = { cb: null };
+  function openPlacePicker(o) {
+    PICK.cb = o.pick;
+    $('destTitle').textContent = o.title; $('destText').textContent = o.text;
+    $('placeHereWrap').classList.toggle('hidden', !o.here);
+    $('destQuery').value = ''; $('destResults').innerHTML = ''; $('destDialog').classList.remove('hidden');
+    setTimeout(() => $('destQuery').focus(), 50);
+  }
+  /** A short name for where I am (OpenStreetMap), or null. */
+  async function placeName(lat, lon) {
+    try {
+      const res = await fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&accept-language=en&lat=' + lat + '&lon=' + lon);
+      const o = await res.json();
+      const parts = String((o && o.display_name) || '').split(',').map((x) => x.trim()).filter(Boolean);
+      return cut((o && o.name) || parts.slice(0, 2).join(', '), 60) || null;
+    } catch (e) { return null; }
+  }
+  function pickMyLocation() {
+    const cb = PICK.cb;
+    $('destDialog').classList.add('hidden');
+    if (!navigator.geolocation) { banner('This browser has no location'); return; }
+    banner('Finding where you are…');
+    navigator.geolocation.getCurrentPosition(async (p) => {
+      const lat = p.coords.latitude, lon = p.coords.longitude;
+      const name = await placeName(lat, lon);
+      if (cb) cb({ name: name || 'Meeting point', lat, lon });
+    }, () => banner('Allow location for this site to use where you are'), { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 });
+  }
+
+  // ---- Ride planner: a plan travels in the invite link's hash (PROTOCOL.md "Ride plans"), kept on this phone ----
+  const PLAN_KEEP = 12 * 3600000;
+  const cut = (s, n) => String(s == null ? '' : s).trim().slice(0, n);
+  const b64url = {
+    enc(s) { let bin = ''; new TextEncoder().encode(s).forEach((b) => { bin += String.fromCharCode(b); }); return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+    dec(s) { const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)); return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))); },
+  };
+  function cleanPlace(p) {
+    if (!p || typeof p !== 'object') return null;
+    const lat = Number(p.lat), lon = Number(p.lon);
+    if (p.lat == null || p.lon == null || !isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+    return { name: cut(p.name, 60) || 'Pinned place', lat, lon };
+  }
+  /** A plan as the link carries it (names cut to 60, at most 5 stops), or null without a time and a meeting point. */
+  function cleanPlan(o) {
+    if (!o || typeof o !== 'object') return null;
+    const at = Number(o.at), meet = cleanPlace(o.meet);
+    if (!isFinite(at) || at <= 0 || !meet) return null;
+    const p = { v: 1, title: cut(o.title, 60), at, meet, stops: (Array.isArray(o.stops) ? o.stops : []).map(cleanPlace).filter(Boolean).slice(0, 5) };
+    const dest = cleanPlace(o.dest);
+    if (dest) p.dest = dest;
+    p.by = cut(o.by, 60);
+    return p;
+  }
+  const planEncode = (p) => b64url.enc(JSON.stringify(cleanPlan(p)));
+  function planDecode(s) { try { return cleanPlan(JSON.parse(b64url.dec(s))); } catch (e) { return null; } }
+  function loadPlans() {
+    let list = [];
+    try { list = JSON.parse(store.get('rc-web-plans') || '[]'); } catch (e) {}
+    return (Array.isArray(list) ? list : []).map((o) => { const p = cleanPlan(o); return p && CODE_RE.test(o.code) ? Object.assign(p, { code: o.code }) : null; })
+      .filter((p) => p && Date.now() - p.at < PLAN_KEEP).sort((a, b) => a.at - b.at);
+  }
+  let PLANS = loadPlans();
+  function savePlans() { store.set('rc-web-plans', JSON.stringify(PLANS)); }
+  /** Saves a plan for a ride code (a newer copy of the same ride replaces the old one). */
+  function keepPlan(plan, code) {
+    PLANS = PLANS.filter((p) => p.code !== code).concat(Object.assign({}, plan, { code })).filter((p) => Date.now() - p.at < PLAN_KEEP).sort((a, b) => a.at - b.at);
+    savePlans(); renderPlans(); renderPlanCard();
+  }
+  function dropPlan(code) { PLANS = PLANS.filter((p) => p.code !== code); savePlans(); renderPlans(); renderPlanCard(); }
+  const planFor = (code) => PLANS.find((p) => p.code === code && Date.now() - p.at < PLAN_KEEP) || null;
+  function newCode() {
+    const abc = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    let code;
+    do { code = Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => abc[b % abc.length]).join(''); } while (planFor(code));
+    return code;
+  }
+  /** "Sun 12 Oct", or "Sunday 12 October" (the same everywhere, whatever the browser's language). */
+  const dateText = (ms, long) => { const d = new Date(ms), f = (o) => d.toLocaleDateString('en-GB', o); return f({ weekday: long ? 'long' : 'short' }) + ' ' + d.getDate() + ' ' + f({ month: long ? 'long' : 'short' }); };
+  const shortDate = (ms) => dateText(ms, false);
+  const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  /** "Today, 7:00 AM", "Tomorrow, 6:30 AM" or "Sun 12 Oct, 7:00 AM". */
+  function whenText(ms) {
+    const day = (x) => new Date(x).setHours(0, 0, 0, 0), diff = Math.round((day(ms) - day(Date.now())) / 86400000);
+    return (diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : diff === -1 ? 'Yesterday' : shortDate(ms)) + ', ' + clock(ms);
+  }
+  const localInput = (ms) => { const d = new Date(ms), z = (n) => String(n).padStart(2, '0'); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + 'T' + z(d.getHours()) + ':' + z(d.getMinutes()); };
+  const fromInput = (v) => { const m = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)/.exec(v || ''); return m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5]).getTime() : NaN; };
+  const planText = (p) => 'Ride planned: ' + (p.title ? p.title + ', ' : '') + whenText(p.at) + '. Meet at ' + p.meet.name + '. Code ' + p.code + '.';
+  const sharePlan = (code) => { const p = planFor(code); if (p) shareLink(planText(p), inviteUrl(code), 'Invite link copied'); };
+
+  /** A calendar file (.ics): 3 hours from the start, a reminder an hour before, the stops and the join link. */
+  function planIcs(p, link) {
+    const utc = (ms) => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const tx = (t) => String(t).replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+    // Lines longer than 75 characters fold onto the next line, which starts with a space (never splitting an emoji).
+    const fold = (line) => {
+      const out = [];
+      while (line.length > 74) {
+        let n = 74;
+        if (/[\uDC00-\uDFFF]/.test(line.charAt(n))) n--;
+        out.push(line.slice(0, n)); line = ' ' + line.slice(n);
+      }
+      return out.concat(line).join('\r\n');
+    };
+    const title = p.title || 'RideComm ride';
+    const desc = ['Meet at ' + p.meet.name].concat(
+      p.stops.length ? ['Stops: ' + p.stops.map((s) => s.name).join(', ')] : [],
+      p.dest ? ['Destination: ' + p.dest.name] : [],
+      ['Ride code: ' + p.code, 'Join: ' + link]).join('\n');
+    return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//RideComm//Ride planner//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+      'BEGIN:VEVENT', 'UID:ride-' + p.code + '-' + p.at + '@ridecomm', 'DTSTAMP:' + utc(Date.now()), 'DTSTART:' + utc(p.at), 'DTEND:' + utc(p.at + 3 * 3600000),
+      'SUMMARY:' + tx(title), 'LOCATION:' + tx(p.meet.name), 'GEO:' + p.meet.lat.toFixed(6) + ';' + p.meet.lon.toFixed(6), 'DESCRIPTION:' + tx(desc), 'URL:' + link,
+      'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + tx(title + ' starts in an hour'), 'TRIGGER:-PT60M', 'END:VALARM',
+      'END:VEVENT', 'END:VCALENDAR'].map(fold).join('\r\n') + '\r\n';
+  }
+  function downloadFile(name, blob) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name; a.style.display = 'none';
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+  }
+  function addToCalendar(code) {
+    const p = planFor(code); if (!p) return;
+    downloadFile('ride-' + code + '.ics', new Blob([planIcs(p, inviteUrl(code))], { type: 'text/calendar;charset=utf-8' }));
+  }
+
+  /** Title, day and time, meeting point of a plan (the join screen and the plan sheet). */
+  function planHead(p, del) {
+    return '<div class="row"><div class="ic violet">' + icon(P.event) + '</div><div class="grow"><div class="rname">' + esc(p.title || 'Ride') + '</div>' +
+      '<div class="rsub plan-when">' + esc(whenText(p.at)) + ' <span style="white-space:nowrap">· ' + p.code + '</span></div><div class="rsub">Meet at ' + esc(p.meet.name) + '</div></div>' +
+      (del ? '<button class="x" data-plan-del="' + p.code + '" aria-label="Delete plan">' + icon(P.close) + '</button>' : '') + '</div>';
+  }
+  /** Join screen: upcoming planned rides and "Plan a ride". */
+  function renderPlans() {
+    const box = $('plansBox');
+    if (!SET.planner) { box.innerHTML = ''; return; }
+    PLANS = PLANS.filter((p) => Date.now() - p.at < PLAN_KEEP);
+    box.innerHTML = (PLANS.length ? '<div class="card plan" style="margin-top:16px"><div class="label">Upcoming rides</div>' + PLANS.map((p) =>
+      '<div class="planitem" style="margin-top:10px">' + planHead(p, true) +
+      '<div class="grid2"><button class="btn primary" data-plan-join="' + p.code + '">Join</button><button class="btn" data-plan-share="' + p.code + '">' + icon(P.share) + 'Share</button></div>' +
+      '<button class="btn small" style="margin-top:10px" data-plan-ics="' + p.code + '">' + icon(P.calAdd) + 'Add to calendar</button></div>').join('') + '</div>' : '') +
+      '<button class="btn" style="margin-top:16px" id="planNew">' + icon(P.event) + 'Plan a ride</button>';
+  }
+  const PL = { draft: null, saved: null };
+  function openPlanner() {
+    const next = new Date(Date.now() + 3600000); next.setMinutes(0, 0, 0);
+    PL.draft = { title: '', at: next.getTime(), meet: null, stops: [], dest: null }; PL.saved = null;
+    renderPlanner(); $('planSheet').classList.remove('hidden');
+    $('planSheetIn').scrollTop = 0;
+  }
+  function renderPlanner() {
+    const d = PL.draft, box = $('planSheetIn');
+    if (PL.saved) {
+      const p = planFor(PL.saved);
+      box.innerHTML = '<h1>Ride planned</h1><p>Share the invite with your group: it carries the time, the meeting point and the stops, and they can add a reminder to their calendar.</p>' +
+        '<div class="card plan" style="margin-top:16px">' + (p ? planHead(p, false) : '') + '</div>' +
+        '<div class="field"><button class="btn primary" data-plan-share="' + PL.saved + '">' + icon(P.share) + 'Share invite</button></div>' +
+        '<div class="field"><button class="btn" data-plan-ics="' + PL.saved + '">' + icon(P.calAdd) + 'Add to calendar</button></div>' +
+        '<div class="field"><button class="btn" id="planDone">Done</button></div>';
+      return;
+    }
+    const row = (p, kind, i) => '<div class="prow"><span class="pdot ' + kind + '">' + icon(kind === 'meet' ? P.pin : kind === 'dest' ? P.finish : P.flag) + '</span>' +
+      '<div class="grow"><div class="n">' + esc(p.name) + '</div><div class="dd">' + p.lat.toFixed(4) + ', ' + p.lon.toFixed(4) + '</div></div>' +
+      '<button class="x" data-plan-drop="' + kind + (i != null ? ':' + i : '') + '" aria-label="Remove">' + icon(P.close) + '</button></div>';
+    box.innerHTML = '<div class="row"><h1 class="grow">Plan a ride</h1><button class="iconbtn" id="planClose" aria-label="Close">' + icon(P.close) + '</button></div>' +
+      '<p>Pick when and where to meet. The plan travels in the invite link, with a reminder for everyone\'s calendar.</p>' +
+      '<div class="field"><div class="label">Name (optional)</div><input id="planTitle" maxlength="60" placeholder="e.g. Sunday Lonavala ride" value="' + esc(d.title) + '"></div>' +
+      '<div class="field"><div class="label">Start</div><input id="planWhen" type="datetime-local" value="' + localInput(d.at) + '"></div>' +
+      '<div class="field"><div class="label">Meeting point</div>' + (d.meet ? row(d.meet, 'meet')
+        : '<div class="grid2 stack" style="margin-top:8px"><button class="btn small" data-plan-pick="meet">' + icon(P.search) + 'Search</button><button class="btn small" id="planHere">' + icon(P.myLoc) + 'My location</button></div>') + '</div>' +
+      '<div class="field"><div class="label">Stops on the way (optional)</div>' + d.stops.map((s, i) => row(s, 'stop', i)).join('') +
+        (d.stops.length < 5 ? '<button class="btn small" style="margin-top:8px" data-plan-pick="stop">' + icon(P.add) + 'Add a stop</button>' : '') + '</div>' +
+      '<div class="field"><div class="label">Destination (optional)</div>' + (d.dest ? row(d.dest, 'dest') : '<button class="btn small" style="margin-top:8px" data-plan-pick="dest">' + icon(P.finish) + 'Choose destination</button>') + '</div>' +
+      '<div class="error hidden" id="planErr"></div>' +
+      '<div class="grid2" style="margin-top:20px"><button class="btn" id="planCancel">Cancel</button><button class="btn primary" id="planSave">Save plan</button></div>';
+  }
+  /** What happens to a place picked for the plan's meeting point, a stop or the destination. */
+  const planPick = (kind) => (p) => {
+    const d = PL.draft, place = cleanPlace(p); if (!d || !place) return;
+    if (kind === 'meet') d.meet = place; else if (kind === 'dest') d.dest = place; else if (d.stops.length < 5) d.stops.push(place);
+    renderPlanner();
+  };
+  function pickForPlan(kind) {
+    const titles = { meet: 'Meeting point', stop: 'Add a stop', dest: 'Destination' };
+    openPlacePicker({ title: titles[kind], text: 'Type a place, or paste coordinates or a Google Maps link.', here: kind === 'meet', pick: planPick(kind) });
+  }
+  function savePlanDraft() {
+    const d = PL.draft, err = $('planErr');
+    const fail = (t) => { err.textContent = t; err.classList.remove('hidden'); };
+    if (!isFinite(d.at)) return fail('Pick the day and time the ride starts.');
+    if (d.at < Date.now() - 3600000) return fail('That time has already passed. Pick a later one.');
+    if (!d.meet) return fail('Choose where to meet.');
+    const code = newCode();
+    const plan = cleanPlan({ title: d.title, at: d.at, meet: d.meet, stops: d.stops, dest: d.dest, by: store.get('rc-web-name') || $('nameIn').value.trim() });
+    keepPlan(plan, code);
+    PL.saved = code; renderPlanner();
+    $('planSheetIn').scrollTop = 0;
+  }
+  /** In a ride that was planned: the meeting point, stops and destination, each with a Navigate button. */
+  function renderPlanCard() {
+    const box = $('planCard'), p = SET.planner && S.room && S.code ? planFor(S.code) : null;
+    const isDest = !!(p && p.dest && D.dest && dist(D.dest.lat, D.dest.lon, p.dest.lat, p.dest.lon) < 50);
+    const sig = p ? JSON.stringify(p) + isDest + SET.dest : '';
+    if (box.dataset.sig === sig) return;
+    box.dataset.sig = sig;
+    if (!p) { box.innerHTML = ''; return; }
+    const today = new Date(p.at).toDateString() === new Date().toDateString();
+    const row = (pl, kind, label) => '<div class="prow"><span class="pdot ' + kind + '">' + icon(kind === 'meet' ? P.pin : kind === 'dest' ? P.finish : P.flag) + '</span>' +
+      '<div class="grow"><div class="dd">' + label + '</div><div class="n">' + esc(pl.name) + '</div></div>' +
+      '<a class="btn nav" target="_blank" rel="noopener" aria-label="Navigate to ' + esc(pl.name) + '" href="' + directions(pl.lat, pl.lon) + '">' + icon(P.nav) + '<span>Navigate</span></a></div>';
+    box.innerHTML = '<div class="card plan"><div class="row"><div class="ic violet">' + icon(P.event) + '</div><div class="grow"><div class="label">' + (today ? "Today's plan" : 'Ride plan') + '</div>' +
+      '<div class="rname">' + esc(p.title || 'Ride') + '</div><div class="rsub plan-when">' + esc(whenText(p.at)) + (p.by ? ' · planned by ' + esc(p.by) : '') + '</div></div></div>' +
+      '<div style="margin-top:6px">' + row(p.meet, 'meet', 'Meet at') + p.stops.map((s, i) => row(s, 'stop', 'Stop ' + (i + 1))).join('') + (p.dest ? row(p.dest, 'dest', 'Destination') : '') + '</div>' +
+      (p.dest && SET.dest && !isDest ? '<button class="btn go" style="margin-top:10px" id="planSetDest">' + icon(P.finish) + 'Set as destination</button>' : '') + '</div>';
+  }
+
+  // ---- Ride history: a summary of each ride, kept only on this phone (same rules as the app's RideLog) ----
+  const RL = { MIN_DIST: 300, MIN_MS: 5 * 60000, MAX_ACC: 50, EVERY: 25, MAX_POINTS: 3000, STOP_R: 60, STOP_LEAVE: 100, STOP_MS: 3 * 60000, MAX_KMH: 250, GAP_MS: 30000, MOVING_KMH: 5, KEEP: 30 };
+  const REC = { ride: null, pts: [], kept: null, last: null, speeds: [], stay: null, lastStayAt: 0, saver: null };
+  function loadRides() {
+    try { const l = JSON.parse(store.get('rc-web-rides') || '[]'); return Array.isArray(l) ? l.filter((r) => r && r.id && isFinite(r.start)) : []; } catch (e) { return []; }
+  }
+  const rideCount = () => loadRides().length;
+  /** Newest first, at most 30; if the phone's storage is full, the oldest go first. */
+  function writeRides(list) {
+    list = list.slice(0, RL.KEEP);
+    while (true) {
+      try { localStorage.setItem('rc-web-rides', JSON.stringify(list)); return; } catch (e) { if (!list.length) return; list = list.slice(0, -1); }
+    }
+  }
+  /** Google's encoded polyline (5 decimals), like the app: a long route in a short string. */
+  function encodeRoute(pts) {
+    let out = '', pLat = 0, pLon = 0;
+    const one = (v) => { v = v < 0 ? ~(v << 1) : v << 1; while (v >= 0x20) { out += String.fromCharCode((0x20 | (v & 0x1f)) + 63); v >>= 5; } out += String.fromCharCode(v + 63); };
+    pts.forEach(([lat, lon]) => { const a = Math.round(lat * 1e5), b = Math.round(lon * 1e5); one(a - pLat); one(b - pLon); pLat = a; pLon = b; });
+    return out;
+  }
+  function decodeRoute(s) {
+    const pts = []; let i = 0, lat = 0, lon = 0;
+    const next = () => { let r = 0, sh = 0, b; do { if (i >= s.length) return null; b = s.charCodeAt(i++) - 63; r |= (b & 0x1f) << sh; sh += 5; } while (b >= 0x20); return r & 1 ? ~(r >> 1) : r >> 1; };
+    while (i < s.length) { const a = next(), b = a == null ? null : next(); if (b == null) break; lat += a; lon += b; pts.push([lat / 1e5, lon / 1e5]); }
+    return pts;
+  }
+  function noteRider(name) { const r = REC.ride; if (r && name && !r.riders.includes(name)) r.riders.push(name); }
+  function startRecording() {
+    if (!SET.history || REC.ride || !S.code || !S.room) return;
+    REC.ride = { id: newId(), code: S.code, start: Date.now(), dist: 0, moving: 0, top: 0, riders: [S.name], stops: [] };
+    REC.pts = []; REC.kept = null; REC.last = null; REC.speeds = []; REC.stay = null; REC.lastStayAt = 0;
+    S.room.remoteParticipants.forEach((p) => { if (isRider(p.identity)) noteRider(p.name); });
+    clearInterval(REC.saver); REC.saver = setInterval(saveRide, 60000);
+    startLocation();
+  }
+  /** Ends the recording; returns the saved ride (null when it was too short to keep). */
+  function stopRecording() {
+    const saved = saveRide();
+    clearInterval(REC.saver); REC.saver = null; REC.ride = null;
+    return saved;
+  }
+  /** One GPS fix: the route every 25 m, distance, moving time, top speed and stops. */
+  function recordFix(c) {
+    const r = REC.ride; if (!r) return;
+    const now = Date.now(), lat = c.latitude, lon = c.longitude, last = REC.last;
+    if (!isFinite(lat) || !isFinite(lon) || (c.accuracy != null && c.accuracy > RL.MAX_ACC) || (last && now < last.at)) return;
+    // Speed: the GPS's own when it has one, else from the last fix.
+    let kmh = c.speed != null && isFinite(c.speed) && c.speed >= 0 ? c.speed * 3.6 : null;
+    if (last) {
+      const dt = now - last.at;
+      if (kmh == null && dt > 0) kmh = dist(last.lat, last.lon, lat, lon) / dt * 3600;
+      if (dt > 0 && dt <= RL.GAP_MS && kmh != null && kmh >= RL.MOVING_KMH && kmh <= RL.MAX_KMH) r.moving += dt;
+    }
+    if (kmh != null && kmh <= RL.MAX_KMH) {
+      REC.speeds.push(kmh); if (REC.speeds.length > 3) REC.speeds.shift();
+      if (REC.speeds.length === 3) r.top = Math.max(r.top, REC.speeds.slice().sort((a, b) => a - b)[1]);
+    }
+    REC.last = { lat, lon, at: now };
+    const k = REC.kept;
+    if (!k || dist(k.lat, k.lon, lat, lon) >= RL.EVERY) {
+      if (k) { const d = dist(k.lat, k.lon, lat, lon), h = (now - k.at) / 3600000; if (h > 0 && d / 1000 / h <= RL.MAX_KMH) r.dist += d; }
+      REC.kept = { lat, lon, at: now };
+      REC.pts.push([lat, lon]);
+      if (REC.pts.length > RL.MAX_POINTS) REC.pts = REC.pts.filter((_, i, a) => i % 2 === 0 || i === a.length - 1);
+    }
+    // A stop: within 60 m for 3 minutes, over once I'm 100 m away. Waiting at the very start isn't a stop.
+    const s = REC.stay, stay = () => { REC.stay = { lat, lon, at: now, first: REC.pts.length }; REC.lastStayAt = now; };
+    if (!s) { stay(); return; }
+    const away = dist(s.lat, s.lon, lat, lon), stopped = now - s.at >= RL.STOP_MS;
+    if (stopped && away > RL.STOP_LEAVE) {
+      if (s.first > 1) r.stops.push({ lat: s.lat, lon: s.lon, at: s.at, dur: REC.lastStayAt - s.at });
+      stay();
+    } else if (!stopped && away > RL.STOP_R) stay();
+    else if (away <= RL.STOP_LEAVE) REC.lastStayAt = now;
+  }
+  function rideNow() {
+    const r = REC.ride; if (!r) return null;
+    return { id: r.id, code: r.code, start: r.start, end: Date.now(), dist: Math.round(r.dist), moving: r.moving, top: Math.round(r.top * 10) / 10,
+      avg: r.moving >= 60000 ? Math.round(r.dist / r.moving * 3600 * 10) / 10 : 0, riders: r.riders.slice(), route: encodeRoute(REC.pts), stops: r.stops.slice() };
+  }
+  /** Saves the ride so far (every minute and on leaving), if it's long enough to keep: 300 m or 5 minutes. */
+  function saveRide() {
+    const rec = rideNow(); if (!rec) return null;
+    if (rec.dist < RL.MIN_DIST && rec.end - rec.start < RL.MIN_MS) return null;
+    writeRides([rec].concat(loadRides().filter((x) => x.id !== rec.id)).sort((a, b) => b.start - a.start));
+    return rec;
+  }
+  const kmText = (m) => (m / 1000).toFixed(1);
+  /** "1:14 h" or "25 min", like the app. */
+  const durText = (ms) => { const min = Math.floor(Math.max(0, ms) / 60000); return min < 60 ? min + ' min' : Math.floor(min / 60) + ':' + String(min % 60).padStart(2, '0') + ' h'; };
+  const rideLine = (r) => shortDate(r.start) + ' · ' + kmText(r.dist) + ' km · ' + durText(r.end - r.start);
+  const rideWith = (r) => { const o = (r.riders || []).slice(1); return 'Ride ' + r.code + (o.length ? ' · with ' + o.join(', ') : ''); };
+  const rideRow = (r) => '<button class="place ride-row" data-ride="' + esc(r.id) + '"><span class="ic">' + icon(P.route) + '</span><span class="grow"><div class="n">' +
+    esc(rideLine(r)) + '</div><div class="dd">' + esc(rideWith(r)) + '</div></span><span style="color:var(--muted)">›</span></button>';
+  /** Join screen: the last three rides, and "See all". */
+  function renderRides() {
+    const box = $('ridesBox'), list = SET.history ? loadRides() : [];
+    if (!list.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="card" style="margin-top:16px"><div class="row"><div class="label grow">Your rides</div>' +
+      (list.length > 3 ? '<button class="linkbtn" id="ridesAll">See all (' + list.length + ')</button>' : '') + '</div>' + list.slice(0, 3).map(rideRow).join('') + '</div>';
+  }
+  function openAllRides() {
+    $('ridesSheetIn').innerHTML = '<div class="row"><h1 class="grow">Your rides</h1><button class="iconbtn" id="ridesClose" aria-label="Close">' + icon(P.close) + '</button></div>' +
+      '<p>Kept only on this phone, newest first (up to 30).</p>' + loadRides().map(rideRow).join('');
+    $('ridesSheet').classList.remove('hidden');
+  }
+
+  // One ride: map with the route, then the numbers, stops and riders.
+  const RV = { ride: null, map: null };
+  function statTile(v, unit, label) { return '<div class="stat"><div class="v">' + v + (unit ? '<small> ' + unit + '</small>' : '') + '</div><div class="l">' + label + '</div></div>'; }
+  async function openRide(id) {
+    const r = loadRides().find((x) => x.id === id); if (!r) return;
+    RV.ride = r;
+    $('ridesSheet').classList.add('hidden');
+    const view = $('rideView');
+    view.classList.remove('hidden'); view.scrollTop = 0;
+    $('rideTitle').textContent = dateText(r.start, true);
+    $('rideSub').textContent = clock(r.start) + ' – ' + clock(r.end) + ' · ride ' + r.code;
+    const stops = r.stops || [];
+    $('rideBody').innerHTML = '<div class="card"><div class="stats">' +
+      statTile(kmText(r.dist), 'km', 'Distance') + statTile(durText(r.moving), '', 'Riding time') + statTile(durText(r.end - r.start), '', 'Total time') +
+      statTile(Math.round(r.avg || 0), 'km/h', 'Average') + statTile(Math.round(r.top || 0), 'km/h', 'Top speed') + statTile(stops.length, '', stops.length === 1 ? 'Stop' : 'Stops') +
+      '</div></div>' +
+      (stops.length ? '<div class="card"><div class="label">Stops</div>' + stops.map((s) =>
+        '<div class="prow"><span class="pdot stop">' + icon(P.cup) + '</span><div class="grow"><div class="n">' + esc(clock(s.at)) + '</div><div class="dd">Stopped ' + durText(s.dur) + '</div></div>' +
+        '<a class="btn nav" target="_blank" rel="noopener" aria-label="Open in Google Maps" href="https://www.google.com/maps/search/?api=1&query=' + s.lat.toFixed(5) + ',' + s.lon.toFixed(5) + '">' + icon(P.pin) + '<span>Map</span></a></div>').join('') + '</div>' : '') +
+      '<div class="card"><div class="label">Riders</div><p style="margin-top:6px">' + esc((r.riders || []).join(', ') || 'Just you') + '</p></div>' +
+      '<div class="grid2 stack" style="margin-top:14px"><button class="btn primary" id="rideShare">' + icon(P.image) + 'Share picture</button><button class="btn stop" id="rideDelete">' + icon(P.del) + 'Delete</button></div>' +
+      '<p class="note" style="text-align:center">Kept only on this phone. Sharing sends a picture of the route and numbers, no map.</p>';
+    const pts = decodeRoute(r.route || '');
+    $('rideEmpty').classList.toggle('hidden', pts.length > 0);
+    const google = useGoogle();
+    try { if (google) await loadGoogle(); else await loadLeaflet(); } catch (e) { $('rideEmpty').textContent = "Couldn't load the map. Check your internet."; $('rideEmpty').classList.remove('hidden'); return; }
+    if (RV.ride !== r || view.classList.contains('hidden')) return;
+    if (google !== useGoogle()) { openRide(id); return; }
+    dropRideMap();
+    view.classList.toggle('google', google);
+    const m = RV.map = google ? googleEngine($('rideMap')) : leafletEngine($('rideMap'));
+    m.dark(SET.darkMap);
+    const marker = (lat, lon, cls, d, z) => m.marker(lat, lon, mk('<div class="rmk ' + cls + '">' + icon(d) + '</div>', 30, 30, 15, 15), z);
+    if (pts.length > 1) { m.line(pts, 'rgba(255,61,129,.35)', 11); m.line(pts, '#FF3D81', 5); }
+    stops.forEach((s) => marker(s.lat, s.lon, 'stop', P.cup, 5));
+    if (pts.length) { marker(pts[0][0], pts[0][1], 'start', P.start, 10); if (pts.length > 1) marker(pts[pts.length - 1][0], pts[pts.length - 1][1], 'end', P.finish, 20); }
+    const all = pts.concat(stops.map((s) => [s.lat, s.lon]));
+    if (all.length === 1) m.view(all[0][0], all[0][1], 15);
+    else if (all.length) m.fit(all, { t: 90, b: 30, s: 30 });
+  }
+  function dropRideMap() {
+    if (!RV.map) return;
+    try { RV.map.destroy(); } catch (e) {}
+    RV.map = null;
+    const el = $('rideMap'), fresh = document.createElement('div'); fresh.id = 'rideMap'; el.replaceWith(fresh);
+  }
+  function closeRide() { $('rideView').classList.add('hidden'); dropRideMap(); RV.ride = null; }
+  function deleteRide() {
+    const r = RV.ride; if (!r || !confirm('Delete this ride from your history?')) return;
+    writeRides(loadRides().filter((x) => x.id !== r.id));
+    closeRide(); renderRides(); banner('Ride deleted');
+  }
+
+  /** A picture of the ride to share (1080×1350): the route as a glowing line, no map, and the numbers. */
+  function ridePicture(r) {
+    const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d'), font = (w, px) => w + ' ' + px + 'px Outfit, "Segoe UI", system-ui, sans-serif';
+    const rr = (l, t, w, h, rad) => { x.beginPath(); x.moveTo(l + rad, t); x.arcTo(l + w, t, l + w, t + h, rad); x.arcTo(l + w, t + h, l, t + h, rad); x.arcTo(l, t + h, l, t, rad); x.arcTo(l, t, l + w, t, rad); x.closePath(); };
+    const fitText = (t, w, px, weight) => { while (px > 18) { x.font = font(weight, px); if (x.measureText(t).width <= w) break; px -= 2; } return t; };
+    const bg = x.createLinearGradient(0, 0, W * 0.4, H); bg.addColorStop(0, '#2B1C70'); bg.addColorStop(0.55, '#130F33'); bg.addColorStop(1, '#070A14');
+    x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    [[120, 80, 560, 'rgba(124,92,255,.55)'], [1040, 560, 480, 'rgba(255,61,129,.32)'], [160, 1300, 520, 'rgba(34,211,238,.22)']].forEach(([cx, cy, rad, col]) => {
+      const g = x.createRadialGradient(cx, cy, 0, cx, cy, rad); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+    });
+    x.textBaseline = 'alphabetic'; x.fillStyle = 'rgba(255,255,255,.6)'; x.font = font(600, 32);
+    x.fillText(('RIDE ' + r.code + ' · ' + clock(r.start) + ' – ' + clock(r.end)).toUpperCase(), 72, 112);
+    x.fillStyle = '#fff';
+    x.fillText(fitText(dateText(r.start, true), W - 144, 76, 800), 72, 196);
+    const others = (r.riders || []).slice(1);
+    x.fillStyle = 'rgba(255,255,255,.72)';
+    x.fillText(fitText(others.length ? 'With ' + others.join(', ') : 'Solo ride', W - 144, 36, 600), 72, 250);
+    // The route, scaled into its box.
+    const bx = 72, by = 300, bw = W - 144, bh = 560;
+    rr(bx, by, bw, bh, 44); x.fillStyle = 'rgba(255,255,255,.06)'; x.fill(); x.strokeStyle = 'rgba(255,255,255,.18)'; x.lineWidth = 2; x.stroke();
+    const pts = decodeRoute(r.route || '');
+    if (pts.length > 1) {
+      const lat0 = pts.reduce((a, p) => a + p[0], 0) / pts.length, kx = Math.cos(lat0 * Math.PI / 180);
+      const xs = pts.map((p) => p[1] * kx), ys = pts.map((p) => -p[0]);
+      const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys), pad = 70;
+      const sc = Math.min((bw - 2 * pad) / Math.max(maxX - minX, 1e-9), (bh - 2 * pad) / Math.max(maxY - minY, 1e-9));
+      const ox = bx + (bw - (maxX - minX) * sc) / 2, oy = by + (bh - (maxY - minY) * sc) / 2;
+      const at = (i) => [ox + (xs[i] - minX) * sc, oy + (ys[i] - minY) * sc];
+      const path = () => { x.beginPath(); pts.forEach((_, i) => { const [px, py] = at(i); if (i) x.lineTo(px, py); else x.moveTo(px, py); }); };
+      const grad = x.createLinearGradient(bx, by, bx + bw, by + bh); grad.addColorStop(0, '#FFB72D'); grad.addColorStop(0.5, '#FF665A'); grad.addColorStop(1, '#F326A9');
+      x.lineJoin = 'round'; x.lineCap = 'round';
+      x.save(); x.shadowColor = '#FF3D81'; x.shadowBlur = 40; path(); x.strokeStyle = grad; x.lineWidth = 16; x.stroke(); x.restore();
+      path(); x.strokeStyle = 'rgba(255,255,255,.9)'; x.lineWidth = 5; x.stroke();
+      const dot = (i, col) => { const [px, py] = at(i); x.beginPath(); x.arc(px, py, 17, 0, Math.PI * 2); x.fillStyle = col; x.fill(); x.lineWidth = 6; x.strokeStyle = '#fff'; x.stroke(); };
+      (r.stops || []).forEach((s) => {
+        const px = ox + (s.lon * kx - minX) * sc, py = oy + (-s.lat - minY) * sc;
+        x.beginPath(); x.arc(px, py, 13, 0, Math.PI * 2); x.fillStyle = '#FFC93C'; x.fill(); x.lineWidth = 5; x.strokeStyle = '#fff'; x.stroke();
+      });
+      dot(0, '#0FB5A8'); dot(pts.length - 1, '#FF3D81');
+    } else {
+      x.fillStyle = 'rgba(255,255,255,.55)'; x.font = font(600, 36); x.textAlign = 'center'; x.fillText('No route recorded', W / 2, by + bh / 2); x.textAlign = 'left';
+    }
+    // The numbers.
+    const tiles = [[kmText(r.dist), 'km', 'Distance'], [durText(r.moving), '', 'Riding time'], [durText(r.end - r.start), '', 'Total time'],
+      [String(Math.round(r.avg || 0)), 'km/h', 'Average'], [String(Math.round(r.top || 0)), 'km/h', 'Top speed'], [String((r.stops || []).length), '', (r.stops || []).length === 1 ? 'Stop' : 'Stops']];
+    const tw = (bw - 48) / 3, th = 150;
+    tiles.forEach(([v, unit, label], i) => {
+      const l = bx + (i % 3) * (tw + 24), t = 900 + Math.floor(i / 3) * (th + 24);
+      rr(l, t, tw, th, 32); x.fillStyle = 'rgba(255,255,255,.08)'; x.fill(); x.strokeStyle = 'rgba(255,255,255,.16)'; x.lineWidth = 2; x.stroke();
+      x.textAlign = 'center'; x.fillStyle = '#fff';
+      const value = v + (unit ? ' ' + unit : '');
+      fitText(value, tw - 30, 56, 800); x.fillText(value, l + tw / 2, t + 80);
+      x.fillStyle = 'rgba(255,255,255,.65)'; x.font = font(600, 28); x.fillText(label, l + tw / 2, t + 122);
+      x.textAlign = 'left';
+    });
+    // Footer.
+    const lg = x.createLinearGradient(72, 1250, 132, 1310); lg.addColorStop(0, '#FF8A1F'); lg.addColorStop(1, '#FF3D81');
+    rr(72, 1252, 60, 60, 18); x.fillStyle = lg; x.fill();
+    try { x.save(); x.translate(79, 1259 + 46); x.scale(46 / 960, 46 / 960); x.fillStyle = '#fff'; x.fill(new Path2D(BIKE)); x.restore(); } catch (e) { x.restore(); }
+    x.fillStyle = '#fff'; x.font = font(800, 44); x.fillText('RideComm', 150, 1298);
+    x.fillStyle = 'rgba(255,255,255,.55)'; x.font = font(600, 28); x.textAlign = 'right'; x.fillText('Ride together', W - 72, 1296); x.textAlign = 'left';
+    return c;
+  }
+  /** Shares the picture (the phone's share sheet when it can take files), else saves it. Made at once, so iPhone still counts the tap. */
+  function sharePicture(r) {
+    const url = ridePicture(r).toDataURL('image/png'), bin = atob(url.split(',')[1]), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const name = 'ridecomm-ride-' + localInput(r.start).slice(0, 10) + '.png', blob = new Blob([bytes], { type: 'image/png' });
+    const file = new File([blob], name, { type: 'image/png' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'My RideComm ride', text: rideLine(r) }).catch((e) => { if (!e || e.name !== 'AbortError') { downloadFile(name, blob); banner('Picture saved'); } });
+      return;
+    }
+    downloadFile(name, blob);
+    banner('Picture saved');
+  }
+
   // ---- Rendering ----
   function renderRiders() {
     const r = S.room; if (!r) return;
-    const list = [r.localParticipant, ...Array.from(r.remoteParticipants.values()).filter((p) => !isCheckIn(p.identity)).sort((a, b) => (a.name || '').localeCompare(b.name || ''))];
+    const list = [r.localParticipant, ...Array.from(r.remoteParticipants.values()).filter((p) => isRider(p.identity)).sort((a, b) => (a.name || '').localeCompare(b.name || ''))];
     $('riders').innerHTML = list.map((p) => {
       const me = p === r.localParticipant;
       const muted = !p.isMicrophoneEnabled;
@@ -2320,6 +2993,7 @@
     const r = S.room; if (!r) return;
     if (r.state === 'connected') setStatus('Connected · ' + riderCount() + (riderCount() === 1 ? ' rider' : ' riders'), 'var(--go)');
     else if (r.state === 'reconnecting' || r.state === 'signalReconnecting') setStatus('Weak network, reconnecting…', 'var(--amber)');
+    renderFamily();
   }
   function renderAll() { renderRiders(); renderStatus(); }
 
@@ -2395,7 +3069,7 @@
 
     await room.connect(pass.url, pass.token);
     S.room = room;
-    room.remoteParticipants.forEach((p) => { S.seen.add(p.identity); if (!isCheckIn(p.identity)) HS.seen.set(p.identity, p.name || 'A rider'); });
+    room.remoteParticipants.forEach((p) => { S.seen.add(p.identity); if (isRider(p.identity)) { HS.seen.set(p.identity, p.name || 'A rider'); noteRider(p.name); } });
     try { await room.startAudio(); } catch (e) {}
     $('unlockBtn').classList.toggle('hidden', room.canPlaybackAudio);
     await room.localParticipant.setMicrophoneEnabled(!S.mutedWanted);
@@ -2436,7 +3110,7 @@
     if (SET.hazards) send(T.hazard, { t: 'sync' });
     if (SET.dest) send(T.dest, { t: 'sync' });
     if (S.mySos && !S.mySosDelivered) {
-      send(T.sos, sosMsg(S.mySos.lat, S.mySos.lon)).then((ok) => {
+      sendMine(T.sos, sosMsg(S.mySos.lat, S.mySos.lon)).then((ok) => {
         if (ok) { S.mySosDelivered = true; renderMySos(); speak('Back online. SOS sent to the group.'); }
       });
     } else if (Date.now() - since > 5000) speak('Back online');
@@ -2476,6 +3150,7 @@
       $('join').classList.add('hidden'); $('ride').classList.remove('hidden'); $('dock').classList.remove('hidden');
       applyLook();
       $('codeOut').textContent = code;
+      startRecording(); renderPlanCard();
       history.replaceState(null, '', '?code=' + code + (params.get('ts') ? '&ts=' + params.get('ts') : ''));
       keepAwake();
       speak('Joined ride ' + code.split('').join(' '));
@@ -2497,7 +3172,9 @@
   }
   async function leave() {
     $('leaveSheet').classList.add('hidden');
+    $('shareSheet').classList.add('hidden');
     stopWhisper();
+    const saved = stopRecording();
     // Left without saying "home": offer a check-in on the join screen later.
     store.set('rc-web-checkin', SET.home && !HS.meHome && S.code ? JSON.stringify({ code: S.code, at: Date.now() }) : '');
     S.leaving = true; clearTimeout(S.retry);
@@ -2517,7 +3194,9 @@
     try { S.wakeLock && S.wakeLock.release(); } catch (e) {}
     $('ride').classList.add('hidden'); $('dock').classList.add('hidden'); $('join').classList.remove('hidden');
     applyLook();
-    $('audio').innerHTML = ''; renderAlerts(); renderMySos();
+    $('audio').innerHTML = ''; renderAlerts(); renderMySos(); renderFamily(); renderPlanCard(); renderPlans(); renderRides();
+    // The ride just ended: show its summary.
+    if (saved) openRide(saved.id);
   }
 
   // ---- Wiring ----
@@ -2564,7 +3243,7 @@
     if (e.target.closest('[data-open-dest]')) openDest();
     if (e.target.closest('#destClear')) clearDest();
     const place = e.target.closest('[data-place]');
-    if (place) { const p = D.results[Number(place.dataset.place)]; if (p) setDest(p.lat, p.lon, p.name); $('destDialog').classList.add('hidden'); }
+    if (place) { const p = D.results[Number(place.dataset.place)]; $('destDialog').classList.add('hidden'); if (p && PICK.cb) PICK.cb(p); }
     if (e.target.closest('#homeBtn')) imHome(false);
     if (e.target.closest('#homeLeave')) leave();
     if (e.target.closest('#homeSave')) saveHomeHere();
@@ -2577,6 +3256,33 @@
       const c = pendingCheckIn(), text = 'Reached home safe \u{1F3E0} ' + ($('nameIn').value.trim() || '') + (c ? ' (RideComm ride ' + c.code + ')' : '');
       (navigator.share ? navigator.share({ text }) : navigator.clipboard.writeText(text).then(() => banner('Copied: paste it in your group chat'))).catch(() => {});
     }
+    // Ride planner
+    if (e.target.closest('#planNew')) openPlanner();
+    if (e.target.closest('#planCancel, #planClose, #planDone')) { $('planSheet').classList.add('hidden'); PL.draft = null; }
+    if (e.target.closest('#planSave')) savePlanDraft();
+    if (e.target.closest('#planHere')) { PICK.cb = planPick('meet'); pickMyLocation(); }
+    const pp = e.target.closest('[data-plan-pick]');
+    if (pp) pickForPlan(pp.dataset.planPick);
+    const pd = e.target.closest('[data-plan-drop]');
+    if (pd && PL.draft) { const [k, i] = pd.dataset.planDrop.split(':'); if (k === 'stop') PL.draft.stops.splice(Number(i), 1); else PL.draft[k] = null; renderPlanner(); }
+    const pj = e.target.closest('[data-plan-join]');
+    if (pj) { $('codeIn').value = pj.dataset.planJoin; join(); }
+    const ps = e.target.closest('[data-plan-share]');
+    if (ps) sharePlan(ps.dataset.planShare);
+    const pi = e.target.closest('[data-plan-ics]');
+    if (pi) addToCalendar(pi.dataset.planIcs);
+    const pdel = e.target.closest('[data-plan-del]');
+    if (pdel && confirm('Delete this planned ride from this phone?')) dropPlan(pdel.dataset.planDel);
+    if (e.target.closest('#planSetDest')) { const p = planFor(S.code); if (p && p.dest) setDest(p.dest.lat, p.dest.lon, p.dest.name); }
+    if (e.target.closest('#placeHere')) pickMyLocation();
+    // Ride history
+    const rd = e.target.closest('[data-ride]');
+    if (rd) openRide(rd.dataset.ride);
+    if (e.target.closest('#ridesAll')) openAllRides();
+    if (e.target.closest('#ridesClose')) $('ridesSheet').classList.add('hidden');
+    if (e.target.closest('#rideShare') && RV.ride) sharePicture(RV.ride);
+    if (e.target.closest('#rideDelete')) deleteRide();
+    if (e.target.closest('#historyClear') && confirm('Clear all ' + rideCount() + ' rides from this phone?')) { writeRides([]); renderRides(); renderSettings(); banner('Ride history cleared'); }
     // Settings choices and emergency info
     const ch = e.target.closest('[data-choice]');
     if (ch) setSetting(ch.dataset.choice, ch.dataset.value);
@@ -2587,7 +3293,13 @@
   $('destCancel').addEventListener('click', () => $('destDialog').classList.add('hidden'));
   $('destSearch').addEventListener('click', searchDest);
   $('destQuery').addEventListener('keydown', (e) => { if (e.key === 'Enter') searchDest(); });
-  ['destDialog', 'leaveSheet'].forEach((id) => $(id).addEventListener('click', (e) => { if (e.target.id === id) $(id).classList.add('hidden'); }));
+  $('rideBack').addEventListener('click', closeRide);
+  $('planSheet').addEventListener('input', (e) => {
+    if (!PL.draft) return;
+    if (e.target.id === 'planTitle') PL.draft.title = e.target.value;
+    if (e.target.id === 'planWhen') PL.draft.at = fromInput(e.target.value);
+  });
+  ['destDialog', 'leaveSheet', 'shareSheet', 'ridesSheet'].forEach((id) => $(id).addEventListener('click', (e) => { if (e.target.id === id) $(id).classList.add('hidden'); }));
   // Talk to one rider: hold a "Hold to talk / reply" button, or hold a rider's row for half a second.
   let held = false, holdTimer = null;
   document.addEventListener('pointerdown', (e) => {
@@ -2671,33 +3383,37 @@
     if (on && !meter) startMeter();
     speak(on ? 'Mic on' : 'Mic off'); renderRiders();
   });
-  $('shareBtn').addEventListener('click', async () => {
-    // With rides locked to the group, the invite carries the group key after "#" (never sent to the web server).
-    const key = SET.locked && SET.server ? store.get('rc-web-key') || '' : '';
-    const url = 'https://saquelain.github.io/intercomm-app/join/?code=' + S.code + (key ? '#k=' + encodeURIComponent(key) : '');
-    const text = 'Join my RideComm ride! Code: ' + S.code;
-    try { if (navigator.share) await navigator.share({ title: 'RideComm', text, url }); else { await navigator.clipboard.writeText(text + ' ' + url); banner('Invite link copied'); } } catch (e) {}
-  });
+  // Share: the invite (with the plan and group key after "#"), or with Family can watch on, a choice of the family link too.
+  $('shareBtn').addEventListener('click', openShare);
+  $('shareRiders').addEventListener('click', () => { $('shareSheet').classList.add('hidden'); shareInvite(); });
+  $('shareFamily').addEventListener('click', () => { $('shareSheet').classList.add('hidden'); shareFamily(); });
+  $('shareCancel').addEventListener('click', () => $('shareSheet').classList.add('hidden'));
   $('sosBtn').addEventListener('click', startCountdown);
   $('countdown').addEventListener('click', () => stopCountdown(true));
   $('okBtn').addEventListener('click', imOk);
   $('unlockBtn').addEventListener('click', async () => { try { await S.room.startAudio(); } catch (e) {} $('unlockBtn').classList.add('hidden'); });
   ['codeIn', 'nameIn'].forEach((id) => $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') join(); }));
   // Closing the tab counts as leaving (not dropping out); a page kept for "back" doesn't.
-  window.addEventListener('pagehide', (e) => { if (S.room && !e.persisted) send(T.rider, { t: 'bye' }); });
+  window.addEventListener('pagehide', (e) => { if (S.room && !e.persisted) send(T.rider, { t: 'bye' }); saveRide(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveRide(); });
 
   applyNight(); applyLook();
-  // An invite to a locked ride carries the group key after "#k=".
+  // An invite to a locked ride carries the group key after "#k=", a planned ride its plan after "#p=".
   const hashParams = new URLSearchParams(location.hash.slice(1));
+  const preset = (params.get('code') || (location.hash.indexOf('=') < 0 ? location.hash.slice(1) : '') || '').toUpperCase();
   if (hashParams.get('k')) {
     store.set('rc-web-key', hashParams.get('k'));
     if (SET.server) { SET.locked = true; saveSettings(); }
-    history.replaceState(null, '', location.pathname + location.search);
   }
-  const preset = (params.get('code') || (location.hash.indexOf('=') < 0 ? location.hash.slice(1) : '') || '').toUpperCase();
+  const linkPlan = hashParams.get('p') ? planDecode(hashParams.get('p')) : null;
+  if (linkPlan && CODE_RE.test(preset)) {
+    keepPlan(linkPlan, preset);
+    if (SET.planner) banner('Ride plan saved: ' + (linkPlan.title || 'Ride') + ', ' + whenText(linkPlan.at));
+  }
+  if (hashParams.get('k') || hashParams.get('p')) history.replaceState(null, '', location.pathname + location.search);
   if (CODE_RE.test(preset)) $('codeIn').value = preset;
   $('nameIn').value = store.get('rc-web-name') || '';
-  renderCheckIn();
+  renderCheckIn(); renderPlans(); renderRides();
 })();
 </script>
 </body>

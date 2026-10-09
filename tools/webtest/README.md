@@ -12,6 +12,16 @@ mute, a fake signal drop with `goOffline()` / `goOnline()`). GPS is faked too: `
 - `more.test.js` (three riders): talk to one rider (hold in the sheet, hold to reply, hold a rider's row),
   shared destination (search, pasted maps link, arrival, clear), break reminder (clock moved forward), home
   safe (card, leave dialog, later check-in under `~home`), and rides locked with a group key from the link.
+- `plans.test.js`: ride history (a ride recorded from fake GPS moves with the clock moved on: distance, moving time,
+  top speed, a 4-minute stop; the summary after leaving, the share picture as a download and through the share sheet,
+  "Your rides", "See all", delete, Clear ride history, the switch off), the ride planner (making a plan with "My
+  location", pasted coordinates and searches; the invite link's `#p=`; the calendar file; Join from the plan, the plan
+  card in the ride and "Set as destination"; opening a `#p=` link, with `#k=` too) and the invite page (the plan, the
+  app and web links passing `p` and `k`, Add to calendar, no plan, iPhone).
+- `watch.test.js`: family watching: the watch page (waiting, live, the SOS alarm and "Seen", a late watcher catching
+  up, faded old positions, weak network, dropped and rejoined, the ride ended, typing a code) and the ride page's
+  side (watchers not counted or announced, "Family watching: Ammi", positions and SOS reach family only with
+  "Family can watch" on, the Share choice and family link, "the lowest id answers" ignoring watchers).
 - `gmap.test.js`: the Group map on Google Maps (Google's real script in keyless mode, served a stand-in key),
   long press, tap a rider, dark map, switching to OpenStreetMap in Settings, and a refused key falling back.
 
@@ -29,6 +39,8 @@ node tools/webtest/rides.test.js
 node tools/webtest/features.test.js
 node tools/webtest/more.test.js
 node tools/webtest/gmap.test.js
+node tools/webtest/plans.test.js
+node tools/webtest/watch.test.js
 ```
 
 In the Claude cloud container Playwright lives at `/opt/node22/lib/node_modules/playwright` (set

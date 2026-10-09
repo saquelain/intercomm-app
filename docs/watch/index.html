@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Watch the ride · RideComm</title>
+<meta name="description" content="Follow your family's RideComm ride live on a map. You can't hear the ride, and nobody hears you.">
+<meta name="theme-color" content="#070A14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night: #070A14; --deep: #0E0B22; --text: rgba(255,255,255,.96); --muted: rgba(255,255,255,.7); --faint: rgba(255,255,255,.45);
+    --orange: #FF8A1F; --pink: #FF3D81; --violet: #7C5CFF; --cyan: #22D3EE; --go: #34E89E; --stop: #FF4D6D; --amber: #FFC93C;
+    --glass: linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.04)); --rim: rgba(255,255,255,.22);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body { min-height: 100vh; font-family: Outfit, system-ui, sans-serif; color: var(--text); overflow-x: hidden;
+    background: linear-gradient(var(--night), var(--deep)); background-attachment: fixed; }
+  .glow { position: fixed; border-radius: 50%; filter: blur(70px); z-index: 0; pointer-events: none; }
+  .g1 { width: 70vw; height: 70vw; background: var(--violet); top: -20vw; left: -20vw; opacity: .5; }
+  .g2 { width: 60vw; height: 60vw; background: var(--pink); top: 35vh; right: -25vw; opacity: .35; }
+  .g3 { width: 60vw; height: 60vw; background: var(--cyan); bottom: -25vw; left: -10vw; opacity: .25; }
+  .hidden { display: none !important; }
+  svg.i { width: 24px; height: 24px; fill: currentColor; flex: none; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  h1 { margin: 0; font-size: 26px; font-weight: 800; }
+  p { margin: 6px 0 0; color: var(--muted); font-size: 16px; line-height: 1.35; }
+  .label { font-size: 13px; letter-spacing: 1.4px; color: var(--faint); font-weight: 600; text-transform: uppercase; }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .grow { flex: 1; min-width: 0; }
+  .field { margin-top: 16px; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 58px; border-radius: 999px; min-width: 0;
+    font-weight: 600; font-size: 18px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.1); color: var(--text); text-decoration: none; }
+  .btn.primary { background: linear-gradient(90deg, var(--orange), var(--pink)); border-color: rgba(255,255,255,.4); }
+  .btn:disabled { opacity: .45; }
+  .btn:active, .iconbtn:active { transform: scale(.96); }
+  input { width: 100%; height: 58px; border-radius: 18px; border: 1px solid var(--rim); background: rgba(255,255,255,.07);
+    color: var(--text); font: 600 20px Outfit, sans-serif; padding: 0 16px; margin-top: 8px; outline: none; }
+  input.code { text-align: center; letter-spacing: 8px; font-size: 30px; text-transform: uppercase; }
+  .error { color: var(--stop); margin-top: 12px; font-size: 15px; }
+  .logo { width: 60px; height: 60px; border-radius: 18px; display: grid; place-items: center; flex: none; color: #fff;
+    background: linear-gradient(135deg, var(--cyan), var(--violet)); border: 1px solid rgba(255,255,255,.4); }
+  .logo svg { width: 34px; height: 34px; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  /* Before watching: the ride code and my name */
+  .setup { position: relative; z-index: 1; max-width: 460px; margin: 0 auto; padding: max(24px, env(safe-area-inset-top)) 16px 32px; }
+  .card { background: var(--glass); border: 1px solid var(--rim); border-radius: 26px; padding: 22px 20px; margin-top: 18px;
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); animation: rise .35s ease-out both; }
+  .codeshow { font-size: 34px; font-weight: 800; letter-spacing: 6px; margin-top: 4px; }
+  .note { margin-top: 16px; font-size: 14px; color: var(--faint); }
+
+  /* Watching: the map, a bar on top, the riders below */
+  .watch { position: fixed; inset: 0; z-index: 1; background: #10121C; }
+  #map { position: absolute; inset: 0; background: #F2EFE9; }
+  .watch.google #map { bottom: var(--panel-h, 0px); }
+  .watch.google .attrib { display: none; }
+  .bar { position: absolute; z-index: 500; left: 12px; right: 12px; top: max(12px, env(safe-area-inset-top)); display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px 8px 14px; border-radius: 24px; background: rgba(16,18,34,.9); border: 1px solid var(--rim); }
+  .bar .t { font-weight: 600; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar .s { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--go); flex: none; }
+  .iconbtn { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; flex: none; border: 1px solid var(--rim); background: rgba(255,255,255,.08); }
+  .iconbtn.on { color: var(--orange); }
+  .panel { position: absolute; z-index: 500; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; max-width: 560px; margin: 0 auto; }
+  .box { padding: 14px 16px; border-radius: 26px; background: rgba(16,18,34,.92); border: 1px solid var(--rim); max-height: 46vh; overflow-y: auto; }
+  .attrib { align-self: flex-end; font-size: 10px; padding: 3px 8px; border-radius: 8px; background: rgba(16,18,34,.85); color: rgba(255,255,255,.8); }
+  .attrib a { color: inherit; }
+  .state { text-align: center; padding: 10px 6px 6px; }
+  .state h2 { margin: 8px 0 0; font-size: 22px; }
+  .state .ic { margin: 0 auto; }
+  .ic { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  .rider { display: flex; align-items: center; gap: 12px; padding: 8px 6px; border-radius: 16px; width: 100%; text-align: left; background: none; border: 0; }
+  .rider.sel { background: rgba(255,138,31,.18); }
+  .rider + .rider { margin-top: 2px; }
+  .avatar { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 18px; flex: none; color: #fff;
+    background: linear-gradient(135deg, var(--violet), var(--cyan)) center/cover; }
+  .avatar.off { background: rgba(255,255,255,.12); color: var(--muted); }
+  .rname { font-weight: 600; font-size: 17px; overflow-wrap: anywhere; }
+  .rsub { color: var(--muted); font-size: 14px; }
+  .rsub.old { color: var(--amber); }
+  .info { display: flex; align-items: center; gap: 12px; padding: 6px 6px 10px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.1); }
+  .sos-card { padding: 14px; border-radius: 20px; margin-bottom: 10px; background: linear-gradient(135deg, rgba(255,77,109,.45), rgba(255,77,109,.18)); border: 1px solid rgba(255,77,109,.8); }
+  .sos-card .btn { min-height: 48px; font-size: 16px; margin-top: 10px; }
+  .mk { position: relative; width: 44px; height: 44px; }
+  .mk .face { width: 44px; height: 44px; border-radius: 50%; border: 3px solid #fff; display: grid; place-items: center; font-weight: 800; font-size: 17px;
+    color: #fff; background: linear-gradient(135deg, var(--violet), var(--cyan)) center/cover; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
+  .mk.stale { opacity: .5; }
+  .mk.sos .face { background: linear-gradient(135deg, #FF5E62, #E5245E); box-shadow: 0 0 0 6px rgba(255,77,109,.4), 0 2px 6px rgba(0,0,0,.45); }
+  .mk .tagname { position: absolute; top: 48px; left: 50%; transform: translateX(-50%); padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+    background: rgba(16,14,36,.9); color: #fff; font: 600 13px Outfit, sans-serif; }
+  .mk .tagname span { color: rgba(255,255,255,.7); font-weight: 400; }
+  .mk .arrow { position: absolute; left: 50%; top: 50%; width: 0; height: 0; margin: -36px 0 0 -6px; border: 6px solid transparent;
+    border-bottom: 10px solid #fff; transform-origin: 6px 36px; }
+  .pin { position: relative; width: 46px; height: 76px; }
+  .pin .head { width: 46px; height: 46px; border-radius: 50%; background: var(--amber); border: 3px solid #fff; display: grid; place-items: center; color: #2A1E05; }
+  .pin .stem { position: absolute; left: 21px; top: 46px; width: 4px; height: 26px; background: var(--amber); }
+  .pin .tip { position: absolute; left: 18px; top: 68px; width: 10px; height: 10px; border-radius: 50%; background: var(--amber); }
+  .pin .tagname { position: absolute; bottom: 84px; left: 50%; transform: translateX(-50%); padding: 5px 11px; border-radius: 14px; white-space: nowrap;
+    background: rgba(16,14,36,.92); color: #fff; font: 600 13px Outfit, sans-serif; text-align: center; line-height: 1.25; }
+  .pin.dest .head, .pin.dest .stem, .pin.dest .tip { background: var(--go); }
+  .pin.dest .head { color: #042A1B; }
+  .leaflet-div-icon { background: none; border: 0; }
+
+  /* SOS: full screen until "Seen" */
+  .alarm { position: fixed; inset: 0; z-index: 50; overflow-y: auto; background: radial-gradient(circle at 50% 20%, #FF5E62, #C2184F 70%); text-align: center;
+    padding: max(28px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom)); }
+  .alarm-in { max-width: 460px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  .alarm .big { font-size: 88px; font-weight: 800; line-height: 1; letter-spacing: 4px; animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform: scale(1.08); } }
+  .alarm h1 { font-size: 30px; overflow-wrap: anywhere; } .alarm p { color: rgba(255,255,255,.9); font-size: 18px; margin: 0; }
+  .alarm .btn { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.6); }
+  .alarm .btn.seen { background: #fff; color: #B0103F; font-weight: 800; font-size: 20px; min-height: 66px; }
+  .med { text-align: left; padding: 14px 16px; border-radius: 20px; background: rgba(0,0,0,.18); }
+  .med .label { color: rgba(255,255,255,.75); } .med .v { font-size: 18px; font-weight: 600; margin-bottom: 8px; overflow-wrap: anywhere; } .med .v.big { font-size: 30px; font-weight: 800; }
+  .sound { position: fixed; z-index: 45; left: 16px; right: 16px; bottom: auto; top: calc(max(12px, env(safe-area-inset-top)) + 74px); max-width: 420px; margin: 0 auto; min-height: 48px; font-size: 16px; }
+  .banner { position: fixed; top: max(10px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 60; width: calc(100% - 32px);
+    max-width: 488px; padding: 14px 18px; border-radius: 20px; background: rgba(30,26,58,.95); border: 1px solid var(--rim); font-size: 17px; transition: opacity .3s, transform .3s; }
+  .banner.gone { opacity: 0; transform: translate(-50%, -20px); pointer-events: none; }
+  @media (max-width: 380px) {
+    .bar { gap: 6px; padding-left: 10px; }
+    .iconbtn { width: 40px; height: 40px; }
+    input.code { letter-spacing: 4px; font-size: 26px; }
+    .alarm .big { font-size: 68px; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>
+
+<!-- Before watching -->
+<section class="setup" id="setup">
+  <div class="row">
+    <div class="logo"><svg class="i" viewBox="0 -960 960 960"><path d="M480.12-330q70.88 0 120.38-49.62t49.5-120.5q0-70.88-49.62-120.38T479.88-670Q409-670 359.5-620.38T310-499.88q0 70.88 49.62 120.38t120.5 49.5Zm-.36-58q-46.76 0-79.26-32.74-32.5-32.73-32.5-79.5 0-46.76 32.74-79.26 32.73-32.5 79.5-32.5 46.76 0 79.26 32.74 32.5 32.73 32.5 79.5 0 46.76-32.74 79.26-32.73 32.5-79.5 32.5Zm.24 188q-135 0-245.5-76T57-470q-4-7.13-6-14.65-2-7.52-2-15.43 0-7.92 2-15.38 2-7.47 6-14.54 67-118 177.5-194T480-800q135 0 245.5 76T903-530q4 7.12 6 14.65 2 7.52 2 15.43 0 7.92-2 15.38-2 7.47-6 14.54-67 118-177.5 194T480-200Z"/></svg></div>
+    <div class="grow"><h1>Watch the ride</h1><p style="margin:2px 0 0;font-size:14px">RideComm · for family at home</p></div>
+  </div>
+  <div class="card">
+    <p style="margin:0">See your family's ride live on a map: where everyone is, and an alarm if someone sends an SOS. You can't hear the ride, and nobody hears you.</p>
+    <div class="field hidden" id="codeShow"><div class="label">Ride code</div><div class="codeshow" id="codeShowText"></div></div>
+    <div class="field" id="codeWrap"><div class="label">Ride code</div><input id="codeIn" class="code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="CODE"></div>
+    <div class="field"><div class="label">Your name</div><input id="nameIn" maxlength="20" autocomplete="nickname" placeholder="e.g. Ammi"></div>
+    <div class="field"><button class="btn primary" id="startBtn">Start watching</button></div>
+    <div class="error hidden" id="err"></div>
+  </div>
+  <p class="note">The riders see that you're watching. Each rider decides whether family can see them on the map. Keep this page open to hear the SOS alarm.</p>
+</section>
+
+<!-- Watching -->
+<section class="watch hidden" id="watch">
+  <div id="map"></div>
+  <div class="bar">
+    <div class="grow"><div class="t" id="title">Ride</div><div class="s"><span class="dot" id="stateDot"></span><span id="stateText">Connecting…</span></div></div>
+    <button class="iconbtn" id="fitBtn" aria-label="Show everyone"><svg class="i" viewBox="0 -960 960 960"><path d="M200-200h80q17 0 28.5 11.5T320-160q0 17-11.5 28.5T280-120H160q-17 0-28.5-11.5T120-160v-120q0-17 11.5-28.5T160-320q17 0 28.5 11.5T200-280v80Zm560 0v-80q0-17 11.5-28.5T800-320q17 0 28.5 11.5T840-280v120q0 17-11.5 28.5T800-120H680q-17 0-28.5-11.5T640-160q0-17 11.5-28.5T680-200h80ZM200-760v80q0 17-11.5 28.5T160-640q-17 0-28.5-11.5T120-680v-120q0-17 11.5-28.5T160-840h120q17 0 28.5 11.5T320-800q0 17-11.5 28.5T280-760h-80Zm560 0h-80q-17 0-28.5-11.5T640-800q0-17 11.5-28.5T680-840h120q17 0 28.5 11.5T840-800v120q0 17-11.5 28.5T800-640q-17 0-28.5-11.5T760-680v-80Z"/></svg></button>
+    <button class="iconbtn" id="followBtn" aria-label="Follow a rider"><svg class="i" viewBox="0 -960 960 960"><path d="M440-82v-40q-125-14-214.5-103.5T122-440H82q-17 0-28.5-11.5T42-480q0-17 11.5-28.5T82-520h40q14-125 103.5-214.5T440-838v-40q0-17 11.5-28.5T480-918q17 0 28.5 11.5T520-878v40q125 14 214.5 103.5T838-520h40q17 0 28.5 11.5T918-480q0 17-11.5 28.5T878-440h-40q-14 125-103.5 214.5T520-122v40q0 17-11.5 28.5T480-42q-17 0-28.5-11.5T440-82Zm40-118q116 0 198-82t82-198q0-116-82-198t-198-82q-116 0-198 82t-82 198q0 116 82 198t198 82Zm0-120q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Z"/></svg></button>
+  </div>
+  <div class="panel" id="panel">
+    <div class="attrib">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</div>
+    <div class="box" id="box"></div>
+  </div>
+</section>
+
+<button class="btn primary sound hidden" id="soundBtn">Tap to turn on the SOS alarm sound</button>
+<div class="alarm hidden" id="alarm" role="alertdialog" aria-live="assertive"><div class="alarm-in" id="alarmIn"></div></div>
+<div class="banner gone" id="banner"></div>
+
+<script async src="https://cdn.jsdelivr.net/npm/livekit-client@2.22.3/dist/livekit-client.umd.js"
+  onerror="var s=document.createElement('script');s.src='https://unpkg.com/livekit-client@2.22.3/dist/livekit-client.umd.js';document.head.appendChild(s)"></script>
+<script>
+(() => {
+  'use strict';
+  // Family at home follow a ride: joins it as "watch-…" (never a rider), never publishes a mic and takes no audio.
+  // Same token server and messages as the ride page (PROTOCOL.md "Family watching").
+  const params = new URLSearchParams(location.search);
+  const TOKEN_SERVER = params.get('ts') || 'ridecomm-xnnn94';
+  const CODE_RE = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/;
+  const T = { sos: 'rc-sos', loc: 'rc-loc', dest: 'rc-dest', avatar: 'rc-avatar' };
+  // The group's private ride server, once it's deployed (same as the ride page).
+  const RIDE_SERVER = '';
+  // Google Maps key, restricted to https://saquelain.github.io/* (same as the ride page). Empty: OpenStreetMap.
+  const GMAPS_KEY = 'AIzaSyBR672NmW5DM29g3s6JfyWc2IBbCEdZ7lk';
+  const STALE_MS = 120000;
+  const isCheckIn = (id) => /~home$/.test(id || '');
+  const isWatcher = (id) => /^watch-/.test(id || '');
+  const isRider = (id) => !isCheckIn(id) && !isWatcher(id);
+  const P = {
+    pin: 'M452-112q-14-5-25-15-65-60-115-117t-83.5-110.5q-33.5-53.5-51-103T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 45-17.5 94.5t-51 103Q698-301 648-244T533-127q-11 10-25 15t-28 5q-14 0-28-5Zm84.5-391.5Q560-527 560-560t-23.5-56.5Q513-640 480-640t-56.5 23.5Q400-593 400-560t23.5 56.5Q447-480 480-480t56.5-23.5Z',
+    flag: 'M280-400v240q0 17-11.5 28.5T240-120q-17 0-28.5-11.5T200-160v-600q0-17 11.5-28.5T240-800h287q14 0 25 9t14 23l10 48h184q17 0 28.5 11.5T800-680v320q0 17-11.5 28.5T760-320H553q-14 0-25-9t-14-23l-10-48H280Z',
+    finish: 'M390-740h60v-60h-60v60Zm120 0v-60h60v60h-60ZM390-500v-60h60v60h-60Zm240-120v-60h60v60h-60Zm0 120v-60h60v60h-60Zm-120 0v-60h60v60h-60Zm120-240v-60h60v60h-60Zm-180 60v-60h60v60h-60ZM299.82-160q-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37v-580q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.42 8.62 8.59 8.63 8.59 21.38v30H390v60h-60v60h60v60h-60v370q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63ZM570-560v-60h60v60h-60Zm-120 0v-60h60v60h-60Zm-60-60v-60h60v60h-60Zm120 0v-60h60v60h-60Zm60-60v-60h60v60h-60Z',
+    call: 'M795-120q-116 0-236.5-56T335-335Q232-438 176-558.5T120-795q0-19 13-32t32-13h140q14 0 24 10t14 25l27 126q2 14-.5 25.5T359-634L259-533q26 44 55 82t64 72q37 38 78 69.5t86 55.5l95-98q10-11 23-15t26-2l119 26q15 4 25 16t10 27v135q0 19-13 32t-32 13Z',
+    schedule: 'M513-492v-171q0-13-8.5-21.5T483-693q-13 0-21.5 8.5T453-663v183q0 6 2 11t6 10l144 149q9 10 22.5 9.5T650-310q9-9 9-22t-9-22L513-492ZM480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-82 31.5-155t86-127.5Q252-817 325-848.5T480-880q82 0 155 31.5t127.5 86Q817-708 848.5-635T880-480q0 82-31.5 155t-86 127.5Q708-143 635-111.5T480-80Z',
+    home: 'M160-180v-390q0-14.25 6.38-27 6.37-12.75 17.62-21l260-195q15.68-12 35.84-12Q500-825 516-813l260 195q11.25 8.25 17.63 21 6.37 12.75 6.37 27v390q0 24.75-17.62 42.37Q764.75-120 740-120H590q-12.75 0-21.37-8.63Q560-137.25 560-150v-220q0-12.75-8.62-21.38Q542.75-400 530-400H430q-12.75 0-21.37 8.62Q400-382.75 400-370v220q0 12.75-8.62 21.37Q382.75-120 370-120H220q-24.75 0-42.37-17.63Q160-155.25 160-180Z',
+  };
+  const icon = (d) => '<svg class="i" viewBox="0 -960 960 960"><path d="' + d + '"/></svg>';
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+  const newId = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+  let myId = store.get('rc-watch-id');
+  if (!myId || !isWatcher(myId)) { myId = 'watch-' + newId(); store.set('rc-watch-id', myId); }
+
+  // ---- State ----
+  const W = { room: null, code: null, name: '', retry: null, retryDelay: 2000, everRiders: false, offline: false,
+    pos: new Map(), photos: new Map(), regroup: null, dest: null, alerts: new Map(), follow: null, fitted: false, wake: null };
+
+  let bannerTimer = null;
+  function banner(text) {
+    const b = $('banner'); b.textContent = text; b.classList.remove('gone');
+    clearTimeout(bannerTimer); bannerTimer = setTimeout(() => b.classList.add('gone'), 3500);
+  }
+  const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  function ago(ms) {
+    const s = Math.max(0, Date.now() - ms) / 1000;
+    return s < 60 ? 'just now' : s < 3600 ? Math.floor(s / 60) + ' min ago' : Math.floor(s / 3600) + ' h ago';
+  }
+  const riders = () => (W.room ? Array.from(W.room.remoteParticipants.values()).filter((p) => isRider(p.identity)) : []);
+  const nameOf = (id) => { const p = W.room && W.room.remoteParticipants.get(id); return (p && p.name) || (W.pos.get(id) || {}).name || 'A rider'; };
+
+  // ---- SOS alarm: a siren and buzz every few seconds until "Seen" ----
+  let audioCtx = null, alarmTimer = null;
+  function unlockSound() {
+    try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); } catch (e) {}
+    setTimeout(renderSoundBtn, 300);
+  }
+  function renderSoundBtn() { $('soundBtn').classList.toggle('hidden', !W.room || !!(audioCtx && audioCtx.state === 'running')); }
+  function siren(seconds) {
+    try {
+      if (!audioCtx) return;
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'square'; g.gain.value = 0.1; o.connect(g); g.connect(audioCtx.destination);
+      const t0 = audioCtx.currentTime;
+      for (let i = 0; i < seconds * 2; i++) o.frequency.setValueAtTime(i % 2 ? 620 : 960, t0 + i * 0.5);
+      o.start(t0); o.stop(t0 + seconds);
+    } catch (e) {}
+  }
+  const buzz = () => { try { navigator.vibrate && navigator.vibrate([500, 200, 500, 200, 500]); } catch (e) {} };
+  function alarmOn() {
+    if (alarmTimer) return;
+    const ring = () => { siren(2); buzz(); };
+    ring(); alarmTimer = setInterval(ring, 3000);
+  }
+  function alarmOff() { clearInterval(alarmTimer); alarmTimer = null; try { navigator.vibrate && navigator.vibrate(0); } catch (e) {} }
+  function infoFrom(o) {
+    if (!o || typeof o !== 'object') return null;
+    const i = { blood: String(o.blood || '').slice(0, 40), medical: String(o.medical || '').slice(0, 200), contact: String(o.contact || '').slice(0, 40), phone: String(o.phone || '').slice(0, 40) };
+    return i.blood || i.medical || i.contact || i.phone ? i : null;
+  }
+  const tel = (n) => 'tel:' + String(n).replace(/[^\d+]/g, '');
+  const mapLink = (lat, lon) => 'https://maps.google.com/?q=' + lat + ',' + lon;
+  function onSos(o, from) {
+    if (o.t === 'sos') {
+      const cur = W.alerts.get(from), again = cur && cur.at === o.at;
+      W.alerts.set(from, { name: o.name || nameOf(from), at: o.at || Date.now(), lat: o.lat, lon: o.lon, crash: !!o.crash, info: infoFrom(o.info), seen: again ? cur.seen : false });
+      if (o.lat != null) W.pos.set(from, Object.assign({}, W.pos.get(from) || {}, { name: o.name || nameOf(from), lat: o.lat, lon: o.lon, at: Date.now() }));
+      if (!again) { alarmOn(); W.follow = from; W.fitted = true; }
+    } else if (o.t === 'ok') {
+      if (!W.alerts.delete(from)) return;
+      banner((o.name || nameOf(from)) + ' is OK');
+    } else return;
+    if (![...W.alerts.values()].some((a) => !a.seen)) alarmOff();
+    renderAlarm(); render();
+  }
+  function seen() { W.alerts.forEach((a) => { a.seen = true; }); alarmOff(); renderAlarm(); render(); }
+  function sosText(a) { return a.crash ? 'may have crashed' : 'needs help'; }
+  function medInfo(i) {
+    if (!i) return '';
+    return '<div class="med">' + (i.blood ? '<div class="label">Blood group</div><div class="v big">' + esc(i.blood) + '</div>' : '') +
+      (i.medical ? '<div class="label">Medical</div><div class="v">' + esc(i.medical) + '</div>' : '') +
+      (i.contact || i.phone ? '<div class="label">Emergency contact</div><div class="v">' + esc([i.contact, i.phone].filter(Boolean).join(' · ')) + '</div>' : '') + '</div>';
+  }
+  function renderAlarm() {
+    const open = [...W.alerts.entries()].find(([, a]) => !a.seen);
+    $('alarm').classList.toggle('hidden', !open);
+    if (!open) return;
+    const [, a] = open;
+    $('alarmIn').innerHTML = '<div class="big">SOS</div><h1>' + esc(a.name) + ' ' + sosText(a) + '</h1><p>Sent at ' + esc(clock(a.at)) + '</p>' +
+      (a.lat != null ? '<a class="btn" target="_blank" rel="noopener" href="' + mapLink(a.lat, a.lon) + '">' + icon(P.pin) + 'Open their location in Google Maps</a>' : '<p>Waiting for their location…</p>') +
+      medInfo(a.info) +
+      (a.info && a.info.phone ? '<a class="btn" href="' + tel(a.info.phone) + '">' + icon(P.call) + 'Call ' + esc(a.info.contact || 'their contact') + '</a>' : '') +
+      '<a class="btn" href="tel:112">' + icon(P.call) + 'Call 112</a>' +
+      '<button class="btn seen" id="seenBtn">Seen</button>';
+  }
+
+  // ---- The map: Google Maps when the key works here, else Leaflet + OpenStreetMap (same engine as the ride page) ----
+  const GM = { loading: null, failed: false };
+  const useGoogle = () => !!GMAPS_KEY && !GM.failed;
+  let leaflet = null;
+  function loadLeaflet() {
+    if (leaflet) return leaflet;
+    leaflet = new Promise((ok, bad) => {
+      const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(css);
+      const js = document.createElement('script'); js.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+      js.onload = () => ok(window.L); js.onerror = () => { leaflet = null; bad(new Error('map')); }; document.head.appendChild(js);
+    });
+    return leaflet;
+  }
+  function loadGoogle() {
+    if (GM.loading) return GM.loading;
+    GM.loading = new Promise((ok, bad) => {
+      window.__rcGoogleReady = () => ok(window.google);
+      window.gm_authFailure = () => { GM.failed = true; resetMap(); openMap(); };
+      const js = document.createElement('script');
+      js.async = true;
+      js.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(GMAPS_KEY) + '&v=weekly&loading=async&callback=__rcGoogleReady';
+      js.onerror = () => { GM.loading = null; bad(new Error('map')); };
+      document.head.appendChild(js);
+    });
+    return GM.loading;
+  }
+  const mk = (html, w, h, ax, ay) => ({ html, w, h, ax, ay });
+  function leafletEngine(el) {
+    const map = L.map(el, { zoomControl: false, attributionControl: false }).setView([20.6, 78.9], 5);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    const di = (i) => L.divIcon({ html: i.html, iconSize: [i.w, i.h], iconAnchor: [i.ax, i.ay], className: '' });
+    return {
+      view: (lat, lon, z) => map.setView([lat, lon], z),
+      pan: (lat, lon) => map.panTo([lat, lon]),
+      zoom: () => map.getZoom(),
+      fit: (pts) => map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [40, 190], paddingBottomRight: [40, 300], maxZoom: 16 }),
+      marker(lat, lon, i, z, onClick) {
+        const m = L.marker([lat, lon], { icon: di(i), zIndexOffset: z || 0 }).addTo(map);
+        if (onClick) m.on('click', onClick);
+        return { move: (a, b) => m.setLatLng([a, b]), icon: (n) => m.setIcon(di(n)), remove: () => m.remove() };
+      },
+      onDrag: (cb) => map.on('dragstart', cb),
+      destroy: () => map.remove(),
+    };
+  }
+  function googleEngine(el) {
+    const g = google.maps;
+    const map = new g.Map(el, { center: { lat: 20.6, lng: 78.9 }, zoom: 5, disableDefaultUI: true, clickableIcons: false, gestureHandling: 'greedy', keyboardShortcuts: false });
+    class Html extends g.OverlayView {
+      constructor(lat, lon, i, z, onClick) {
+        super();
+        this.rcAt = new g.LatLng(lat, lon);
+        this.rcDiv = document.createElement('div');
+        this.rcDiv.style.cssText = 'position:absolute;cursor:pointer';
+        this.rcDiv.style.zIndex = String(1000 + (z || 0));
+        if (onClick) this.rcDiv.addEventListener('click', (e) => { e.stopPropagation(); onClick(); });
+        this.rcIcon(i);
+        this.setMap(map);
+      }
+      rcIcon(i) { this.rcI = i; this.rcDiv.innerHTML = i.html; this.rcDiv.style.width = i.w + 'px'; this.rcDiv.style.height = i.h + 'px'; this.draw(); }
+      rcMove(lat, lon) { this.rcAt = new g.LatLng(lat, lon); this.draw(); }
+      onAdd() { this.getPanes().overlayMouseTarget.appendChild(this.rcDiv); }
+      draw() {
+        const p = this.getProjection && this.getProjection();
+        const pt = p && p.fromLatLngToDivPixel(this.rcAt);
+        if (!pt) return;
+        this.rcDiv.style.left = (pt.x - this.rcI.ax) + 'px';
+        this.rcDiv.style.top = (pt.y - this.rcI.ay) + 'px';
+      }
+      onRemove() { this.rcDiv.remove(); }
+    }
+    return {
+      view: (lat, lon, z) => { map.setZoom(z); map.panTo({ lat, lng: lon }); },
+      pan: (lat, lon) => map.panTo({ lat, lng: lon }),
+      zoom: () => map.getZoom(),
+      fit(pts) {
+        const b = new g.LatLngBounds();
+        pts.forEach((p) => b.extend({ lat: p[0], lng: p[1] }));
+        map.fitBounds(b, { top: 190, left: 40, right: 40, bottom: 40 });
+        g.event.addListenerOnce(map, 'idle', () => { if (map.getZoom() > 16) map.setZoom(16); });
+      },
+      marker(lat, lon, i, z, onClick) {
+        const m = new Html(lat, lon, i, z, onClick);
+        return { move: (a, b) => m.rcMove(a, b), icon: (n) => m.rcIcon(n), remove: () => m.setMap(null) };
+      },
+      onDrag: (cb) => map.addListener('dragstart', cb),
+      destroy: () => { g.event.clearInstanceListeners(map); el.innerHTML = ''; },
+    };
+  }
+  const M = { map: null, marks: new Map(), pins: {}, sig: new Map() };
+  function resetMap() {
+    if (!M.map) return;
+    try { M.map.destroy(); } catch (e) {}
+    M.map = null; M.marks.clear(); M.pins = {}; M.sig.clear();
+    const el = $('map'), fresh = document.createElement('div'); fresh.id = 'map'; el.replaceWith(fresh);
+    $('watch').classList.remove('google');
+  }
+  const panelWatch = window.ResizeObserver ? new ResizeObserver(() => fitPanel()) : null;
+  function fitPanel() { const v = $('watch'), p = $('panel'); v.style.setProperty('--panel-h', (v.clientHeight - p.offsetTop + 10) + 'px'); }
+  async function openMap() {
+    const google = useGoogle();
+    try { if (google) await loadGoogle(); else await loadLeaflet(); } catch (e) { banner("Couldn't load the map. Check your internet."); return; }
+    if (google !== useGoogle()) return openMap();
+    if (M.map) return;
+    $('watch').classList.toggle('google', google);
+    if (google) { fitPanel(); if (panelWatch) panelWatch.observe($('panel')); }
+    M.map = google ? googleEngine($('map')) : leafletEngine($('map'));
+    M.map.onDrag(() => { W.follow = null; render(); });
+    W.fitted = false;
+    renderMap();
+  }
+  function riderIcon(id, p) {
+    const stale = Date.now() - p.at > STALE_MS, photo = W.photos.get(id), sos = W.alerts.has(id);
+    const name = (p.name || 'Rider').split(' ')[0];
+    const arrow = !stale && (p.spd || 0) >= 8 && p.hdg != null ? '<div class="arrow" style="transform:rotate(' + p.hdg + 'deg)"></div>' : '';
+    const html = '<div class="mk' + (stale ? ' stale' : '') + (sos ? ' sos' : '') + '">' + arrow + '<div class="face"' + (photo ? ' style="background-image:url(' + photo + ')"' : '') + '>' +
+      (photo ? '' : esc(name.charAt(0).toUpperCase())) + '</div><div class="tagname">' + esc(name) + ' <span>· ' + (sos ? 'SOS' : ago(p.at)) + '</span></div></div>';
+    return mk(html, 44, 44, 22, 22);
+  }
+  const pinIcon = (cls, label, sub, d) => mk('<div class="pin ' + cls + '"><div class="tagname">' + esc(label) + '<br><span style="opacity:.75">' + sub + '</span></div><div class="head">' + icon(d) + '</div><div class="stem"></div><div class="tip"></div></div>', 46, 76, 23, 73);
+  function renderMap() {
+    const m = M.map; if (!m) return;
+    const seenIds = new Set();
+    W.pos.forEach((p, id) => {
+      seenIds.add(id);
+      const i = riderIcon(id, p), mark = M.marks.get(id);
+      if (mark) { mark.move(p.lat, p.lon); if (M.sig.get(id) !== i.html) { mark.icon(i); M.sig.set(id, i.html); } }
+      else { M.marks.set(id, m.marker(p.lat, p.lon, i, 0, () => { W.follow = id; m.view(p.lat, p.lon, Math.max(m.zoom(), 15)); render(); })); M.sig.set(id, i.html); }
+    });
+    M.marks.forEach((mark, id) => { if (!seenIds.has(id)) { mark.remove(); M.marks.delete(id); M.sig.delete(id); } });
+    const pin = (key, place, i, z) => {
+      const cur = M.pins[key];
+      if (!place) { if (cur) { cur.remove(); delete M.pins[key]; } return; }
+      if (cur) { cur.move(place.lat, place.lon); cur.icon(i); } else M.pins[key] = m.marker(place.lat, place.lon, i, z);
+    };
+    pin('regroup', W.regroup, W.regroup && pinIcon('', W.regroup.label, 'Regroup point', P.flag), -100);
+    pin('dest', W.dest, W.dest && pinIcon('dest', W.dest.label, 'Destination', P.finish), -150);
+    const f = W.follow && W.pos.get(W.follow);
+    if (f) m.pan(f.lat, f.lon);
+    else if (!W.fitted) fitAll();
+  }
+  function fitAll() {
+    const pts = Array.from(W.pos.values()).map((p) => [p.lat, p.lon]);
+    if (W.regroup) pts.push([W.regroup.lat, W.regroup.lon]);
+    if (W.dest) pts.push([W.dest.lat, W.dest.lon]);
+    if (!pts.length || !M.map) return;
+    W.fitted = true;
+    if (pts.length === 1) M.map.view(pts[0][0], pts[0][1], 15); else M.map.fit(pts);
+  }
+
+  // ---- Messages from the riders ----
+  function onLoc(o, from) {
+    if (!o.t || o.t === 'pos') {
+      if (!isFinite(o.lat) || !isFinite(o.lon)) return;
+      const first = !W.pos.size;
+      W.pos.set(from, { name: o.name || nameOf(from), lat: o.lat, lon: o.lon, at: o.at || Date.now(), spd: o.spd, hdg: o.hdg });
+      if (first) W.fitted = false;
+    } else if (o.t === 'regroup') {
+      const cur = W.regroup;
+      if (cur && cur.id !== o.id && (o.at < cur.at || (o.at === cur.at && o.id < cur.id))) return;
+      W.regroup = { id: o.id, lat: o.lat, lon: o.lon, label: String(o.label || 'Regroup').slice(0, 40), name: o.name || 'A rider', at: o.at };
+    } else if (o.t === 'regroup-clear') {
+      if (!W.regroup || W.regroup.id !== o.id) return;
+      W.regroup = null;
+    } else return;
+    render();
+  }
+  function onDest(o, from) {
+    if (o.t === 'dest') {
+      const cur = W.dest;
+      if (cur && (cur.id === o.id || o.at < cur.at || (o.at === cur.at && o.id < cur.id))) return;
+      W.dest = { id: o.id, lat: o.lat, lon: o.lon, label: String(o.label || 'Destination').slice(0, 40), name: o.name || nameOf(from), at: o.at };
+    } else if (o.t === 'dest-clear') {
+      if (!W.dest || W.dest.id !== o.id) return;
+      W.dest = null;
+    } else return;
+    render();
+  }
+
+  // ---- What's shown ----
+  function state() {
+    const r = W.room, n = riders().length;
+    if (n) W.everRiders = true;
+    if (!r) return W.offline ? ['Connection lost, reconnecting…', 'var(--amber)', 'lost'] : ['Connecting…', 'var(--amber)', 'connecting'];
+    if (r.state === 'reconnecting' || r.state === 'signalReconnecting') return ['Weak network, reconnecting…', 'var(--amber)', 'weak'];
+    if (!n) return W.everRiders ? ['The ride has ended', 'var(--faint)', 'ended'] : ['Waiting for the ride to start', 'var(--amber)', 'waiting'];
+    return ['Live · ' + n + (n === 1 ? ' rider' : ' riders'), 'var(--go)', 'live'];
+  }
+  function render() {
+    const [text, color, st] = state();
+    $('stateText').textContent = text; $('stateDot').style.background = color;
+    $('watch').dataset.state = st;
+    $('followBtn').classList.toggle('on', !!W.follow);
+    let html = '';
+    W.alerts.forEach((a) => {
+      html += '<div class="sos-card"><div class="rname">SOS · ' + esc(a.name) + ' ' + sosText(a) + '</div><div class="rsub" style="color:#fff">Sent at ' + esc(clock(a.at)) + '</div>' +
+        (a.lat != null ? '<a class="btn" target="_blank" rel="noopener" href="' + mapLink(a.lat, a.lon) + '">' + icon(P.pin) + 'Open location in Google Maps</a>' : '') +
+        (a.info && a.info.phone ? '<a class="btn" href="' + tel(a.info.phone) + '">' + icon(P.call) + 'Call ' + esc(a.info.contact || 'their contact') + '</a>' : '') + '</div>';
+    });
+    if (st === 'waiting' || st === 'ended' || st === 'connecting' || st === 'lost') {
+      const ended = st === 'ended';
+      html += '<div class="state"><div class="ic" style="background:' + (ended ? 'rgba(52,232,158,.2);color:var(--go)' : 'rgba(255,201,60,.2);color:var(--amber)') + '">' + icon(ended ? P.home : P.schedule) + '</div>' +
+        '<h2>' + esc(text) + '</h2><p>' + (ended ? 'Everyone has left the ride. If they start again with the same code, this page shows them.'
+          : st === 'waiting' ? 'Nobody is riding yet. Keep this page open: it shows the riders as soon as they join.'
+          : st === 'lost' ? 'Trying again by itself.' : 'Getting into ride ' + esc(W.code) + '…') + '</p></div>';
+    }
+    if (W.dest) html += '<div class="info"><div class="ic" style="background:var(--go);color:#042A1B">' + icon(P.finish) + '</div><div class="grow"><div class="rname">Heading to ' + esc(W.dest.label) + '</div><div class="rsub">Set by ' + esc(W.dest.name) + '</div></div></div>';
+    if (W.regroup) html += '<div class="info"><div class="ic" style="background:var(--amber);color:#2A1E05">' + icon(P.flag) + '</div><div class="grow"><div class="rname">Regroup: ' + esc(W.regroup.label) + '</div><div class="rsub">Set by ' + esc(W.regroup.name) + '</div></div></div>';
+    const list = riders().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    if (list.length) {
+      html += '<div class="label" style="margin:4px 6px 4px">Riders</div>' + list.map((p) => {
+        const id = p.identity, pos = W.pos.get(id), photo = W.photos.get(id), name = p.name || 'Rider';
+        const old = pos && Date.now() - pos.at > STALE_MS;
+        const sub = !pos ? 'Not sharing location' : 'Updated ' + ago(pos.at) + (!old && pos.spd != null ? ' · ' + Math.round(pos.spd) + ' km/h' : '');
+        return '<button class="rider' + (W.follow === id ? ' sel' : '') + '" data-rider="' + esc(id) + '"><div class="avatar' + (pos ? '' : ' off') + '"' + (photo ? ' style="background-image:url(' + photo + ')"' : '') + '>' +
+          (photo ? '' : esc(name.charAt(0).toUpperCase())) + '</div><div class="grow"><div class="rname">' + esc(name) + (W.alerts.has(id) ? ' <span style="color:var(--stop)">· SOS</span>' : '') + '</div>' +
+          '<div class="rsub' + (old ? ' old' : '') + '">' + sub + '</div></div></button>';
+      }).join('');
+    }
+    $('box').innerHTML = html;
+    renderMap();
+  }
+
+  // ---- Joining (same token server as the ride page; never publishes, never subscribes to audio) ----
+  function rideServer() {
+    if (RIDE_SERVER) return RIDE_SERVER;
+    try { const s = JSON.parse(store.get('rc-web-settings') || '{}'); return s.server || ''; } catch (e) { return ''; }
+  }
+  async function getPass() {
+    const body = JSON.stringify({ room_name: 'ride-' + W.code, participant_name: W.name, participant_identity: myId });
+    const key = store.get('rc-watch-key') || '', server = key ? rideServer() : '';
+    const res = await fetch(server || 'https://cloud-api.livekit.io/api/v2/sandbox/connection-details', {
+      method: 'POST',
+      headers: server ? { 'Content-Type': 'application/json', 'X-RideComm-Key': key } : { 'Content-Type': 'application/json', 'X-Sandbox-ID': TOKEN_SERVER },
+      body,
+    });
+    if (server && res.status === 401) throw new Error('This family link has the wrong group key. Ask the rider for a new link.');
+    if (!res.ok) throw new Error('Could not get into the ride (' + res.status + '). Check the code and your internet.');
+    const d = await res.json();
+    return { url: d.server_url || d.serverUrl, token: d.participant_token || d.participantToken };
+  }
+  async function liveKitReady() {
+    for (let i = 0; i < 60 && !window.LivekitClient; i++) await new Promise((ok) => setTimeout(ok, 250));
+    if (!window.LivekitClient) throw new Error("Couldn't load RideComm. Check your internet and reload the page.");
+  }
+  function send(topic, obj) {
+    const r = W.room; if (!r) return;
+    r.localParticipant.sendText(JSON.stringify(obj), { topic }).catch(() => {});
+  }
+  /** Asks the riders for what they share: regroup point, destination and any SOS still on. */
+  function sync() {
+    send(T.loc, { t: 'sync' }); send(T.dest, { t: 'sync' }); send(T.sos, { t: 'catchup', since: 0 });
+  }
+  async function connect() {
+    const { Room, RoomEvent } = LivekitClient;
+    const pass = await getPass();
+    const room = new Room({ adaptiveStream: false, dynacast: false });
+    const text = (topic, fn) => room.registerTextStreamHandler(topic, async (reader, info) => {
+      try { fn(JSON.parse(await reader.readAll()), info.identity); } catch (e) {}
+    });
+    text(T.loc, onLoc); text(T.dest, onDest); text(T.sos, onSos);
+    room.registerByteStreamHandler(T.avatar, async (reader, info) => {
+      try { W.photos.set(info.identity, URL.createObjectURL(new Blob(await reader.readAll(), { type: 'image/jpeg' }))); render(); } catch (e) {}
+    });
+    room
+      .on(RoomEvent.ParticipantConnected, () => render())
+      .on(RoomEvent.ParticipantDisconnected, (p) => { W.pos.delete(p.identity); if (W.follow === p.identity) W.follow = null; render(); })
+      .on(RoomEvent.Reconnecting, render)
+      .on(RoomEvent.Reconnected, () => { sync(); render(); })
+      .on(RoomEvent.Disconnected, () => {
+        if (W.room !== room) return;
+        W.room = null; W.offline = true; render();
+        scheduleRetry();
+      });
+    // Family never hear the ride: nothing is subscribed, nothing published.
+    await room.connect(pass.url, pass.token, { autoSubscribe: false });
+    W.room = room; W.offline = false; W.retryDelay = 2000;
+    sync(); render(); renderSoundBtn();
+  }
+  function scheduleRetry() {
+    clearTimeout(W.retry);
+    W.retry = setTimeout(async () => {
+      try { await connect(); } catch (e) { W.retryDelay = Math.min(W.retryDelay * 2, 15000); scheduleRetry(); }
+    }, W.retryDelay);
+  }
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator && !W.wake) { W.wake = await navigator.wakeLock.request('screen'); W.wake.addEventListener('release', () => { W.wake = null; }); } } catch (e) {}
+  }
+  async function start() {
+    const code = ($('codeIn').value || '').trim().toUpperCase(), name = $('nameIn').value.trim() || 'Family', err = $('err');
+    err.classList.add('hidden');
+    if (!CODE_RE.test(code)) { err.textContent = 'Enter the 6-letter ride code from the family link.'; err.classList.remove('hidden'); return; }
+    unlockSound();
+    store.set('rc-watch-name', name);
+    W.code = code; W.name = name;
+    const btn = $('startBtn'); btn.disabled = true; btn.textContent = 'Connecting…';
+    try {
+      await liveKitReady();
+      $('setup').classList.add('hidden'); $('watch').classList.remove('hidden');
+      $('title').textContent = 'Ride ' + code;
+      document.title = 'Watching ride ' + code + ' · RideComm';
+      history.replaceState(null, '', '?code=' + code + (params.get('ts') ? '&ts=' + params.get('ts') : ''));
+      render();
+      openMap();
+      keepAwake();
+      try { await connect(); } catch (e) { W.offline = true; render(); banner((e && e.message) || "Couldn't reach the ride. Trying again…"); scheduleRetry(); }
+    } catch (e) {
+      $('setup').classList.remove('hidden'); $('watch').classList.add('hidden');
+      err.textContent = (e && e.message) || "Couldn't start watching."; err.classList.remove('hidden');
+    } finally { btn.disabled = false; btn.textContent = 'Start watching'; }
+  }
+
+  // ---- Wiring ----
+  $('startBtn').addEventListener('click', start);
+  ['codeIn', 'nameIn'].forEach((id) => $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') start(); }));
+  $('fitBtn').addEventListener('click', () => { W.follow = null; W.fitted = false; render(); });
+  $('followBtn').addEventListener('click', () => {
+    if (W.follow) W.follow = null;
+    else { const first = riders().find((p) => W.pos.has(p.identity)); W.follow = first ? first.identity : null; if (!first) banner('Nobody is sharing their location yet'); }
+    const f = W.follow && W.pos.get(W.follow);
+    if (f && M.map) M.map.view(f.lat, f.lon, Math.max(M.map.zoom(), 15));
+    render();
+  });
+  $('box').addEventListener('click', (e) => {
+    const r = e.target.closest('[data-rider]'); if (!r) return;
+    const id = r.dataset.rider, p = W.pos.get(id);
+    if (!p) { banner(nameOf(id) + " isn't sharing their location"); return; }
+    W.follow = W.follow === id ? null : id;
+    if (W.follow && M.map) M.map.view(p.lat, p.lon, Math.max(M.map.zoom(), 15));
+    render();
+  });
+  $('alarm').addEventListener('click', (e) => { if (e.target.closest('#seenBtn')) seen(); });
+  $('soundBtn').addEventListener('click', () => { unlockSound(); siren(0.3); });
+  // Any tap lets the alarm make sound (browsers need one first).
+  document.addEventListener('pointerdown', () => { if (!audioCtx || audioCtx.state !== 'running') unlockSound(); }, true);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && W.code) keepAwake(); });
+  setInterval(() => { if (W.code) render(); }, 5000);
+
+  // The family link: ?code=ABCDEF, and #k=<group key> for rides locked to the group.
+  const hash = new URLSearchParams(location.hash.slice(1));
+  if (hash.get('k')) { store.set('rc-watch-key', hash.get('k')); history.replaceState(null, '', location.pathname + location.search); }
+  const preset = (params.get('code') || '').toUpperCase();
+  const savedName = store.get('rc-watch-name');
+  $('nameIn').value = savedName || 'Family';
+  if (CODE_RE.test(preset)) {
+    $('codeIn').value = preset;
+    $('codeWrap').classList.add('hidden'); $('codeShow').classList.remove('hidden'); $('codeShowText').textContent = preset;
+    // Back again with a name already chosen: start straight away (a tap anywhere turns the alarm sound on).
+    if (savedName) start();
+  }
+})();
+</script>
+</body>
+</html>
