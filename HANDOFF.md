@@ -23,7 +23,7 @@ so far and what's next.
      (all in `PLAY_STORE.md`). Claude offered to generate the upload key file and send it.
 - **Play Store:** on 9 Oct the owner asked how to put the app on the Play Store; they got the steps
   from `PLAY_STORE.md` in plain words. Next step is theirs (developer account, upload key).
-- **Points & badges** built on 9 Oct (fourth chat, app + web). The web part needs "publish the web".
+- **Points & badges** built on 9 Oct (fourth chat, app + web, build #55); web published the same day (Pages at `94116d7`).
 - **Owner's last feedback:** Google Maps group map "working fine"; small-screen fixes, history, planner,
   family, finder, rain not yet reported on from a real ride. The owner's phone uses big text: check
   `app/screenshots/small/` for every new screen.
@@ -110,7 +110,7 @@ fake-LiveKit web tests but has not been confirmed on a ride yet.
 | Low fuel guide (button or "RideComm, low fuel"; rc-fuel; warns at 2 km / 500 m; ends at the pump) | app + web | built, needs a road test |
 | Rain alerts (Open-Meteo here + 25 km ahead, off by default) | app + web | built |
 | Play Store groundwork (targetSdk 36, `play` build + CI bundle, privacy page, store pictures, guide) | app | ready; owner's steps pending |
-| Points & badges (points never for speed, 7 levels, 16 badges, This year, Ride points leaderboard, `rc-score`) | app + web | built (4th chat); web not published |
+| Points & badges (points never for speed, 7 levels, 16 badges, This year, Ride points leaderboard, `rc-score`) | app + web | built (4th chat, build #55), web published |
 
 Chronology (git log): step 1 voice call → music → floating button → votes → SOS → glass redesign →
 group tracking → Spotify ducking → crash detection, photos → invite links → private ride server →
