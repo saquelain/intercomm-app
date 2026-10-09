@@ -128,3 +128,37 @@ Song files go on byte-stream topic `rc-song` (app only).
 
 A JPEG (about 192×192, centre-cropped) sent as a byte stream with `mimeType: image/jpeg` to everyone on
 connect and to each rider who joins.
+
+## Family watching (watch page)
+
+Family at home open `https://saquelain.github.io/intercomm-app/watch/?code=ABCDEF` (plus `#k=<key>` for rides
+locked to the group). The page joins the ride as identity `watch-<uuid>` (localStorage `rc-watch-id`) with the
+name the family member typed (default "Family"), never publishes a mic and subscribes to no audio. On connect
+it sends `rc-loc {t:"sync"}`, `rc-dest {t:"sync"}` and `rc-sos {t:"catchup", since: 0}`.
+
+- Identities starting with `watch-` are **not riders**: never listed, counted, announced, asked to vote, sent
+  `onRiderJoined` data, or considered for "the lowest id present answers". Riders show them as
+  "Family watching: Ammi".
+- **Each rider decides** with Settings → "Family can watch" (off by default). When it's off and a watcher is
+  in the ride, that rider's own `rc-loc` positions and `rc-sos` `sos` messages go only to the riders (LiveKit
+  `destinationIdentities`; nothing is sent if there are no riders). When it's on, they go to everyone.
+  Everything else (regroup, destination, `ok`, votes) is sent as before.
+
+## Ride plans (in invite links)
+
+A plan travels in the invite link's hash, so it never reaches a server:
+`…/join/?code=ABCDEF#p=<plan>` (with `&k=<key>` when locked). `<plan>` is base64url (no padding) of the
+UTF-8 JSON
+
+`{ "v": 1, "title": "Sunday Lonavala ride", "at": <start, epoch ms>, "meet": <place>, "stops": [<place>…], "dest": <place>?, "by": "Asha" }`
+
+where a place is `{ "name": "Shell pump", "lat": 18.52, "lon": 73.85 }`. `title` and names are cut to 60
+characters, at most 5 stops; unknown fields are ignored. The invite page shows the plan, offers "Add to
+calendar" (an .ics file with a reminder an hour before) and passes it on: app `ridecomm://join/ABCDEF?p=…&k=…`,
+web page `…/ride/?code=ABCDEF#p=…&k=…`. Each phone keeps its upcoming plans until 12 hours after the start.
+
+## Ride history
+
+Kept only on each phone (app: SQLite `rides.db`; web: localStorage `rc-web-rides`, newest 30). Routes are
+stored as Google encoded polylines (5 decimals). Nothing is sent to anyone unless the rider shares the
+summary picture.

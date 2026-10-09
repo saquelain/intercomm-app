@@ -74,6 +74,9 @@ fake-LiveKit web tests but has not been confirmed on a ride yet.
 | Break reminder (Off / 1–3 h, Ask for a break vote, reset by a passed Break vote or 10-min stop) | app + web | built |
 | Emergency info on the lock screen (notification, off by default) | app only (iPhone: Medical ID) | built |
 | Lock rides to my group (switch, key in invite links, worker CORS for the web page) | app + web | ready; server not deployed |
+| Ride history & summary (SQLite / localStorage, route map, share picture) | app + web | built |
+| Ride planner (plan in the invite link, Upcoming rides, reminders, calendar, Today's plan card) | app + web | built |
+| Family can watch (watch page, per-rider switch, watchers never count as riders) | app + web | built |
 
 Chronology (git log): step 1 voice call → music → floating button → votes → SOS → glass redesign →
 group tracking → Spotify ducking → crash detection, photos → invite links → private ride server →
@@ -145,11 +148,27 @@ without a key.
 - Cost: Android maps are free; the web map has a free monthly allowance (cap it with a quota in Google
   Cloud). Place search still uses OpenStreetMap (Nominatim), Navigate still opens the Google Maps app.
 
+## Ride history, planner, family watching (Oct 2026)
+
+The owner asked where data would live: **only on each phone** (their choice over a cloud database), so:
+- **History** `trip/RideLog.kt` (pure: `RouteRecorder` keeps a point every 25 m and finds stops,
+  Google polyline codec), `trip/RideHistory.kt` (SQLite `rides.db` via `SQLiteOpenHelper`, no new
+  dependency; also records the ride in progress, saving every minute). `RideManager` calls
+  `begin`/`finish`, `TripTracker` feeds fixes. UI: `ui/RideHistoryUi.kt` (home card, list, summary page),
+  `ui/map/RouteMap.kt` (Google lite map or osmdroid, both still), `ui/RidePicture.kt` (share image, shared
+  through a `FileProvider`, authority `<appId>.files`).
+- **Planner** `plan/RidePlan.kt` (format + rules, see PROTOCOL.md "Ride plans"), `plan/RidePlans.kt`
+  (kept in Prefs, AlarmManager reminders via `RidePlans$Reminder`, re-set after reboot, calendar intent),
+  `ui/PlannerUi.kt`. `InviteLink.url(code, key, plan)` puts `p=` and `k=` after "#"; the app link is
+  `ridecomm://join/CODE?p=…&k=…`.
+- **Family** `ride/Riders.kt`: `isRider` / `isWatcher` / `privateAudience`. Every place that used to list
+  remote participants now uses `room.riderIds()`. Positions (`GroupTracker.sendMyPosition`) and SOS
+  (`SosManager.broadcast`) go only to riders unless "Family can watch" is on. Web: `docs/watch/index.html`.
+- `SmallScreenTest` covers the new screens too (320 dp, text at 130%).
+
 ## Ideas not built yet (from the last "what next" list)
 
-- **Ride summary card**: route on a map, distance, time, top/average speed, stops; share as an image.
 - **Fuel range reminder**: set the bike's range; warn at 80% and offer a Fuel vote.
-- **Ride planner**: start time, meeting point and planned stops shared before the ride, with reminders.
 - **Rider chat log**: scrollable history of the ride's messages, votes and alerts.
 - **Private ride server**: everything is ready (app switch, web settings, keys in invite links, CORS); the
   owner still has to add the Cloudflare/LiveKit secrets, run "Deploy ride server", put the address in

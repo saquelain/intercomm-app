@@ -72,6 +72,26 @@
             android:exported="false"
             android:foregroundServiceType="microphone|location" />
 
+        <!-- Lets the share sheet read a ride summary picture. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/shared_files" />
+        </provider>
+
+        <receiver
+            android:name=".plan.RidePlans$Reminder"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".sos.LockScreenInfo$Restore"
             android:exported="false">

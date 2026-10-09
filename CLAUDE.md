@@ -14,7 +14,8 @@ the owner, who rides with it on real phones and reports back.
 - **iPhone / browser version** (`docs/ride/index.html`): one self-contained page (HTML + CSS + vanilla JS,
   LiveKit JS 2.22.3 from jsdelivr, Leaflet 1.9.4 from cdnjs), served by GitHub Pages. iPhones can't
   install the APK, so this is how iPhone riders join. It must stay compatible with the app.
-- **Invite page** (`docs/join/index.html`): opens the app on Android, the web ride on iPhone.
+- **Invite page** (`docs/join/index.html`): opens the app on Android, the web ride on iPhone, shows a ride plan.
+- **Family watch page** (`docs/watch/index.html`): family at home follow the ride on a map (no audio).
 - **Private ride server** (`server/token-worker/`, Cloudflare Worker): written but not deployed. Rides
   currently use the LiveKit Cloud *sandbox* token server `ridecomm-xnnn94` (anyone with the ID can join).
 
@@ -94,7 +95,9 @@ Links the owner uses:
   `GoogleGroupMap.kt` when the build has a key, else the osmdroid map; MarkerPainter), `hazard/`, `trip/` (speed, distance), `alerts/` (joins, batteries, calls),
   `voice/` (voice commands), `headset/`, `crash/`, `night/`, `overlay/` (floating button), `profile/`,
   `whisper/` (talk to one rider), `home/` (home safe), `group/RideDestination` (shared destination),
-  `trip/BreakReminder`, `sos/LockScreenInfo`.
+  `trip/BreakReminder`, `sos/LockScreenInfo`, `trip/RideHistory` + `RideLog` (history on the phone),
+  `plan/` (ride planner), `ride/Riders` (who is a rider: family watchers `watch-…` and check-ins `…~home`
+  are not; use `room.riderIds()`, never raw `remoteParticipants`).
 - Pattern: pure logic in a plain-Kotlin class/object (unit-tested, e.g. `HazardLogic`, `RoleWatch`,
   `SunTimes`, `TalkButton`), and a manager object with `attach(room)` / `detach()` / `release()` /
   `requestSync()` / `onRiderJoined()` that sends JSON over a LiveKit text-stream topic.

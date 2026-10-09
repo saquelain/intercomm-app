@@ -3,6 +3,7 @@ package com.ridecomm.app.ui
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -721,5 +722,78 @@ open class ScreenshotTest {
         canvas.drawColor(android.graphics.Color.rgb(0xDD, 0xE6, 0xD8))
         menu.draw(canvas)
         bitmap.captureRoboImage("$dir/$name.png")
+    }
+
+    // ---- Ride history, planner, family ----
+
+    private val sampleRoute = (0..120).map { i ->
+        val t = i / 120.0
+        com.ridecomm.app.trip.RoutePoint(18.52 + 0.23 * t + 0.02 * kotlin.math.sin(t * 9), 73.85 - 0.45 * t + 0.03 * kotlin.math.cos(t * 7))
+    }
+    private val sampleRide = com.ridecomm.app.trip.RideSummary(
+        id = 7, code = "XCQGCW", startedAtMs = 1_791_000_000_000, endedAtMs = 1_791_000_000_000 + 3 * 3_600_000L,
+        distanceM = 84_600.0, movingMs = 2 * 3_600_000L + 10 * 60_000L, topKmh = 96f, averageKmh = 39f,
+        riders = listOf("Amit", "Rahul", "Vikram"), route = sampleRoute,
+        stops = listOf(com.ridecomm.app.trip.RideStop(18.64, 73.62, 1_791_000_000_000 + 3_600_000L, 25 * 60_000L)),
+    )
+    private val samplePlan = com.ridecomm.app.plan.RidePlan(
+        code = "XCQGCW", title = "Sunday Lonavala ride", atMs = 1_791_000_000_000,
+        meet = com.ridecomm.app.plan.PlanPlace("Shell pump, Hinjewadi", 18.59, 73.74),
+        stops = listOf(com.ridecomm.app.plan.PlanPlace("Food Mall, Expressway", 18.75, 73.4)),
+        dest = com.ridecomm.app.plan.PlanPlace("Tiger Point, Lonavala", 18.73, 73.39), by = "Amit",
+    )
+    private val routeStandIn: @Composable (Modifier) -> Unit = { m ->
+        Box(m.background(androidx.compose.ui.graphics.Color(0xFF1B2333))) { RouteShape(sampleRoute, Modifier.fillMaxSize().padding(16.dp), width = 8f) }
+    }
+
+    @Composable
+    private fun HomeExtras() {
+        androidx.compose.foundation.layout.Column(Modifier.padding(20.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+            PlannerCard(listOf(samplePlan), joinEnabled = true, onPlan = {}) {}
+            HistoryCard(listOf(sampleRide, sampleRide.copy(id = 8, distanceM = 12_400.0, movingMs = 40 * 60_000L)), onOpen = {}, onAll = {})
+            PlannerCard(emptyList(), joinEnabled = true, onPlan = {}) {}
+        }
+    }
+
+    @Test
+    fun homePlannerHistory() = shot("70_home_plans_history") { HomeExtras() }
+
+    @Test
+    fun homePlannerHistoryGlass() = glassShot("71_home_plans_history_glass") { HomeExtras() }
+
+    @Test
+    fun homePlannerHistorySoft() = softShot("72_home_plans_history_soft") { HomeExtras() }
+
+    @Test
+    fun planDialog() = shot("73_plan_dialog") { PlanDialog({}, {}) }
+
+    @Test
+    fun rideSummaryGlass() = glassShot("74_ride_summary_glass", GlassSceneStyle.RIDE) { RideSummaryContent(sampleRide, {}, {}, {}, routeStandIn) }
+
+    @Test
+    fun rideSummarySoft() = softShot("75_ride_summary_soft") { RideSummaryContent(sampleRide, {}, {}, {}, routeStandIn) }
+
+    @Test
+    fun ridePlanAndFamily() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        com.ridecomm.app.plan.RidePlans.save(context, samplePlan.copy(atMs = System.currentTimeMillis() + 3_600_000))
+        softShot("76_ride_plan_family_soft") {
+            RideContent(
+                ride.copy(riders = riders.take(2), watchers = listOf("Ammi")), MusicState(), VoteState(), SosState(),
+                destination = com.ridecomm.app.group.DestinationState(enabled = true),
+            )
+        }
+        com.ridecomm.app.plan.RidePlans.delete(context, samplePlan.code)
+    }
+
+    @Test
+    fun shareChoice() = shot("77_share_choice") { ShareChoiceDialog({}, {}, {}) }
+
+    @Test
+    fun sharePicture() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val bitmap = RidePicture.render(context, sampleRide)
+        java.io.File(dir).mkdirs()
+        java.io.File("$dir/78_share_picture.png").outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     }
 }

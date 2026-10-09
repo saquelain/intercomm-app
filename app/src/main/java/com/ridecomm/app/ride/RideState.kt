@@ -17,6 +17,8 @@ data class RideState(
     val status: RideStatus = RideStatus.IDLE,
     val code: String = "",
     val riders: List<Rider> = emptyList(),
+    /** Names of family members following the ride map from home (not riders). */
+    val watchers: List<String> = emptyList(),
     val micMuted: Boolean = false,
     /** Push to talk is on: my voice goes out only while [talking]. */
     val pushToTalk: Boolean = false,

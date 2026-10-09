@@ -37,6 +37,7 @@ import com.ridecomm.app.group.GroupMath
 import com.ridecomm.app.group.Place
 import com.ridecomm.app.group.PlaceSearch
 import com.ridecomm.app.home.HomeSafeState
+import com.ridecomm.app.sos.LocationHelper
 import com.ridecomm.app.ride.Rider
 import com.ridecomm.app.trip.BreakDue
 import com.ridecomm.app.trip.TripSpeech
@@ -97,9 +98,19 @@ fun DestinationCard(state: DestinationState, onPick: () -> Unit, onClear: () -> 
     }
 }
 
-/** Search a place by name (or paste coordinates / a maps link) and set it for everyone. */
+/**
+ * Search a place by name (or paste coordinates / a maps link). Used to set the group's destination,
+ * and by the ride planner (with [title], [description] and "Use my location").
+ */
 @Composable
-fun DestinationDialog(onCancel: () -> Unit, onPick: (Place) -> Unit) {
+fun DestinationDialog(
+    onCancel: () -> Unit,
+    onPick: (Place) -> Unit,
+    title: String = "Where are we heading?",
+    description: String = "Everyone hears it, sees how far it is and gets a Navigate button. Type a place, or paste coordinates or a Google Maps link.",
+    myLocation: Boolean = false,
+) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<Place>?>(null) }
@@ -122,11 +133,14 @@ fun DestinationDialog(onCancel: () -> Unit, onPick: (Place) -> Unit) {
         }
     }
     GlassDialog(onDismiss = onCancel) {
-        Text("Where are we heading?", style = MaterialTheme.typography.headlineMedium)
-        Text(
-            "Everyone hears it, sees how far it is and gets a Navigate button. Type a place, or paste coordinates or a Google Maps link.",
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        Text(title, style = MaterialTheme.typography.headlineMedium)
+        Text(description, style = MaterialTheme.typography.bodyMedium)
+        if (myLocation) {
+            GlassButton("Use my location", R.drawable.ms_my_location, Modifier.fillMaxWidth(), height = 52.dp) {
+                val here = LocationHelper.lastKnown(context)
+                if (here == null) error = "Your location isn't known yet. Search instead." else onPick(Place("My location", "", here.latitude, here.longitude))
+            }
+        }
         GlassTextField(
             value = query,
             onValueChange = { query = it.take(200) },

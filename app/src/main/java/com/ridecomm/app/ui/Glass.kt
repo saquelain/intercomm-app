@@ -572,7 +572,7 @@ fun ActionRow(
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             // Two lines rather than cut short ("Where are we heading?" on a small phone).
-            Text(title, style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(title, style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), maxLines = 3, overflow = TextOverflow.Ellipsis)
             if (subtitle != null) {
                 Text(subtitle, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, color = if (soft) NeuTokens.InkMuted else GlassTokens.Muted), maxLines = 2)
             }

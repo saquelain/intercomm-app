@@ -1,5 +1,6 @@
 package com.ridecomm.app.alerts
 
+import com.ridecomm.app.ride.riderIds
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -79,7 +80,7 @@ object RiderAlerts {
     /** Connected: note who's already here and tell them my battery. */
     fun onConnected() {
         val r = room ?: return
-        r.remoteParticipants.keys.forEach { presence.known(it.value) }
+        r.riderIds().forEach { presence.known(it) }
         sendBattery(to = emptyList())
         if (meOnCall) sendCall(to = emptyList())
     }

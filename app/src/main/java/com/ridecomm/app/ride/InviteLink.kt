@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import com.ridecomm.app.Prefs
+import com.ridecomm.app.plan.RidePlans
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,15 +24,34 @@ object InviteLink {
      * With rides locked to the group, the link carries the group key after "#", so riders who tap it
      * get in without typing it (the part after "#" never reaches the web server).
      */
-    fun url(code: String, groupKey: String = "") =
-        "$PAGE?code=$code" + if (groupKey.isNotBlank()) "#k=" + Uri.encode(groupKey) else ""
+    fun url(code: String, groupKey: String = "", plan: String = ""): String {
+        // A ride plan (see RidePlans) also travels after "#", next to the key.
+        val hash = listOfNotNull(
+            plan.takeIf { it.isNotBlank() }?.let { "p=$it" },
+            groupKey.takeIf { it.isNotBlank() }?.let { "k=" + Uri.encode(it) },
+        ).joinToString("&")
+        return "$PAGE?code=$code" + if (hash.isNotEmpty()) "#$hash" else ""
+    }
+
+    /** The group key to put in links, when rides are locked to the group. */
+    fun groupKeyToShare(context: Context): String =
+        if (Prefs.activeRideServer(context).isNotBlank()) Prefs.groupKey(context) else ""
+
+    private const val WATCH_PAGE = "https://saquelain.github.io/intercomm-app/watch/"
+
+    /** The family's link to follow the ride on a map (watch page; the group key travels after "#"). */
+    fun familyUrl(code: String, groupKey: String = "") =
+        "$WATCH_PAGE?code=$code" + if (groupKey.isNotBlank()) "#k=" + Uri.encode(groupKey) else ""
+
+    fun familyText(context: Context, code: String) =
+        "Follow our ride live on a map: " +
+            familyUrl(code, groupKeyToShare(context))
 
     fun shareText(code: String, groupKey: String = "") =
         "Join my RideComm ride: ${url(code, groupKey)}\nOr enter the code $code in the app. On iPhone the link opens it in the browser, no app needed."
 
     /** The invite link for my ride, with the group key when rides are locked to the group. */
-    fun shareText(context: Context, code: String) =
-        shareText(code, if (Prefs.activeRideServer(context).isNotBlank()) Prefs.groupKey(context) else "")
+    fun shareText(context: Context, code: String) = shareText(code, groupKeyToShare(context))
 
     /**
      * Picks up ridecomm://join/CODE (and ?k=GROUPKEY) from an incoming intent. With a [context] the
@@ -43,6 +63,9 @@ object InviteLink {
         val code = RideCode.clean(data.lastPathSegment.orEmpty())
         if (code.length != RideCode.LENGTH) return
         val key = keyFrom(data)
+        if (context != null) {
+            runCatching { data.getQueryParameter("p") }.getOrNull()?.takeIf { it.isNotBlank() }?.let { RidePlans.fromLink(context, code, it) }
+        }
         if (context != null && key != null) {
             Prefs.setGroupKey(context, key)
             if (Prefs.rideServerUrl(context).isNotBlank()) Prefs.setPrivateServer(context, true)

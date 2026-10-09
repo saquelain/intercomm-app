@@ -3,6 +3,7 @@ package com.ridecomm.app.group
 import android.content.Context
 import com.ridecomm.app.Announcer
 import com.ridecomm.app.Prefs
+import com.ridecomm.app.ride.riderIds
 import com.ridecomm.app.ride.safeMainScope
 import com.ridecomm.app.ride.trySendText
 import com.ridecomm.app.trip.TripTracker
@@ -138,7 +139,7 @@ object RideDestination {
         val d = destination ?: return false
         val r = room ?: return false
         if (d.byId == myId()) return true
-        val present = r.remoteParticipants.keys.map { it.value }
+        val present = r.riderIds()
         if (d.byId in present) return false
         return (present + myId()).minOrNull() == myId()
     }

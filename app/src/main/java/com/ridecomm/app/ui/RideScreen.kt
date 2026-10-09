@@ -1,5 +1,6 @@
 package com.ridecomm.app.ui
 
+import com.ridecomm.app.plan.RidePlans
 import com.ridecomm.app.ui.map.GroupMapCard
 import com.ridecomm.app.ui.map.GroupMapScreen
 import com.ridecomm.app.ui.map.roleLabel
@@ -194,12 +195,15 @@ fun RideContent(
         }
     }
 
-    val shareCode = {
+    val shareInvite = {
         val share = Intent(Intent.ACTION_SEND)
             .setType("text/plain")
             .putExtra(Intent.EXTRA_TEXT, InviteLink.shareText(context, state.code))
         context.startActivity(Intent.createChooser(share, "Share ride code"))
     }
+    var chooseShare by remember { mutableStateOf(false) }
+    // With "Family can watch" on, Share also offers the family's watch link.
+    val shareCode = { if (Prefs.familyWatch(context)) chooseShare = true else shareInvite() }
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -232,6 +236,11 @@ fun RideContent(
                 SosCards(sos)
                 breakDue?.let { BreakCard(it, onAsk = BreakReminder::askGroup, onNotNow = BreakReminder::notNow) }
                 if (destination.enabled) DestinationCard(destination, onPick = { pickDestination = true }, onClear = RideDestination::clear)
+                // A ride planned ahead: its meeting point, stops and end, one tap from directions.
+                val plans by RidePlans.plans.collectAsStateWithLifecycle()
+                plans.firstOrNull { it.code == state.code }?.takeIf { Prefs.planner(context) }?.let { plan ->
+                    PlanRideCard(plan, onSetDestination = if (destination.enabled) { p -> RideDestination.set(p.lat, p.lon, p.name) } else null)
+                }
                 if (group.enabled) GroupMapCard(group, state.riders.size) { showMap = true }
                 if (hazards.enabled) {
                     HazardCard(hazards.hazards, System.currentTimeMillis(), onMark = { pickHazard = true }, onRemove = Hazards::remove)
@@ -308,6 +317,23 @@ fun RideContent(
 
     if (showSettings) SettingsDialog(onClose = { showSettings = false }, inRide = true)
 
+    if (chooseShare) {
+        ShareChoiceDialog(
+            onCancel = { chooseShare = false },
+            onRiders = {
+                chooseShare = false
+                shareInvite()
+            },
+            onFamily = {
+                chooseShare = false
+                val share = Intent(Intent.ACTION_SEND)
+                    .setType("text/plain")
+                    .putExtra(Intent.EXTRA_TEXT, InviteLink.familyText(context, state.code))
+                context.startActivity(Intent.createChooser(share, "Share family link"))
+            },
+        )
+    }
+
     if (pickDestination) {
         DestinationDialog(
             onCancel = { pickDestination = false },
@@ -365,6 +391,7 @@ fun RideContent(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun StatusLine(state: RideState, dataUsed: Long?) {
     when (state.status) {
@@ -374,10 +401,17 @@ private fun StatusLine(state: RideState, dataUsed: Long?) {
             val count = state.riders.size
             val data = dataUsed?.let { " · ${DataUsage.format(it)}" }.orEmpty()
             val saver by DataSaver.active.collectAsStateWithLifecycle()
-            StatusPill(
-                "Connected · $count ${if (count == 1) "rider" else "riders"}$data" + if (saver) " · Data saver" else "",
-                if (saver) Palette.Amber else Palette.Go,
-            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatusPill(
+                    "Connected · $count ${if (count == 1) "rider" else "riders"}$data" + if (saver) " · Data saver" else "",
+                    if (saver) Palette.Amber else Palette.Go,
+                )
+                if (state.watchers.isNotEmpty()) {
+                    // Family following the map from home; they only see me if I allowed it.
+                    val seen = Prefs.familyWatch(LocalContext.current)
+                    StatusPill("Family watching: ${state.watchers.joinToString(", ")}" + if (seen) "" else " (can't see you)", Palette.Violet)
+                }
+            }
         }
     }
 }
@@ -879,5 +913,21 @@ private fun TalkButton(talking: Boolean, latched: Boolean, muted: Boolean) {
             else -> "Hold to talk · tap to lock" to Palette.TextSecondary
         }
         Text(label, style = MaterialTheme.typography.labelSmall, color = color, textAlign = TextAlign.Center)
+    }
+}
+
+/** Share: invite riders to the ride, or send family a link to follow it on a map. */
+@Composable
+internal fun ShareChoiceDialog(onCancel: () -> Unit, onRiders: () -> Unit, onFamily: () -> Unit) {
+    GlassDialog(onDismiss = onCancel) {
+        Text("Share", style = MaterialTheme.typography.headlineMedium)
+        PrimaryButton("Invite riders", R.drawable.ms_two_wheeler, Modifier.fillMaxWidth(), height = 56.dp, onClick = onRiders)
+        Text("A link to join the ride and talk.", style = MaterialTheme.typography.bodyMedium)
+        GlassButton("Family link", R.drawable.ms_map, Modifier.fillMaxWidth(), height = 56.dp, onClick = onFamily)
+        Text(
+            "Family at home follow the riders who allow it on a live map, and see an SOS. They can't hear the ride.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        GlassButton("Cancel", modifier = Modifier.fillMaxWidth(), onClick = onCancel)
     }
 }

@@ -1,5 +1,6 @@
 package com.ridecomm.app.group
 
+import com.ridecomm.app.ride.riderIds
 import android.content.Context
 import com.ridecomm.app.Announcer
 import com.ridecomm.app.Prefs
@@ -104,7 +105,7 @@ object RideRoles {
         val r = room ?: return false
         if (s.atMs == 0L) return false
         if (s.byId == myId()) return true
-        val present = r.remoteParticipants.keys.map { it.value }
+        val present = r.riderIds()
         if (s.byId in present) return false
         return (present + myId()).minOrNull() == myId()
     }

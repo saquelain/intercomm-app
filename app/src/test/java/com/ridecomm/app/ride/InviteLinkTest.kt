@@ -46,4 +46,11 @@ class InviteLinkTest {
         // The code still comes through with a key attached.
         assertEquals("CQNQNE", open("ridecomm://join/CQNQNE?k=secret"))
     }
+
+    @Test
+    fun linksCarryAPlanAndTheKeyAfterTheHash() {
+        assertEquals("https://saquelain.github.io/intercomm-app/join/?code=CQNQNE#p=abc&k=our%20key", InviteLink.url("CQNQNE", "our key", "abc"))
+        assertEquals("https://saquelain.github.io/intercomm-app/join/?code=CQNQNE#p=abc", InviteLink.url("CQNQNE", plan = "abc"))
+        assertEquals("https://saquelain.github.io/intercomm-app/watch/?code=CQNQNE", InviteLink.familyUrl("CQNQNE"))
+    }
 }

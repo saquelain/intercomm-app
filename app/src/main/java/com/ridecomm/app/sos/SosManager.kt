@@ -18,6 +18,8 @@ import com.ridecomm.app.overlay.Haptics
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideStatus
 import com.ridecomm.app.ride.safeMainScope
+import com.ridecomm.app.ride.Riders
+import com.ridecomm.app.ride.privateAudience
 import com.ridecomm.app.ride.trySendText
 import io.livekit.android.room.Room
 import io.livekit.android.room.participant.Participant
@@ -242,7 +244,9 @@ object SosManager {
 
     private suspend fun broadcast(o: JSONObject): Boolean {
         val r = room ?: return false
-        return r.trySendText(o.toString(), TOPIC)
+        // My SOS says where I am: family watching from home get it only if I let them watch.
+        val to = if (o.optString("t") == "sos") r.privateAudience(Prefs.familyWatch(appContext)) ?: return true else emptyList()
+        return r.trySendText(o.toString(), TOPIC, to)
     }
 
     // ---- Receiving ----
@@ -277,6 +281,7 @@ object SosManager {
                 val sos = lastSos ?: return
                 if (!_state.value.mySosActive) return
                 val r = room ?: return
+                if (Riders.isWatcher(from) && !Prefs.familyWatch(appContext)) return
                 scope.launch { r.trySendText(sos.toString(), TOPIC, listOf(Participant.Identity(from))) }
             }
         }

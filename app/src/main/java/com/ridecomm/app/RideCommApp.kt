@@ -1,5 +1,6 @@
 package com.ridecomm.app
 
+import com.ridecomm.app.plan.RidePlans
 import android.app.Application
 import com.ridecomm.app.ride.RideService
 import com.ridecomm.app.profile.Profile
@@ -18,5 +19,6 @@ class RideCommApp : Application() {
         MapSetup.configure(this)
         LockScreenInfo.refresh(this)
         LookSetting.load(this)
+        RidePlans.load(this)
     }
 }

@@ -8,6 +8,7 @@ import com.ridecomm.app.Prefs
 import com.ridecomm.app.alerts.RiderAlerts
 import com.ridecomm.app.audio.MicGate
 import com.ridecomm.app.trip.BreakReminder
+import com.ridecomm.app.trip.RideHistory
 import com.ridecomm.app.trip.TripTracker
 import com.ridecomm.app.voice.VoiceCommands
 import com.ridecomm.app.crash.CrashDetector
@@ -98,6 +99,7 @@ object RideManager {
         Prefs.rideStarted(appContext, code)
         MicGate.resetTotals()
         RiderAlerts.start(appContext)
+        RideHistory.begin(appContext, code)
         TripTracker.start(appContext)
         BreakReminder.start(appContext)
         HomeSafe.start(appContext)
@@ -173,6 +175,7 @@ object RideManager {
         stopTalkTimer()
         talkButton.stop()
         MicGate.closed = false
+        RideHistory.finish()
         TripTracker.stop()
         BreakReminder.stop()
         stopWatchingPhoneCalls()
@@ -390,8 +393,8 @@ object RideManager {
                     is RoomEvent.ActiveSpeakersChanged -> MusicManager.onSpeakersChanged(event.speakers)
                     // Per-rider volume and "mute for me" apply to each voice as it arrives.
                     is RoomEvent.TrackPublished, is RoomEvent.TrackSubscribed -> RiderVolumes.apply(r)
-                    // A rider who already left, checking in "home safe" for a moment: not a rider joining.
-                    is RoomEvent.ParticipantDisconnected -> if (!isCheckIn(event.participant)) {
+                    // Family watching the map, or a rider who already left checking in "home safe": not riders.
+                    is RoomEvent.ParticipantDisconnected -> if (Riders.isRider(event.participant)) {
                         HomeSafe.onRiderLeft(event.participant)
                         event.participant.identity?.let {
                             GroupTracker.forget(it.value)
@@ -400,7 +403,7 @@ object RideManager {
                         }
                         RiderAlerts.onRiderLeft(event.participant)
                     }
-                    is RoomEvent.ParticipantConnected -> if (!isCheckIn(event.participant)) {
+                    is RoomEvent.ParticipantConnected -> if (Riders.isRider(event.participant)) {
                         HomeSafe.onRiderJoined(event.participant)
                         event.participant.identity?.let {
                             ProfileSync.onRiderJoined(it)
@@ -527,6 +530,7 @@ object RideManager {
         stopTalkTimer()
         talkButton.stop()
         MicGate.closed = false
+        RideHistory.finish()
         TripTracker.stop()
         BreakReminder.stop()
         stopWatchingPhoneCalls()
@@ -538,13 +542,12 @@ object RideManager {
         val r = room ?: return
         val me = r.localParticipant.toRider(isMe = true, muted = _state.value.micMuted)
         val others = r.remoteParticipants.values
-            .filter { !isCheckIn(it) }
+            .filter { Riders.isRider(it) }
             .map { it.toRider(isMe = false, muted = !it.isMicrophoneEnabled) }
             .sortedBy { it.name.lowercase() }
-        _state.update { it.copy(riders = listOf(me) + others) }
+        _state.update { it.copy(riders = listOf(me) + others, watchers = r.watcherNames()) }
+        RideHistory.noteRiders(others.map { it.name })
     }
-
-    private fun isCheckIn(p: Participant) = p.identity?.value?.let { HomeLogic.isCheckIn(it) } == true
 
     private fun Participant.toRider(isMe: Boolean, muted: Boolean) = Rider(
         id = identity?.value ?: sid.value,

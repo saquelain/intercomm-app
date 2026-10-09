@@ -48,6 +48,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -67,6 +68,9 @@ import kotlinx.coroutines.launch
 import com.ridecomm.app.CrashLog
 import com.ridecomm.app.BuildConfig
 import com.ridecomm.app.Prefs
+import com.ridecomm.app.trip.RideHistory
+import com.ridecomm.app.trip.RideSummary
+import com.ridecomm.app.plan.RidePlans
 import com.ridecomm.app.ui.map.GoogleMapSetup
 import com.ridecomm.app.ui.map.MapProvider
 import com.ridecomm.app.hazard.Hazards
@@ -103,6 +107,24 @@ fun HomeScreen(state: RideState) {
     var serverReady by remember { mutableStateOf(Prefs.serverConfigured(context)) }
     var showSettings by remember { mutableStateOf(false) }
     var pendingCode by remember { mutableStateOf<String?>(null) }
+    var plannerOn by remember { mutableStateOf(Prefs.planner(context)) }
+    var historyOn by remember { mutableStateOf(Prefs.rideHistory(context)) }
+    val plans by RidePlans.plans.collectAsStateWithLifecycle()
+    var planning by remember { mutableStateOf(false) }
+    val historyChanges by RideHistory.changes.collectAsStateWithLifecycle()
+    val rides by produceState(emptyList<RideSummary>(), historyChanges, historyOn) {
+        value = if (historyOn) RideHistory.listAsync(context, 3) else emptyList()
+    }
+    var openRide by remember { mutableStateOf<Long?>(null) }
+    var allRides by remember { mutableStateOf(false) }
+    // Just left a ride: its summary opens by itself.
+    val finished by RideHistory.justFinished.collectAsStateWithLifecycle()
+    LaunchedEffect(finished) {
+        finished?.let {
+            openRide = it
+            RideHistory.shown()
+        }
+    }
     val now = remember { System.currentTimeMillis() }
     // A ride that ended without me leaving (app closed, phone restarted): offer it back in one tap.
     var unfinished by remember { mutableStateOf(RecentRides.rejoin(Prefs.unfinishedRide(context), now)) }
@@ -277,6 +299,9 @@ fun HomeScreen(state: RideState) {
             }
         }
 
+        if (plannerOn) PlannerCard(plans, joinEnabled = name.isNotBlank(), onPlan = { planning = true }) { startRide(it) }
+        if (historyOn) HistoryCard(rides, onOpen = { openRide = it }, onAll = { allRides = true })
+
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Feature(R.drawable.ms_headset_mic, "Talk", Modifier.weight(1f), glassLook)
             Feature(R.drawable.ms_library_music, "Music", Modifier.weight(1f), glassLook)
@@ -285,10 +310,16 @@ fun HomeScreen(state: RideState) {
         }
     }
 
+    if (planning) PlanDialog(onCancel = { planning = false }) { planning = false }
+    if (allRides) RideListScreen(onClose = { allRides = false }) { openRide = it }
+    openRide?.let { RideSummaryScreen(it) { openRide = null } }
+
     if (showSettings) {
         SettingsDialog(
             onClose = { showSettings = false },
             onSaved = {
+                plannerOn = Prefs.planner(context)
+                historyOn = Prefs.rideHistory(context)
                 serverReady = Prefs.serverConfigured(context)
                 savedName = Prefs.riderName(context)
                 name = savedName
@@ -530,6 +561,9 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var breakEvery by remember { mutableStateOf(Prefs.breakEvery(context)) }
     var look by remember { mutableStateOf(Prefs.look(context)) }
     var mapProvider by remember { mutableStateOf(Prefs.mapProvider(context)) }
+    var familyWatch by remember { mutableStateOf(Prefs.familyWatch(context)) }
+    var rideHistory by remember { mutableStateOf(Prefs.rideHistory(context)) }
+    var planner by remember { mutableStateOf(Prefs.planner(context)) }
     val googleMaps = remember { GoogleMapSetup.available(context) }
     // Android 13+: the lock screen note is a notification, which needs permission.
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -695,6 +729,12 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             { it.label },
         ) { mapProvider = it }
         SettingSwitch(
+            "Family can watch",
+            "Family at home can follow you on a live map with a link you share (Share → Family link), and see your " +
+                "SOS. Needs Group map on. They can't hear the ride, and you see when they're watching.",
+            familyWatch,
+        ) { familyWatch = it }
+        SettingSwitch(
             "Hazard alerts",
             "Mark potholes, speed breakers, police, accidents… for the riders behind, and hear \"Pothole in 300 meters\" " +
                 "for the ones ahead. Only the hazard's spot is shared.",
@@ -732,6 +772,29 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
             { it.label },
         ) { breakEvery = it }
         SettingSwitch(
+            "Ride history",
+            "Keeps a summary of each ride on this phone: route, distance, time, speeds and stops. " +
+                "Nothing is shared unless you share it.",
+            rideHistory,
+        ) { rideHistory = it }
+        if (RideHistory.count(context) > 0) {
+            var confirmClear by remember { mutableStateOf(false) }
+            GlassButton(if (confirmClear) "Tap again to delete all rides" else "Clear ride history", R.drawable.ms_close, Modifier.fillMaxWidth(), height = 48.dp) {
+                if (confirmClear) {
+                    RideHistory.clear(context)
+                    confirmClear = false
+                } else {
+                    confirmClear = true
+                }
+            }
+        }
+        SettingSwitch(
+            "Ride planner",
+            "Plan a ride ahead: start time, meeting point and stops travel in the invite link, with reminders " +
+                "before it starts.",
+            planner,
+        ) { planner = it }
+        SettingSwitch(
             "Keep music apps playing",
             "Spotify, YouTube Music… get quieter when someone talks" + if (inRide) ". Applies from your next ride." else "",
             keepMusic,
@@ -747,6 +810,10 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 Prefs.setEmergencyNumbers(context, numbers)
                 Prefs.setShareLocation(context, shareLocation)
                 Prefs.setMapProvider(context, mapProvider)
+                Prefs.setFamilyWatch(context, familyWatch)
+                Prefs.setRideHistory(context, rideHistory)
+                Prefs.setPlanner(context, planner)
+                RidePlans.applySettings(context)
                 Prefs.setKeepOtherMusic(context, keepMusic)
                 if (riderName.isNotBlank()) Prefs.setRiderName(context, riderName.trim())
                 Prefs.setCrashDetection(context, crashDetection)

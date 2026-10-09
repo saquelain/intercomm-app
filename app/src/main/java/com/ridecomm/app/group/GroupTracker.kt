@@ -10,6 +10,8 @@ import com.ridecomm.app.Announcer
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.ride.DataSaver
 import com.ridecomm.app.ride.safeMainScope
+import com.ridecomm.app.ride.privateAudience
+import com.ridecomm.app.ride.riderIds
 import com.ridecomm.app.ride.trySendText
 import com.ridecomm.app.sos.LocationHelper
 import io.livekit.android.room.Room
@@ -229,7 +231,7 @@ object GroupTracker {
         val point = regroup ?: return false
         val r = room ?: return false
         if (point.byId == myId()) return true
-        val present = r.remoteParticipants.keys.map { it.value }
+        val present = r.riderIds()
         if (point.byId in present) return false
         return (present + myId()).minOrNull() == myId()
     }
@@ -313,7 +315,9 @@ object GroupTracker {
             .put("at", System.currentTimeMillis())
         if (loc.hasSpeed()) o.put("spd", (loc.speed * 3.6).toInt())
         myHeading?.let { o.put("hdg", it.toInt()) }
-        r.trySendText(o.toString(), TOPIC)
+        // Family watching from home see me only if I said they may.
+        val to = r.privateAudience(Prefs.familyWatch(appContext)) ?: return
+        r.trySendText(o.toString(), TOPIC, to)
     }
 
     // ---- Messages ----
@@ -426,7 +430,7 @@ object GroupTracker {
         }
     }
 
-    private fun riderIds(): List<String> = (room?.remoteParticipants?.keys?.map { it.value }.orEmpty()) + myId()
+    private fun riderIds(): List<String> = (room?.riderIds().orEmpty()) + myId()
 
     private fun publish() {
         val mine = me

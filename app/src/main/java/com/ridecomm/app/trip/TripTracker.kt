@@ -61,6 +61,7 @@ object TripTracker {
 
     private val listener = LocationListener { location ->
         _location.value = location
+        RideHistory.onFix(location)
         lastFixElapsed = SystemClock.elapsedRealtime()
         meter.add(
             Fix(

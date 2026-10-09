@@ -1,5 +1,7 @@
 package com.ridecomm.app.music
 
+import com.ridecomm.app.ride.riderIds
+import com.ridecomm.app.ride.Riders
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -350,9 +352,11 @@ object MusicManager {
 
     private suspend fun streamSong(song: Song, to: List<Participant.Identity>) {
         val r = room ?: return
-        // Riders saving data are left out; they ask for the song once they stop saving.
-        val destinations = if (to.isEmpty() && savers.isNotEmpty()) {
-            val wanted = r.remoteParticipants.keys.filter { it.value !in savers }
+        // Riders saving data are left out (they ask for the song once they stop saving), and so is
+        // family watching the map from home.
+        val watched = r.remoteParticipants.keys.any { Riders.isWatcher(it.value) }
+        val destinations = if (to.isEmpty() && (savers.isNotEmpty() || watched)) {
+            val wanted = r.riderIds().filter { it !in savers }.map { Participant.Identity(it) }
             if (wanted.isEmpty()) {
                 broadcastIds += song.id
                 return

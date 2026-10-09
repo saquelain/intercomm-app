@@ -1,5 +1,7 @@
 package com.ridecomm.app.home
 
+import com.ridecomm.app.ride.riderIds
+import com.ridecomm.app.ride.Riders
 import android.content.Context
 import com.ridecomm.app.Announcer
 import com.ridecomm.app.Prefs
@@ -89,7 +91,7 @@ object HomeSafe {
     /** Connected: note who's here, and send a "home" that waited for the connection. */
     fun onConnected() {
         val r = room ?: return
-        r.remoteParticipants.values.forEach { noteRider(it) }
+        r.remoteParticipants.values.filter { Riders.isRider(it) }.forEach { noteRider(it) }
         if (homeUnsent) sendHome()
     }
 
@@ -157,7 +159,7 @@ object HomeSafe {
                 r.trySendText(JSONObject().put("t", "home").put("name", name).toString(), TOPIC)
                 delay(500)
                 Prefs.setPendingHomeCheckIn(app, null)
-                r.remoteParticipants.keys.count { !HomeLogic.isCheckIn(it.value) }
+                r.riderIds().size
             }
         } catch (e: Exception) {
             null

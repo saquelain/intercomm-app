@@ -63,6 +63,10 @@ object Prefs {
     private const val KEY_LOCK_SCREEN_INFO = "lock_screen_info"
     private const val KEY_LOOK = "ui_look"
     private const val KEY_MAP_PROVIDER = "map_provider"
+    private const val KEY_FAMILY_WATCH = "family_watch"
+    private const val KEY_RIDE_HISTORY = "ride_history"
+    private const val KEY_PLANNER = "ride_planner"
+    private const val KEY_PLANS = "ride_plans"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -359,4 +363,24 @@ object Prefs {
 
     fun setMapProvider(context: Context, provider: MapProvider) =
         prefs(context).edit().putString(KEY_MAP_PROVIDER, provider.name).apply()
+
+    /** Family watching from home (the watch page) may see my position and SOS. Off by default. */
+    fun familyWatch(context: Context): Boolean = prefs(context).getBoolean(KEY_FAMILY_WATCH, false)
+
+    fun setFamilyWatch(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_FAMILY_WATCH, on).apply()
+
+    /** Keep a summary of each ride on this phone (route, distance, speeds, stops). On by default; never shared. */
+    fun rideHistory(context: Context): Boolean = prefs(context).getBoolean(KEY_RIDE_HISTORY, true)
+
+    fun setRideHistory(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_RIDE_HISTORY, on).apply()
+
+    /** Ride planner: plan rides ahead and get reminders. On by default. */
+    fun planner(context: Context): Boolean = prefs(context).getBoolean(KEY_PLANNER, true)
+
+    fun setPlanner(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_PLANNER, on).apply()
+
+    /** Upcoming ride plans (JSON array, see RidePlans). */
+    fun plansJson(context: Context): String = prefs(context).getString(KEY_PLANS, "") ?: ""
+
+    fun setPlansJson(context: Context, json: String) = prefs(context).edit().putString(KEY_PLANS, json).apply()
 }

@@ -179,6 +179,22 @@ between phones).
 - **Emergency info on lock screen** (Settings, off by default): a quiet notification anyone can read without
   unlocking the phone (blood group, allergies, who to call), put back after a restart. iPhone: use the Health
   app's Medical ID instead (web pages can't reach the lock screen).
+- **Ride history** (Settings, on): every ride is kept on the phone (app: its own SQLite database; web: browser
+  storage), never sent anywhere: route, distance, riding and total time, average and top speed, stops (3+ minutes
+  in one place) and who rode. "Your rides" on the home screen; after leaving a ride its summary opens with the
+  route on a map, and "Share picture" makes an image (route line, no map, plus the numbers) for WhatsApp or
+  Instagram. Rides under 300 m and 5 minutes aren't kept; the newest 100 (web 30) are.
+- **Ride planner** (Settings, on): "Plan a ride" with a name, day and time, meeting point (search, pasted link or
+  my location), up to 5 stops and an end. The plan travels inside the invite link (after "#", so no server sees
+  it): the invite page shows it with "Add to calendar", and each phone keeps it under "Upcoming rides" (Join,
+  Share, Calendar, Delete) with a reminder an hour before and at the start (app notifications; on iPhone through
+  the calendar). In the ride a "Today's plan" card gives directions to each place and can make the end the
+  group's destination.
+- **Family can watch** (Settings, off): Share → "Family link" gives family at home a page
+  (`…/watch/?code=ABCDEF`) with a live map of the riders, the regroup point, destination and any SOS (with an
+  alarm). Each rider decides: with the switch off, their position and SOS never reach the family page. Family
+  aren't riders: they don't hear the ride, aren't listed or announced; riders see "Family watching: Ammi".
+  Needs Group map on.
 
 ## Looks: Classic, Glass and Soft
 

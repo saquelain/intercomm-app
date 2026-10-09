@@ -226,7 +226,7 @@ private fun fit(m: GoogleMap, view: MapView, spots: List<Spot>) {
 
 /** Passes the screen's lifecycle on to the map, as Google's MapView needs. */
 @Composable
-private fun MapLifecycle(mapView: MapView) {
+internal fun MapLifecycle(mapView: MapView) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle, mapView) {
         mapView.onCreate(null)
