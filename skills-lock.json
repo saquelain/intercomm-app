@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "claude-delegate-and-budget": {
+      "source": "piplupjs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/claude-delegate-and-budget/SKILL.md",
+      "computedHash": "c708ae8f8c810e3b68bda88735a388f598c93ed55c91008d3fc70a4219cce73a"
+    }
+  }
+}
