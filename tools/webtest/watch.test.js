@@ -117,7 +117,7 @@ const BASE = 'http://127.0.0.1:8765/';
   await a.click('[data-open-settings]:visible');
   await a.evaluate(() => document.querySelector('[data-setting="family"]').scrollIntoView({ block: 'center' }));
   await a.screenshot({ path: OUT + 'f4_settings_family.png' });
-  await a.click('.switch:has([data-setting="family"])');
+  await a.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'family').then(() => a.click('.switch:has([data-setting="family"])'));
   await a.click('#settingsClose');
   await w.waitForTimeout(500);
   const wb = await box(w);
@@ -191,7 +191,7 @@ const BASE = 'http://127.0.0.1:8765/';
 
   // ---- Old positions fade; signal trouble; the ride ends ----
   await b.click('[data-open-settings]:visible');
-  await b.click('.switch:has([data-setting="family"])');
+  await b.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'family').then(() => b.click('.switch:has([data-setting="family"])'));
   await b.click('#settingsClose');
   await w.waitForTimeout(400);
   await w.evaluate(() => { window.__shift = 3 * 60000; });

@@ -249,7 +249,8 @@ ways and "I'm OK", spoken alerts, catch-up on open votes and active SOS after a 
 browser (it tells the DJ not to send it the song files). On iPhone, keep the page open: Safari pauses the mic when
 the screen locks or another app is in front.
 
-The gear button opens **Settings**, saved in the browser and changeable any time, even mid-ride:
+The gear button opens **Settings** (in groups, like the app: Look & map, Talking & sound, Alerts, Group & location,
+Safety & SOS, Ride tools, Points & badges, Ride server), saved in the browser and changeable any time, even mid-ride:
 
 - **Profile photo**: picked from the phone, cropped to a small square and shown to everyone, on the app too.
 - **Group map** (off by default): shares the iPhone's location with the app riders and shows everyone on a live

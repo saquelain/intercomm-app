@@ -75,7 +75,7 @@ const BASE = 'http://127.0.0.1:8765/';
   }, [mins, lat]);
   const setLook = async (p, look) => {
     await p.click('section:not(.hidden) [data-open-settings]');
-    await p.click('[data-choice="look"][data-value="' + look + '"]');
+    await p.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'look').then(() => p.click('[data-choice="look"][data-value="' + look + '"]'));
     await p.click('#settingsClose');
     await p.waitForTimeout(150);
   };
@@ -218,12 +218,12 @@ const BASE = 'http://127.0.0.1:8765/';
     check('Switched off: nothing sent, so Asha sees only herself', !(await text(a, '#scoreCard')).includes('Chirag'));
     // Switched on mid-ride: the board appears and Asha hears about it.
     await c.click('#ride [data-open-settings]');
-    await c.click('label:has([data-setting="points"])');
+    await c.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'points').then(() => c.click('label:has([data-setting="points"])'));
     await c.click('#settingsClose');
     await a.waitForTimeout(400);
     check('Switched on mid-ride: card, and Asha sees Chirag', (await text(c, '#scoreCard')).includes('Ride points') && (await text(a, '#scoreCard')).includes('Chirag'));
     await c.click('#ride [data-open-settings]');
-    await c.click('label:has([data-setting="points"])');
+    await c.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'points').then(() => c.click('label:has([data-setting="points"])'));
     await c.click('#settingsClose');
     check('Switched off mid-ride: card gone', (await text(c, '#scoreCard')) === '');
 

@@ -60,7 +60,7 @@ const BASE = 'http://127.0.0.1:8765/';
   const iso = (daysFromNow) => { const d = new Date(); d.setDate(d.getDate() + daysFromNow); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const setLook = async (p, look) => {
     await p.click('section:not(.hidden) [data-open-settings]');
-    await p.click('[data-choice="look"][data-value="' + look + '"]');
+    await p.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'look').then(() => p.click('[data-choice="look"][data-value="' + look + '"]'));
     await p.click('#settingsClose');
     await p.waitForTimeout(150);
   };
@@ -177,7 +177,7 @@ const BASE = 'http://127.0.0.1:8765/';
 
     // Switched off: no card, rides don't add km.
     await a.click('#join [data-open-settings]');
-    await a.click('label:has([data-setting="garage"])');
+    await a.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'garage').then(() => a.click('label:has([data-setting="garage"])'));
     await a.click('#settingsClose');
     check('Switched off: no card', (await text(a, '#garageBox')) === '');
     await a.click('#joinBtn');

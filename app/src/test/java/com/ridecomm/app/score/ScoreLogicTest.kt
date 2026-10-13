@@ -160,4 +160,25 @@ class ScoreLogicTest {
         step(10, moving = false)
         assertEquals(2, c.count)
     }
+
+    @Test
+    fun hazardsOnlyCountOnRealRides() {
+        // Parked in a ride with a friend, marking a hazard: no points (the owner's 8-minute, 0 km ride).
+        assertEquals(0, ScoreRules.points(ScoreEntry("a", at(2026, 10, 9), km = 0.0, movingMin = 0, others = 1, hazards = 1)))
+        assertEquals(30, ScoreRules.points(ScoreEntry("a", at(2026, 10, 9), km = 10.0, movingMin = 20, hazards = 2)))
+    }
+
+    @Test
+    fun repairTakesTheHistorysDistance() {
+        val wrong = ScoreEntry("w", at(2026, 10, 9, h = 20), km = 16.1, movingMin = 36, others = 1, hazards = 1)
+        val right = ScoreEntry("r", at(2026, 10, 9, h = 18), km = 16.1, movingMin = 36, others = 1)
+        val rides = listOf(Triple(wrong.atMs + 400L, 0.0, 0L), Triple(right.atMs, 16.1, 36 * 60_000L))
+        val fixed = ScoreBook.repair(listOf(wrong, right), rides)
+        assertEquals(0.0, fixed[0].km, 0.0)
+        assertEquals(0, fixed[0].movingMin)
+        assertEquals(0, ScoreRules.points(fixed[0]))
+        assertEquals(right, fixed[1])
+        // No history for a ride: left as it is.
+        assertEquals(listOf(wrong), ScoreBook.repair(listOf(wrong), emptyList()))
+    }
 }

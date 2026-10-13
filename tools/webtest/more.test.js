@@ -234,7 +234,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await e.waitForSelector('#join:not(.hidden)');
   check('Back on the join screen: Glass again', await e.evaluate(() => !document.documentElement.classList.contains('in-ride')));
   await e.click('[data-open-settings]:visible');
-  await e.click('[data-choice="look"][data-value="classic"]');
+  await e.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'look').then(() => e.click('[data-choice="look"][data-value="classic"]'));
   check('Switching to Classic in Settings', await e.evaluate(() => !document.documentElement.classList.contains('look-glass')));
 
   // ---- Soft look (neumorphism) on every screen ----

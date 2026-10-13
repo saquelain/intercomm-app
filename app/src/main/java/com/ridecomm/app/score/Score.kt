@@ -82,6 +82,18 @@ object Score {
 
     fun reset(context: Context) = write(context, emptyList())
 
+    /**
+     * Mends rides counted before the fix above: a ride whose entry says more km than the ride history
+     * recorded for it takes the history's distance and riding time. Runs once; history must be on for it.
+     */
+    fun repairOnce(context: Context, rides: List<com.ridecomm.app.trip.RideSummary>) {
+        if (Prefs.scoreRepaired(context)) return
+        val list = load(context)
+        val fixed = ScoreBook.repair(list, rides.map { Triple(it.startedAtMs, it.distanceM / 1000, it.movingMs) })
+        if (fixed != list) write(context, fixed)
+        Prefs.setScoreRepaired(context)
+    }
+
     // ---- The ride going on ----
 
     private lateinit var appContext: Context
@@ -137,10 +149,12 @@ object Score {
     /** My ride so far, with the latest distance and riding time. */
     private fun current(): ScoreEntry? {
         val r = ride ?: return null
-        val trip = TripTracker.state.value
+        // The trip counter only belongs to this ride once it has started for it: right after joining it can
+        // still hold the last ride's distance (that once gave a ride that never moved the last one's 16 km).
+        val trip = TripTracker.state.value.takeIf { it.startedAtMs >= r.atMs - 60_000 }
         return r.copy(
-            km = maxOf(r.km, trip.distanceM / 1000),
-            movingMin = maxOf(r.movingMin, (trip.movingMs / 60_000).toInt()),
+            km = maxOf(r.km, (trip?.distanceM ?: 0.0) / 1000),
+            movingMin = maxOf(r.movingMin, ((trip?.movingMs ?: 0L) / 60_000).toInt()),
             others = names.size,
             names = names.take(8),
             breaks = breaks.count,

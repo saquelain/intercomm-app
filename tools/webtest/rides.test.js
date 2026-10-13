@@ -115,10 +115,10 @@ fs.mkdirSync(OUT, { recursive: true });
   // Group map: both switch it on in Settings and get a GPS position 2.4 km apart.
   await a.evaluate(() => window.__move({ latitude: 12.7350, longitude: 77.3000, accuracy: 8, speed: 16, heading: 40 }));
   await b.evaluate(() => window.__move({ latitude: 12.7160, longitude: 77.2870, accuracy: 8, speed: 15, heading: 35 }));
-  await a.click('label:has([data-setting="map"])');
+  await a.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'map').then(() => a.click('label:has([data-setting="map"])'));
   await a.click('#settingsClose');
   await b.click('[data-open-settings]:visible');
-  await b.click('label:has([data-setting="map"])');
+  await b.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'map').then(() => b.click('label:has([data-setting="map"])'));
   await b.click('#settingsClose');
   // Bilal's first position reaches Asha's page within a moment; give it up to 8 s on a busy machine.
   await a.waitForFunction(() => document.getElementById('mapCard').textContent.includes('2 of 2 riders on the map') &&
@@ -159,7 +159,7 @@ fs.mkdirSync(OUT, { recursive: true });
   // Switching the map off hides it and stops sharing, mid-ride.
   await a.click('#mapBack');
   await a.click('[data-open-settings]:visible');
-  await a.click('label:has([data-setting="map"])');
+  await a.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'map').then(() => a.click('label:has([data-setting="map"])'));
   await a.click('#settingsClose');
   check('Map card hidden after switching off', await a.evaluate(() => document.getElementById('mapCard').classList.contains('hidden')));
 

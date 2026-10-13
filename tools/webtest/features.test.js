@@ -58,6 +58,7 @@ fs.mkdirSync(OUT, { recursive: true });
 
   // Emergency info goes out with the SOS; my own screen shows it for helpers.
   await settings(a, async () => {
+    await a.click('[data-setgroup="safety"]');
     await a.click('[data-blood="O+"]');
     await a.fill('#infoMedical', 'Allergic to penicillin');
     await a.fill('#infoContact', 'Ammi');
@@ -117,8 +118,8 @@ fs.mkdirSync(OUT, { recursive: true });
 
   // Group map on both: B gets 400 m ahead of the lead.
   await a.evaluate(() => window.__move({ latitude: 12.9716, longitude: 77.5946, accuracy: 8, speed: 15, heading: 0 }));
-  await settings(a, () => a.click('label:has([data-setting="map"])'));
-  await settings(b, () => b.click('label:has([data-setting="map"])'));
+  await settings(a, () => a.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'map').then(() => a.click('label:has([data-setting="map"])')));
+  await settings(b, () => b.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'map').then(() => b.click('label:has([data-setting="map"])')));
   await a.waitForTimeout(300);
   await spoken(a); await spoken(b);
   await b.evaluate(() => window.__move({ latitude: 12.9755, longitude: 77.5946, accuracy: 8, speed: 15, heading: 0 }));
@@ -135,7 +136,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await b.click('#mapBack');
 
   // Push to talk on A.
-  await settings(a, () => a.click('[data-choice="talk"][data-value="ptt"]'));
+  await settings(a, () => a.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'talk').then(() => a.click('[data-choice="talk"][data-value="ptt"]')));
   check('PTT label', (await a.textContent('#micLabel')).includes('Hold to talk'));
   const box = await a.locator('#micBtn').boundingBox();
   await a.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -152,18 +153,18 @@ fs.mkdirSync(OUT, { recursive: true });
   check('Tap again: stopped', (await a.textContent('#micLabel')).includes('Hold to talk'));
 
   // Night mode on A.
-  await settings(a, () => a.click('[data-choice="night"][data-value="on"]'));
+  await settings(a, () => a.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'night').then(() => a.click('[data-choice="night"][data-value="on"]')));
   check('Night mode on', await a.evaluate(() => document.documentElement.classList.contains('night')));
   await spoken(a);
   await b.click('[data-say="SLOW_DOWN"]');
   await a.waitForTimeout(300);
   const sp = await a.evaluate(() => [window.__spoken.slice(), window.__vol]); check("Quieter voice at night", Math.abs(sp[1] - 0.55) < 0.001);
   await a.screenshot({ path: OUT + 'w16_night.png' });
-  await settings(a, () => a.click('[data-choice="night"][data-value="off"]'));
+  await settings(a, () => a.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'night').then(() => a.click('[data-choice="night"][data-value="off"]')));
   check('Night mode off', !(await a.evaluate(() => document.documentElement.classList.contains('night'))));
 
   // Hazard alerts off: card gone.
-  await settings(b, () => b.click('label:has([data-setting="hazards"])'));
+  await settings(b, () => b.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'hazards').then(() => b.click('label:has([data-setting="hazards"])')));
   check('Hazards off hides the card', (await b.innerHTML('#hazCard')) === '');
 
   console.log(errors.length ? 'PAGE ERRORS:\n' + errors.join('\n') : 'No page errors');

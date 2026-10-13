@@ -965,4 +965,13 @@ open class ScreenshotTest {
         java.io.File(dir).mkdirs()
         java.io.File("$dir/120_wrapped_picture.png").outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     }
+
+    // ---- Settings in groups ----
+
+    @Test fun settingsList() = shot("130_settings_list") { SettingsDialog(onClose = {}) }
+    @Test fun settingsListSoft() = softShot("131_settings_list_soft") { SettingsDialog(onClose = {}) }
+    @Test fun settingsListGlass() = glassShot("132_settings_list_glass") { SettingsDialog(onClose = {}, inRide = true) }
+    @Test fun settingsTalkSoft() = softShot("133_settings_talk_soft") { SettingsDialog(onClose = {}, startGroup = "TALK") }
+    @Test fun settingsToolsSoft() = softShot("134_settings_tools_soft") { SettingsDialog(onClose = {}, startGroup = "TOOLS") }
+    @Test fun settingsSafety() = shot("135_settings_safety") { SettingsDialog(onClose = {}, startGroup = "SAFETY") }
 }

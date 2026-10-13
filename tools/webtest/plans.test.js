@@ -175,6 +175,7 @@ const BASE = 'http://127.0.0.1:8765/';
     // Settings: the switch and "Clear ride history".
     await a.click('[data-open-settings]:visible');
     check('Settings: Ride history switch (on) and Clear button', await a.isChecked('[data-setting="history"]') && (await a.textContent('#historyClear')).includes('Clear ride history (4)'));
+    await a.click('[data-setgroup="tools"]');
     await a.evaluate(() => document.getElementById('historyClear').scrollIntoView({ block: 'center' }));
     await a.screenshot({ path: OUT + 'h6_settings_history.png' });
     await a.click('#historyClear');
@@ -183,7 +184,7 @@ const BASE = 'http://127.0.0.1:8765/';
     check('No rides card once cleared', (await a.textContent('#ridesBox')) === '');
     // Ride history off: nothing is recorded and location isn't needed.
     await a.click('[data-open-settings]:visible');
-    await a.click('.switch:has([data-setting="history"])');
+    await a.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'history').then(() => a.click('.switch:has([data-setting="history"])'));
     await a.click('#settingsClose');
     await a.click('#joinBtn');
     await a.waitForSelector('#ride:not(.hidden)');

@@ -72,7 +72,7 @@ Links the owner uses:
   `https://maven-central.storage-download.googleapis.com/maven2/` (recreate it in a new container; the
   content is in HANDOFF.md).
 - Compile: `./gradlew compileDebugKotlin`
-- Unit tests (about 485, all must pass): `./gradlew testDebugUnitTest` (Robolectric runs them on SDK 35,
+- Unit tests (about 505, all must pass): `./gradlew testDebugUnitTest` (Robolectric runs them on SDK 35,
   see `app/src/test/resources/robolectric.properties`; the app targets 36)
 - Same as CI: `./gradlew testReleaseUnitTest assembleRelease`
 - Lint: `./gradlew lintDebug`
@@ -95,7 +95,8 @@ Links the owner uses:
 - `ride/RideManager.kt`: owns the LiveKit room, connect/retry loop, mute, push-to-talk, catch-up after a
   drop, voice bitrate (data saver). Every feature manager is attached/detached/released here.
 - `ride/RideService.kt`: foreground service, notification, floating button and overlays.
-- `Prefs.kt`: every setting (SharedPreferences). `ui/HomeScreen.kt` → `SettingsDialog` shows them.
+- `Prefs.kt`: every setting (SharedPreferences). `ui/HomeScreen.kt` → `SettingsDialog` shows them in groups
+  (`SettingsSection`); a new setting goes into the right group, and on the web into `SET_GROUPS`.
 - `ui/RideScreen.kt` (`RideContent` takes plain state so screenshots can render any situation),
   `ui/Glass.kt` (shared glass components), `ui/Theme.kt` (`Palette`), `ui/NightFilter.kt`,
   `ui/RideExtras.kt` (destination, break, home safe cards), `ui/WhisperUi.kt`, `ui/Look.kt` (Classic / Glass

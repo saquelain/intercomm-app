@@ -1,5 +1,7 @@
 package com.ridecomm.app.ui
 
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.annotation.DrawableRes
 import com.ridecomm.app.nearby.LowFuel
 import kotlin.math.roundToInt
 import androidx.compose.material3.SliderDefaults
@@ -132,7 +134,12 @@ fun HomeScreen(state: RideState) {
     val garage by MyGarage.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { MyGarage.load(context) }
     val scores by Score.entries.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) { withContext(Dispatchers.IO) { Score.load(context) } }
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            Score.load(context)
+            runCatching { Score.repairOnce(context, RideHistory.list(context)) }
+        }
+    }
     var allRides by remember { mutableStateOf(false) }
     // Just left a ride: its summary opens by itself.
     val finished by RideHistory.justFinished.collectAsStateWithLifecycle()
@@ -557,7 +564,7 @@ private fun Feature(icon: Int, label: String, modifier: Modifier, glassLook: Boo
  * hidden (it can't change mid-ride) and the other settings apply straight away.
  */
 @Composable
-fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolean = false) {
+fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolean = false, startGroup: String? = null) {
     val context = LocalContext.current
     var tokenId by remember { mutableStateOf(Prefs.tokenServerId(context)) }
     var serverUrl by remember { mutableStateOf(Prefs.rideServerUrl(context)) }
@@ -610,262 +617,299 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
         onClose()
     }
     val voiceAvailable = remember { VoiceCommands.available(context) }
+    // Settings come in groups: the list first, then one group at a time.
+    var section by remember { mutableStateOf(SettingsSection.entries.firstOrNull { it.name == startGroup }) }
     var voiceCommands by remember { mutableStateOf(Prefs.voiceCommands(context) && voiceAvailable) }
 
-    GlassDialog(onDismiss = cancel) {
-        Text("Settings", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp))
-        ProfileEditor(riderName) { riderName = it }
-        OptionChips(
-            "Look",
-            when (look) {
-                UiLook.CLASSIC -> "The original RideComm look."
-                UiLook.GLASS -> "Frosted glass over a violet glow, on every screen."
-                UiLook.NEU -> "Light \"neumorphism\": soft raised cards and buttons on a pale page. Easier to read in bright sun."
-            },
-            UiLook.entries,
-            look,
-            { it.label },
-        ) { look = it }
-        if (!inRide) {
-            GlassTextField(
-                value = tokenId,
-                onValueChange = { tokenId = it },
-                label = "LiveKit token server ID",
-                placeholder = "ridecomm-xxxxxx",
-                textStyle = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                "LiveKit Cloud → Settings → Development token server. Everyone in the group uses the same one.",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            SettingSwitch(
-                "Lock rides to my group",
-                "Only riders with your group key can join. Needs your group's private ride server; invite links " +
-                    "then carry the key, so new riders get in with one tap.",
-                privateServer,
-            ) { privateServer = it }
-            if (privateServer) {
-                GlassTextField(
-                    value = serverUrl,
-                    onValueChange = { serverUrl = it },
-                    label = "Private ride server",
-                    placeholder = "https://ridecomm-token.….workers.dev",
-                    textStyle = MaterialTheme.typography.bodyLarge,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                )
-                GlassTextField(
-                    value = groupKey,
-                    onValueChange = { groupKey = it },
-                    label = "Group key",
-                    placeholder = "Ask your group admin",
-                    textStyle = MaterialTheme.typography.bodyLarge,
-                )
-                Text(
-                    "While this is on, the token server ID above isn't used.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+    GlassDialog(onDismiss = cancel, scrollKey = section) {
+        val open = section
+        if (open == null) {
+            Text("Settings", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp))
+                ProfileEditor(riderName) { riderName = it }
+            Column {
+                SettingsSection.entries.filter { it != SettingsSection.SERVER || !inRide }.forEachIndexed { i, s ->
+                    if (i > 0) Box(Modifier.fillMaxWidth().padding(start = 56.dp).height(1.dp).background(Palette.TextTertiary.copy(alpha = 0.18f)))
+                    SettingsRow(s) { section = s }
+                }
             }
-        }
-        GlassTextField(
-            value = numbers,
-            onValueChange = { numbers = it },
-            label = "Emergency SMS numbers",
-            placeholder = "+91 98xxxxxxxx, …",
-            textStyle = MaterialTheme.typography.bodyLarge,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-        )
-        Text("Used for SOS when there's no internet.", style = MaterialTheme.typography.bodyMedium)
-        EmergencyInfoSetting(emergencyInfo, shareInfo, onInfo = { emergencyInfo = it }, onShare = { shareInfo = it })
-        SettingSwitch(
-            "Emergency info on lock screen",
-            "A quiet notification anyone can read without unlocking your phone: blood group, allergies and who to call. " +
-                "Off unless you switch it on. Also check your phone shows notifications on the lock screen.",
-            lockScreenInfo,
-        ) {
-            lockScreenInfo = it
-            if (it && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-            ) {
-                notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                GlassIconButton(R.drawable.ms_arrow_back, "Back to settings", size = 44.dp, iconSize = 20.dp) { section = null }
+                Spacer(Modifier.width(12.dp))
+                FitText(open.title, MaterialTheme.typography.headlineMedium.copy(fontSize = 22.sp))
             }
-        }
-        OptionChips(
-            "Talk mode",
-            when (talkMode) {
-                TalkMode.OPEN_MIC -> "Just talk: the wind filter sends your voice and holds back wind."
-                TalkMode.PUSH_TO_TALK -> "Silent until you hold the mic button. Tap it once to talk hands-free, tap again to stop. " +
-                    "The headset button and floating button start and stop talking too."
-            },
-            TalkMode.entries,
-            talkMode,
-            { it.label },
-        ) { talkMode = it }
-        WindGateSetting(windGate, onTest = { testingFilter = true }) { windGate = it }
-        OptionChips(
-            "Night mode",
-            when (nightMode) {
-                NightModeSetting.OFF -> "Normal colours, day and night."
-                NightModeSetting.AUTO -> "Dim red screen and quieter alerts from sunset to sunrise where you are."
-                NightModeSetting.ON -> "Dim red screen and quieter alerts, all the time. Red light keeps your eyes used to the dark road."
-            },
-            NightModeSetting.entries,
-            nightMode,
-            { it.label },
-        ) { nightMode = it }
-        SettingSwitch("Floating ride button", "Controls over Maps and other apps", bubbleOn) { bubbleOn = it }
-        SettingSwitch(
-            "Crash detection",
-            "After a hard impact and no movement, starts a 15-second SOS countdown you can cancel",
-            crashDetection,
-        ) { crashDetection = it }
-        SettingSwitch(
-            "Headset button",
-            "1 press: mute/unmute · 2: next song or music off · 3: SOS. While Spotify plays, the button may control Spotify instead.",
-            headsetButtons,
-        ) { headsetButtons = it }
-        SettingSwitch(
-            "Voice commands",
-            if (voiceAvailable) {
-                "Say \"RideComm\" then: break, fuel, food, yes, no, slow down, wait for me, mute, next song, " +
-                    "music off, who's here, battery, speed, where is everyone, regroup here, pothole, police, SOS, cancel. Works while your mic is on."
-            } else {
-                "Needs Android 13 or newer with Google speech recognition"
-            },
-            voiceCommands,
-            warning = !voiceAvailable,
-        ) { if (voiceAvailable) voiceCommands = it }
-        SettingSwitch(
-            "Rider alerts",
-            "Speaks when someone joins, drops out or is back, and when a phone's battery gets low",
-            riderAlerts,
-        ) { riderAlerts = it }
-        DataSaverSetting(dataSaver) { dataSaver = it }
-        SpeedAlertSetting(speedLimit) { speedLimit = it }
-        RideUpdatesSetting(rideUpdates) { rideUpdates = it }
-        SettingSwitch("Show who's talking", "Small photos at the top-left over Maps and other apps", speakerOverlay) {
-            speakerOverlay = it
-        }
-        SettingSwitch(
-            "Group map",
-            "Share your location with the group: a live map of everyone, how far each rider is, alerts when someone " +
-                "falls behind, and regroup points. Uses GPS; turned off unless you switch it on.",
-            shareLocation,
-        ) { shareLocation = it }
-        OptionChips(
-            "Map",
-            when {
-                !googleMaps && !BuildConfig.HAS_GOOGLE_MAPS -> "Google Maps isn't set up in this version yet, so the Group map uses OpenStreetMap."
-                !googleMaps -> "Google Maps needs Google Play services, which this phone doesn't have, so the Group map uses OpenStreetMap."
-                mapProvider == MapProvider.GOOGLE -> "The Group map looks like the Google Maps app: same roads, places and labels."
-                else -> "The free OpenStreetMap map, as before."
-            },
-            MapProvider.entries,
-            mapProvider,
-            { it.label },
-        ) { mapProvider = it }
-        SettingSwitch(
-            "Family can watch",
-            "Family at home can follow you on a live map with a link you share (Share → Family link), and see your " +
-                "SOS. Needs Group map on. They can't hear the ride, and you see when they're watching.",
-            familyWatch,
-        ) { familyWatch = it }
-        SettingSwitch(
-            "Hazard alerts",
-            "Mark potholes, speed breakers, police, accidents… for the riders behind, and hear \"Pothole in 300 meters\" " +
-                "for the ones ahead. Only the hazard's spot is shared.",
-            hazardAlerts,
-        ) { hazardAlerts = it }
-        SettingSwitch(
-            "Lead & sweep alerts",
-            "Tap a rider to make them lead or sweep. The lead hears when someone gets ahead, the sweep when someone " +
-                "drops behind. Needs Group map on.",
-            roleAlerts,
-        ) { roleAlerts = it }
-        SettingSwitch(
-            "Talk to one rider",
-            "Hold a rider's name to talk only to them (lead to sweep, say). The others don't hear you while you hold. " +
-                "Private between RideComm phones, not encrypted.",
-            talkToOne,
-        ) { talkToOne = it }
-        SettingSwitch(
-            "Shared destination",
-            "Set where the group is heading: everyone hears it, sees how far it is, and gets one Navigate button. " +
-                "Search uses OpenStreetMap. Your own location isn't shared.",
-            destination,
-        ) { destination = it }
-        HomeSafeSetting(homeSafe, homeSpot, onChange = { homeSafe = it }, onHome = { homeSpot = it })
-        OptionChips(
-            "Break reminder",
-            if (breakEvery == BreakEvery.OFF) {
-                "No reminders."
-            } else {
-                "After ${breakEvery.label} of riding: \"Time for a break?\" One tap asks the group with a Break vote. " +
-                    "A passed Break vote or a 10-minute stop starts the count again."
-            },
-            BreakEvery.entries,
-            breakEvery,
-            { it.label },
-        ) { breakEvery = it }
-        SettingSwitch(
-            "Fuel & food finder",
-            "Find petrol, food or a mechanic on the road ahead, and tap Low fuel (or say \"RideComm, low fuel\") to be " +
-                "warned at the next petrol pump ahead. Searches send your location to Google Maps or OpenStreetMap only when you use them.",
-            finder,
-        ) { finder = it }
-        SettingSwitch(
-            "Rain alerts",
-            "Hear when rain is expected where you are or on the road ahead. Every 15 minutes in a ride your rough " +
-                "location (about 1 km) goes to the free Open-Meteo weather service. Off unless you switch it on.",
-            rainAlerts,
-        ) { rainAlerts = it }
-        SettingSwitch(
-            "Ride history",
-            "Keeps a summary of each ride on this phone: route, distance, time, speeds and stops. " +
-                "Nothing is shared unless you share it.",
-            rideHistory,
-        ) { rideHistory = it }
-        if (RideHistory.count(context) > 0) {
-            var confirmClear by remember { mutableStateOf(false) }
-            GlassButton(if (confirmClear) "Tap again to delete all rides" else "Clear ride history", R.drawable.ms_close, Modifier.fillMaxWidth(), height = 48.dp) {
-                if (confirmClear) {
-                    RideHistory.clear(context)
-                    confirmClear = false
-                } else {
-                    confirmClear = true
+            when (open) {
+                SettingsSection.LOOK -> {
+                OptionChips(
+                    "Look",
+                    when (look) {
+                        UiLook.CLASSIC -> "The original RideComm look."
+                        UiLook.GLASS -> "Frosted glass over a violet glow, on every screen."
+                        UiLook.NEU -> "Light \"neumorphism\": soft raised cards and buttons on a pale page. Easier to read in bright sun."
+                    },
+                    UiLook.entries,
+                    look,
+                    { it.label },
+                ) { look = it }
+                OptionChips(
+                    "Map",
+                    when {
+                        !googleMaps && !BuildConfig.HAS_GOOGLE_MAPS -> "Google Maps isn't set up in this version yet, so the Group map uses OpenStreetMap."
+                        !googleMaps -> "Google Maps needs Google Play services, which this phone doesn't have, so the Group map uses OpenStreetMap."
+                        mapProvider == MapProvider.GOOGLE -> "The Group map looks like the Google Maps app: same roads, places and labels."
+                        else -> "The free OpenStreetMap map, as before."
+                    },
+                    MapProvider.entries,
+                    mapProvider,
+                    { it.label },
+                ) { mapProvider = it }
+                OptionChips(
+                    "Night mode",
+                    when (nightMode) {
+                        NightModeSetting.OFF -> "Normal colours, day and night."
+                        NightModeSetting.AUTO -> "Dim red screen and quieter alerts from sunset to sunrise where you are."
+                        NightModeSetting.ON -> "Dim red screen and quieter alerts, all the time. Red light keeps your eyes used to the dark road."
+                    },
+                    NightModeSetting.entries,
+                    nightMode,
+                    { it.label },
+                ) { nightMode = it }
+                }
+                SettingsSection.TALK -> {
+                OptionChips(
+                    "Talk mode",
+                    when (talkMode) {
+                        TalkMode.OPEN_MIC -> "Just talk: the wind filter sends your voice and holds back wind."
+                        TalkMode.PUSH_TO_TALK -> "Silent until you hold the mic button. Tap it once to talk hands-free, tap again to stop. " +
+                            "The headset button and floating button start and stop talking too."
+                    },
+                    TalkMode.entries,
+                    talkMode,
+                    { it.label },
+                ) { talkMode = it }
+                WindGateSetting(windGate, onTest = { testingFilter = true }) { windGate = it }
+                SettingSwitch(
+                    "Talk to one rider",
+                    "Hold a rider's name to talk only to them (lead to sweep, say). The others don't hear you while you hold. " +
+                        "Private between RideComm phones, not encrypted.",
+                    talkToOne,
+                ) { talkToOne = it }
+                SettingSwitch(
+                    "Keep music apps playing",
+                    "Spotify, YouTube Music… get quieter when someone talks" + if (inRide) ". Applies from your next ride." else "",
+                    keepMusic,
+                ) { keepMusic = it }
+                SettingSwitch(
+                    "Voice commands",
+                    if (voiceAvailable) {
+                        "Say \"RideComm\" then: break, fuel, food, yes, no, slow down, wait for me, mute, next song, " +
+                            "music off, who's here, battery, speed, where is everyone, regroup here, pothole, police, SOS, cancel. Works while your mic is on."
+                    } else {
+                        "Needs Android 13 or newer with Google speech recognition"
+                    },
+                    voiceCommands,
+                    warning = !voiceAvailable,
+                ) { if (voiceAvailable) voiceCommands = it }
+                SettingSwitch(
+                    "Headset button",
+                    "1 press: mute/unmute · 2: next song or music off · 3: SOS. While Spotify plays, the button may control Spotify instead.",
+                    headsetButtons,
+                ) { headsetButtons = it }
+                DataSaverSetting(dataSaver) { dataSaver = it }
+                }
+                SettingsSection.ALERTS -> {
+                SettingSwitch(
+                    "Rider alerts",
+                    "Speaks when someone joins, drops out or is back, and when a phone's battery gets low",
+                    riderAlerts,
+                ) { riderAlerts = it }
+                SettingSwitch(
+                    "Hazard alerts",
+                    "Mark potholes, speed breakers, police, accidents… for the riders behind, and hear \"Pothole in 300 meters\" " +
+                        "for the ones ahead. Only the hazard's spot is shared.",
+                    hazardAlerts,
+                ) { hazardAlerts = it }
+                SettingSwitch(
+                    "Lead & sweep alerts",
+                    "Tap a rider to make them lead or sweep. The lead hears when someone gets ahead, the sweep when someone " +
+                        "drops behind. Needs Group map on.",
+                    roleAlerts,
+                ) { roleAlerts = it }
+                SettingSwitch(
+                    "Rain alerts",
+                    "Hear when rain is expected where you are or on the road ahead. Every 15 minutes in a ride your rough " +
+                        "location (about 1 km) goes to the free Open-Meteo weather service. Off unless you switch it on.",
+                    rainAlerts,
+                ) { rainAlerts = it }
+                SpeedAlertSetting(speedLimit) { speedLimit = it }
+                RideUpdatesSetting(rideUpdates) { rideUpdates = it }
+                OptionChips(
+                    "Break reminder",
+                    if (breakEvery == BreakEvery.OFF) {
+                        "No reminders."
+                    } else {
+                        "After ${breakEvery.label} of riding: \"Time for a break?\" One tap asks the group with a Break vote. " +
+                            "A passed Break vote or a 10-minute stop starts the count again."
+                    },
+                    BreakEvery.entries,
+                    breakEvery,
+                    { it.label },
+                ) { breakEvery = it }
+                }
+                SettingsSection.GROUP -> {
+                SettingSwitch(
+                    "Group map",
+                    "Share your location with the group: a live map of everyone, how far each rider is, alerts when someone " +
+                        "falls behind, and regroup points. Uses GPS; turned off unless you switch it on.",
+                    shareLocation,
+                ) { shareLocation = it }
+                SettingSwitch(
+                    "Family can watch",
+                    "Family at home can follow you on a live map with a link you share (Share → Family link), and see your " +
+                        "SOS. Needs Group map on. They can't hear the ride, and you see when they're watching.",
+                    familyWatch,
+                ) { familyWatch = it }
+                SettingSwitch(
+                    "Shared destination",
+                    "Set where the group is heading: everyone hears it, sees how far it is, and gets one Navigate button. " +
+                        "Search uses OpenStreetMap. Your own location isn't shared.",
+                    destination,
+                ) { destination = it }
+                HomeSafeSetting(homeSafe, homeSpot, onChange = { homeSafe = it }, onHome = { homeSpot = it })
+                }
+                SettingsSection.SAFETY -> {
+                GlassTextField(
+                    value = numbers,
+                    onValueChange = { numbers = it },
+                    label = "Emergency SMS numbers",
+                    placeholder = "+91 98xxxxxxxx, …",
+                    textStyle = MaterialTheme.typography.bodyLarge,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                )
+                Text("Used for SOS when there's no internet.", style = MaterialTheme.typography.bodyMedium)
+                EmergencyInfoSetting(emergencyInfo, shareInfo, onInfo = { emergencyInfo = it }, onShare = { shareInfo = it })
+                SettingSwitch(
+                    "Emergency info on lock screen",
+                    "A quiet notification anyone can read without unlocking your phone: blood group, allergies and who to call. " +
+                        "Off unless you switch it on. Also check your phone shows notifications on the lock screen.",
+                    lockScreenInfo,
+                ) {
+                    lockScreenInfo = it
+                    if (it && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }
+                SettingSwitch(
+                    "Crash detection",
+                    "After a hard impact and no movement, starts a 15-second SOS countdown you can cancel",
+                    crashDetection,
+                ) { crashDetection = it }
+                }
+                SettingsSection.TOOLS -> {
+                SettingSwitch(
+                    "Fuel & food finder",
+                    "Find petrol, food or a mechanic on the road ahead, and tap Low fuel (or say \"RideComm, low fuel\") to be " +
+                        "warned at the next petrol pump ahead. Searches send your location to Google Maps or OpenStreetMap only when you use them.",
+                    finder,
+                ) { finder = it }
+                SettingSwitch(
+                    "Ride planner",
+                    "Plan a ride ahead: start time, meeting point and stops travel in the invite link, with reminders " +
+                        "before it starts.",
+                    planner,
+                ) { planner = it }
+                SettingSwitch(
+                    "Ride history",
+                    "Keeps a summary of each ride on this phone: route, distance, time, speeds and stops. " +
+                        "Nothing is shared unless you share it.",
+                    rideHistory,
+                ) { rideHistory = it }
+                if (RideHistory.count(context) > 0) {
+                    var confirmClear by remember { mutableStateOf(false) }
+                    GlassButton(if (confirmClear) "Tap again to delete all rides" else "Clear ride history", R.drawable.ms_close, Modifier.fillMaxWidth(), height = 48.dp) {
+                        if (confirmClear) {
+                            RideHistory.clear(context)
+                            confirmClear = false
+                        } else {
+                            confirmClear = true
+                        }
+                    }
+                }
+                SettingSwitch(
+                    "My garage",
+                    "Your bike's odometer (your rides add their km), reminders for oil change and service by km or months, and " +
+                        "before your insurance, PUC or licence run out. Kept on this phone.",
+                    garage,
+                ) { garage = it }
+                }
+                SettingsSection.POINTS -> {
+                SettingSwitch(
+                    "Points & badges",
+                    "Earn points for each ride: distance, riding together, breaks, marking hazards, leading or sweeping and " +
+                        "getting home safe. Never for speed. Levels, badges and your year are kept on this phone; riders in " +
+                        "the ride see each other's ride points.",
+                    points,
+                ) { points = it }
+                SettingSwitch(
+                    "Ride Wrapped",
+                    "Your year in review, made on this phone from Points & badges and your ride history: km, longest ride, your " +
+                        "crew, badges and your rider type, with a picture to share. On the home screen from 1 December, any time " +
+                        "from Points & badges.",
+                    wrapped,
+                ) { wrapped = it }
+                }
+                SettingsSection.SCREEN -> {
+                SettingSwitch("Floating ride button", "Controls over Maps and other apps", bubbleOn) { bubbleOn = it }
+                SettingSwitch("Show who's talking", "Small photos at the top-left over Maps and other apps", speakerOverlay) {
+                    speakerOverlay = it
+                }
+                }
+                SettingsSection.SERVER -> {
+                if (!inRide) {
+                    GlassTextField(
+                        value = tokenId,
+                        onValueChange = { tokenId = it },
+                        label = "LiveKit token server ID",
+                        placeholder = "ridecomm-xxxxxx",
+                        textStyle = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        "LiveKit Cloud → Settings → Development token server. Everyone in the group uses the same one.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    SettingSwitch(
+                        "Lock rides to my group",
+                        "Only riders with your group key can join. Needs your group's private ride server; invite links " +
+                            "then carry the key, so new riders get in with one tap.",
+                        privateServer,
+                    ) { privateServer = it }
+                    if (privateServer) {
+                        GlassTextField(
+                            value = serverUrl,
+                            onValueChange = { serverUrl = it },
+                            label = "Private ride server",
+                            placeholder = "https://ridecomm-token.….workers.dev",
+                            textStyle = MaterialTheme.typography.bodyLarge,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                        )
+                        GlassTextField(
+                            value = groupKey,
+                            onValueChange = { groupKey = it },
+                            label = "Group key",
+                            placeholder = "Ask your group admin",
+                            textStyle = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            "While this is on, the token server ID above isn't used.",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
                 }
             }
         }
-        SettingSwitch(
-            "Points & badges",
-            "Earn points for each ride: distance, riding together, breaks, marking hazards, leading or sweeping and " +
-                "getting home safe. Never for speed. Levels, badges and your year are kept on this phone; riders in " +
-                "the ride see each other's ride points.",
-            points,
-        ) { points = it }
-        SettingSwitch(
-            "Ride Wrapped",
-            "Your year in review, made on this phone from Points & badges and your ride history: km, longest ride, your " +
-                "crew, badges and your rider type, with a picture to share. On the home screen from 1 December, any time " +
-                "from Points & badges.",
-            wrapped,
-        ) { wrapped = it }
-        SettingSwitch(
-            "My garage",
-            "Your bike's odometer (your rides add their km), reminders for oil change and service by km or months, and " +
-                "before your insurance, PUC or licence run out. Kept on this phone.",
-            garage,
-        ) { garage = it }
-        SettingSwitch(
-            "Ride planner",
-            "Plan a ride ahead: start time, meeting point and stops travel in the invite link, with reminders " +
-                "before it starts.",
-            planner,
-        ) { planner = it }
-        SettingSwitch(
-            "Keep music apps playing",
-            "Spotify, YouTube Music… get quieter when someone talks" + if (inRide) ". Applies from your next ride." else "",
-            keepMusic,
-        ) { keepMusic = it }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             GlassButton("Cancel", modifier = Modifier.weight(1f), onClick = cancel)
             PrimaryButton("Save", modifier = Modifier.weight(1f), height = 56.dp) {
@@ -1206,6 +1250,38 @@ internal fun RideUpdatesSetting(value: UpdateEvery, onChange: (UpdateEvery) -> U
                 }
             }
         }
+    }
+}
+
+/** Settings in groups, so the page stays short: the list shows these, each opens its own page. */
+private enum class SettingsSection(val title: String, val summary: String, @DrawableRes val icon: Int, val tint: Color) {
+    LOOK("Look & map", "Look, map style, night mode", R.drawable.ms_dark_mode, Color(0xFF7C5CFF)),
+    TALK("Talking & sound", "Talk mode, wind filter, voice commands, music", R.drawable.ms_mic, Color(0xFF22B8D8)),
+    ALERTS("Alerts", "Riders, hazards, lead & sweep, rain, speed, breaks", R.drawable.ms_record_voice_over, Color(0xFFFF8A1F)),
+    GROUP("Group & location", "Group map, family watching, destination, home safe", R.drawable.ms_map, Color(0xFF0FB5A8)),
+    SAFETY("Safety & SOS", "SOS numbers, emergency info, crash detection", R.drawable.ms_emergency, Color(0xFFFF4D6D)),
+    TOOLS("Ride tools", "Fuel & food finder, planner, history, garage", R.drawable.ms_build, Color(0xFF4F7CFF)),
+    POINTS("Points & badges", "Points, badges, Ride Wrapped", R.drawable.ms_emoji_events, Color(0xFFE0A100)),
+    SCREEN("Over other apps", "Floating ride button, who's talking", R.drawable.ms_picture_in_picture, Color(0xFFB45CFF)),
+    SERVER("Ride server", "Token server, lock rides to my group", R.drawable.ms_shield, Color(0xFF8A93B0)),
+}
+
+/** One group in the settings list: a coloured icon, its name and what's inside. */
+@Composable
+private fun SettingsRow(section: SettingsSection, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick).padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(42.dp).clip(RoundedCornerShape(13.dp)).background(section.tint.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
+            Ico(section.icon, 22.dp, section.tint)
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(section.title, style = MaterialTheme.typography.titleMedium)
+            Text(section.summary, style = MaterialTheme.typography.bodyMedium, color = Palette.TextSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+        Ico(R.drawable.ms_chevron_right, 22.dp, Palette.TextTertiary)
     }
 }
 

@@ -14,8 +14,9 @@ so far and what's next.
   last fast-forwarded to `94116d7` on 9 Oct (owner said "publish the web"): the finder, low fuel, rain
   alerts, Points & badges and the privacy page are live. To publish later web changes, only when the owner
   says so: `git push origin HEAD:claude/laughing-fermat-oevz8c` (check it's a fast-forward first).
-- **Web not yet published:** My garage and Ride Wrapped on the iPhone page (commit `cc2d290`), and the privacy
-  page's new lines about points and the garage. They go live with the next "publish the web".
+- **Web not yet published:** My garage, Ride Wrapped and Settings in groups on the iPhone page, the privacy
+  page's new lines about points and the garage, and the hazard points rule. They go live with the next
+  "publish the web".
 - **Waiting on the owner** (nothing to build until they do):
   1. *Google Places for the finder:* enable **Places API (New)** in Google Cloud and tick it on both
      keys' API restrictions. Until then the finder uses OpenStreetMap automatically.
@@ -27,7 +28,8 @@ so far and what's next.
      now": Claude can generate the upload key file and the 4 secret values when they ask ("make the key").
 - **Fourth chat, in order:** published the web (finder, low fuel, rain) → Play Store steps → Points & badges
   (build #55, web published) → My garage + Ride Wrapped (build #58, web not published) → the
-  `claude-delegate-and-budget` skill (build #59, no app change).
+  `claude-delegate-and-budget` skill (build #59, no app change) → owner's feedback from a real ride (13 Oct):
+  Settings in groups, the ride summary map fixed, the points bug fixed (see below).
 - **Owner's last feedback:** Google Maps group map "working fine". Nothing reported yet from a real ride on
   small-screen fixes, history, planner, family, finder, rain, points, garage or Wrapped. The owner's phone
   uses big text: check `app/screenshots/small/` for every new screen.
@@ -256,6 +258,23 @@ composable lambdas, `WrappedPicture` share image). Opened from the Points & badg
 card. Web: the `WV` block (`#wrapView` overlay, `wrappedPicture` canvas). Both tests (`WrappedLogicTest`,
 `wrapped.test.js`) use the same rides and expect the same numbers.
 
+## Owner's feedback of 13 Oct and the fixes
+
+- **Settings too long** → Settings in groups, app and web: profile, then Look & map, Talking & sound, Alerts,
+  Group & location, Safety & SOS, Ride tools, Points & badges, Over other apps (app only), Ride server (not in a
+  ride on the app). App: `SettingsSection` + `SettingsRow` in `HomeScreen.kt`, the old controls moved into a
+  `when (section)`; `GlassDialog(scrollKey)` scrolls a new page to the top; `startGroup` opens one for screenshots.
+  Web: `SET_GROUPS` / `SG` (every switch stays in the page, other groups' ones get `.sethide`); web tests open a
+  group with `[data-setgroup][data-keys~="<key>"]` before clicking a switch (`settings.test.js` checks the groups).
+- **Ride summary map showed the whole world** (the camera was fitted before the pop-up had its size) and a tap
+  opened the Google Maps app with nothing in it → fitted on layout (`doOnLayout`), taps no longer leave the app,
+  and "Explore route" opens the route full screen to pan and zoom (`RouteMap(interactive = true)`).
+- **A ride that never moved got 16 km of points**: `Score` read the trip counter before `TripTracker` had reset
+  it for the new ride, so it kept the last ride's 16 km and 36 min. Now it only reads a counter started for this
+  ride; `Score.repairOnce` mends entries with more km than the ride history recorded (once, flag
+  `score_repaired_1`). Hazard points now also need a ride of 5 km or more (no farming while parked). The web page
+  never had the distance bug (it counts from its own recording).
+
 ## Ideas not built yet (offered, not picked yet)
 
 - **Group challenges**: a monthly goal for the group ("1,000 km together in October") and a month leaderboard
@@ -323,10 +342,10 @@ phones can't do a mesh group call; voice is only ~10 MB an hour anyway).
    (`commandlinetools-linux-*_latest.zip` from dl.google.com), then
    `sdkmanager "platforms;android-36" "platform-tools" "build-tools;35.0.0"` and write
    `sdk.dir=$HOME/android-sdk` to `local.properties` (gitignored).
-3. `./gradlew testDebugUnitTest` should pass (about 485 tests).
+3. `./gradlew testDebugUnitTest` should pass (about 505 tests).
 4. Store pictures (only when needed): `STORE_SHOTS=1 ./gradlew recordRoborazziDebug --tests '*StoreShotTest*'`.
-5. Web tests: see `tools/webtest/README.md` (10 suites: rides, features, more, gmap, plans, watch, road, points,
-   garage, wrapped; all print "No page errors").
+5. Web tests: see `tools/webtest/README.md` (11 suites: rides, features, more, gmap, plans, watch, road, points,
+   garage, wrapped, settings; all print "No page errors").
 6. Skills for Claude in this repo: `.claude/skills/claude-delegate-and-budget` (linked to `.agents/skills/`,
    installed with `npx skills add piplupjs/skills --skill claude-delegate-and-budget`, pinned in
    `skills-lock.json`): when to hand work to helper agents and which model / effort to use.

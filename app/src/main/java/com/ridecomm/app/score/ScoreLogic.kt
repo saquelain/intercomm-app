@@ -81,7 +81,7 @@ object ScoreRules {
     const val HAZARD_MAX = 5
     const val ROLE_POINTS = 25
     const val HOME_POINTS = 15
-    /** Group and role points need a real ride, not a chat in the car park. */
+    /** Group, hazard and role points need a real ride, not a chat in the car park. */
     const val MIN_GROUP_KM = 5.0
     /** Breaks only count on rides long enough to need one. */
     const val BREAKS_FROM_MIN = 60
@@ -95,7 +95,7 @@ object ScoreRules {
         val breaks = min(e.breaks, BREAK_MAX)
         if (e.movingMin >= BREAKS_FROM_MIN && breaks > 0) add(PointsLine("Took $breaks ${if (breaks == 1) "break" else "breaks"}", breaks * BREAK_POINTS))
         val hz = min(e.hazards, HAZARD_MAX)
-        if (hz > 0) add(PointsLine("Marked $hz ${if (hz == 1) "hazard" else "hazards"}", hz * HAZARD_POINTS))
+        if (real && hz > 0) add(PointsLine("Marked $hz ${if (hz == 1) "hazard" else "hazards"}", hz * HAZARD_POINTS))
         if (real && e.lead) add(PointsLine("Led the group", ROLE_POINTS))
         if (real && e.sweep) add(PointsLine("Rode sweep", ROLE_POINTS))
         if (e.home) add(PointsLine("Home safe", HOME_POINTS))
@@ -109,6 +109,7 @@ object ScoreRules {
         "+$GROUP_PER_RIDER for each rider with you (up to $GROUP_MAX_RIDERS)",
         "+$BREAK_POINTS for each break of 10 minutes on rides of an hour or more (up to $BREAK_MAX)",
         "+$HAZARD_POINTS for each hazard you mark for the group (up to $HAZARD_MAX)",
+        "Riding together, hazards, lead and sweep count on rides of ${MIN_GROUP_KM.toInt()} km or more",
         "+$ROLE_POINTS for leading or riding sweep",
         "+$HOME_POINTS for \"I'm home safe\"",
         "Never for speed",
@@ -186,6 +187,15 @@ object ScoreBook {
     const val STREAK_KM = 5.0
 
     fun total(entries: List<ScoreEntry>): Int = entries.sumOf { ScoreRules.points(it) }
+
+    /**
+     * Entries that claim more km than the ride history recorded for the same ride (start ± 1 minute) take the
+     * history's km and riding time. [rides] are (start, km, moving ms).
+     */
+    fun repair(entries: List<ScoreEntry>, rides: List<Triple<Long, Double, Long>>): List<ScoreEntry> = entries.map { e ->
+        val r = rides.firstOrNull { kotlin.math.abs(it.first - e.atMs) < 60_000 } ?: return@map e
+        if (e.km > r.second + 0.5) e.copy(km = r.second, movingMin = (r.third / 60_000).toInt()) else e
+    }
 
     /** Every badge with its progress; earned ones carry the start of the ride that earned them. */
     fun badges(entries: List<ScoreEntry>, zone: TimeZone = TimeZone.getDefault()): List<BadgeProgress> {

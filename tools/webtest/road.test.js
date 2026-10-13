@@ -108,7 +108,7 @@ const BASE = 'http://127.0.0.1:8765/';
     p.evaluate(([la, lo, s, h, d]) => { window.__shift += d * 1000; window.__move({ latitude: la, longitude: lo, accuracy: 8, speed: s, heading: h }); }, [lat, lon, speed, heading, secs]);
   const setLook = async (p, look) => {
     await p.click('#ride [data-open-settings]');
-    await p.click('[data-choice="look"][data-value="' + look + '"]');
+    await p.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'look').then(() => p.click('[data-choice="look"][data-value="' + look + '"]'));
     await p.click('#settingsClose');
     await p.waitForTimeout(150);
   };
@@ -435,7 +435,7 @@ const BASE = 'http://127.0.0.1:8765/';
       meteo.asked[n0].searchParams.get('latitude') === '18.60' && meteo.asked[n0].searchParams.get('longitude') === '73.90');
     // Switching it off: pill gone, no more requests.
     await b.click('#ride [data-open-settings]');
-    await b.click('label:has([data-setting="rain"])');
+    await b.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'rain').then(() => b.click('label:has([data-setting="rain"])'));
     await b.click('#settingsClose');
     check('Rain alerts off: pill hidden', await b.isHidden('#rainPill'));
     await b.evaluate(() => { window.__shift += 20 * 60000; });
@@ -455,20 +455,22 @@ const BASE = 'http://127.0.0.1:8765/';
     check('Settings: "Fuel & food finder" with its description', txt.includes('Fuel & food finder') && txt.includes('Find petrol, food or a mechanic on the road ahead, and tap Low fuel to be warned at the next petrol pump ahead. Searches send your location to Google Maps or OpenStreetMap only when you use them.'));
     check('Settings: "Rain alerts" with its description', txt.includes('Rain alerts') && txt.includes('Hear when rain is expected where you are or on the road ahead. Every 15 minutes your rough location (about 1 km) goes to the free Open-Meteo weather service.'));
     check('Finder on and rain off by default', await a.isChecked('[data-setting="finder"]') && !(await a.isChecked('[data-setting="rain"]')));
+    await a.click('[data-setgroup="tools"]');
     await shot(a, 'road6_settings_classic.png', '[data-setting="finder"]');
-    await a.click('label:has([data-setting="finder"])');
+    await a.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'finder').then(() => a.click('label:has([data-setting="finder"])'));
     await a.click('#settingsClose');
     check('Finder off: no card', (await a.innerHTML('#roadCard')) === '');
     await b.click('#lowFuel');
     await b.waitForTimeout(500);
     check('Finder off: "Bilal is low on fuel" not said', (await said(a, 'Bilal is low on fuel')) === 0);
     await a.click('#ride [data-open-settings]');
-    await a.click('label:has([data-setting="finder"])');
+    await a.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'finder').then(() => a.click('label:has([data-setting="finder"])'));
     await a.click('#settingsClose');
     check('Finder back on: the card is back', !!(await a.$('#roadCard [data-find="fuel"]')));
     for (const look of ['glass', 'neu']) {
       await setLook(a, look);
       await a.click('#ride [data-open-settings]');
+      await a.click('[data-setgroup="tools"]');
       await shot(a, 'road6_settings_' + look + '.png', '[data-setting="finder"]');
       await a.click('#settingsClose');
     }

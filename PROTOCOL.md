@@ -209,7 +209,7 @@ from the facts with the rules below, so app and web agree:
 | 1 per km | distance (whole km) |
 | 10 per other rider, up to 5 | riding together (rides of 5 km or more) |
 | 15 per break, up to 3 | stops of 10 minutes or more, on rides with an hour or more of riding |
-| 10 per hazard, up to 5 | hazards I marked for the group (a new spot, not re-marking one) |
+| 10 per hazard, up to 5 | hazards I marked for the group (a new spot, not re-marking one; rides of 5 km or more) |
 | 25 | leading the group, 25 for riding sweep (rides of 5 km or more) |
 | 15 | "I'm home safe" (in the ride, at home by itself, or a later check-in for my last ride if it started within 24 h) |
 

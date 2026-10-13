@@ -195,6 +195,17 @@ fun RideSummaryContent(
 ) {
     val context = LocalContext.current
     var confirmDelete by remember { mutableStateOf(false) }
+    var bigMap by remember { mutableStateOf(false) }
+    if (bigMap) {
+        FullScreen(onClose = { bigMap = false }) {
+            Box(Modifier.fillMaxSize()) {
+                RouteMap(ride.route, ride.stops, Modifier.fillMaxSize(), interactive = true)
+                Box(Modifier.statusBarsPadding().padding(16.dp)) {
+                    GlassIconButton(R.drawable.ms_arrow_back, "Back", size = 46.dp, iconSize = 22.dp) { bigMap = false }
+                }
+            }
+        }
+    }
     Column(
         Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -205,7 +216,20 @@ fun RideSummaryContent(
             onClose,
         )
         if (ride.route.size >= 2) {
-            map(Modifier.fillMaxWidth().height(260.dp).clip(RoundedCornerShape(24.dp)))
+            Box(Modifier.fillMaxWidth().height(260.dp).clip(RoundedCornerShape(24.dp))) {
+                map(Modifier.fillMaxSize())
+                // The small map is a still picture: a tap opens the route full screen to pan and zoom.
+                Box(Modifier.matchParentSize().clickable { bigMap = true })
+                Row(
+                    Modifier.align(Alignment.BottomEnd).padding(10.dp).clip(RoundedCornerShape(50)).background(Color(0xB3140F2E))
+                        .padding(horizontal = 12.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Ico(R.drawable.ms_zoom_out_map, 16.dp, Color.White)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Explore route", style = MaterialTheme.typography.labelMedium, color = Color.White)
+                }
+            }
         } else {
             GlassCard { Text("No route for this ride: location was off.", style = MaterialTheme.typography.bodyMedium) }
         }

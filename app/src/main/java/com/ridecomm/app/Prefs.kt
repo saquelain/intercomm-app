@@ -72,6 +72,7 @@ object Prefs {
     private const val KEY_POINTS = "points"
     private const val KEY_GARAGE = "garage"
     private const val KEY_WRAPPED = "wrapped"
+    private const val KEY_SCORE_REPAIRED = "score_repaired_1"
     private const val KEY_GARAGE_JSON = "garage_json"
 
     private fun prefs(context: Context) =
@@ -414,6 +415,11 @@ object Prefs {
     fun wrapped(context: Context): Boolean = prefs(context).getBoolean(KEY_WRAPPED, true)
 
     fun setWrapped(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_WRAPPED, on).apply()
+
+    /** The one-time mend of points counted with the last ride's distance has run (see Score.repairOnce). */
+    fun scoreRepaired(context: Context): Boolean = prefs(context).getBoolean(KEY_SCORE_REPAIRED, false)
+
+    fun setScoreRepaired(context: Context) = prefs(context).edit().putBoolean(KEY_SCORE_REPAIRED, true).apply()
 
     /** The garage itself (JSON, see GarageLogic). */
     fun garageJson(context: Context): String = prefs(context).getString(KEY_GARAGE_JSON, "") ?: ""

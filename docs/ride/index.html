@@ -649,6 +649,19 @@
     background: linear-gradient(120deg, #7C5CFF, #FF3D81, #FF8A1F); font: inherit; }
   .wcard svg { width: 40px; height: 40px; flex: none; } .wct { font-size: 22px; font-weight: 800; } .wcs { font-size: 15px; color: rgba(255,255,255,.9); }
 
+  /* Settings in groups: a short list, each group opens its own page */
+  #setGroups { margin-top: 14px; }
+  .sgroup { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 0; background: none; border: 0; border-top: 1px solid rgba(255,255,255,.08);
+    color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .sgroup:first-child { border-top: 0; }
+  .sgroup .gi { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; flex: none; }
+  .sgroup .gi svg { width: 22px; height: 22px; }
+  .sgroup .t { font-weight: 600; font-size: 17px; } .sgroup .d { color: var(--muted); font-size: 14px; }
+  .sgroup .chev { color: var(--faint); flex: none; }
+  #settingsBack { margin-right: 10px; }
+  .sethide { display: none !important; }
+  html.look-neu .sgroup { border-top-color: rgba(120,126,160,.18); }
+
   /* Small phones (iPhone SE and narrower) and large text: nothing overlaps or spills out of its card. */
   .grow { min-width: 0; }
   .btn { min-width: 0; }
@@ -766,7 +779,8 @@
 <!-- Settings: every extra can be switched on and off at any time, also mid-ride. -->
 <div class="sheet hidden" id="settings">
   <div class="sheet-in">
-    <div class="row"><h1 class="grow">Settings</h1><button class="iconbtn" id="settingsClose" aria-label="Close"><svg class="i" viewBox="0 -960 960 960"><path d="M480-424 284-228q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536-480l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480-424Z"/></svg></button></div>
+    <div class="row"><button class="iconbtn hidden" id="settingsBack" aria-label="Back to settings"><svg class="i" viewBox="0 -960 960 960"><path d="m313-440 196 196q12 12 11.5 28T508-188q-12 11-28 11.5T452-188L188-452q-6-6-8.5-13t-2.5-15q0-8 2.5-15t8.5-13l264-264q11-11 27.5-11t28.5 11q12 12 12 28.5T508-715L313-520h447q17 0 28.5 11.5T800-480q0 17-11.5 28.5T760-440H313Z"/></svg></button><h1 class="grow" id="settingsTitle">Settings</h1><button class="iconbtn" id="settingsClose" aria-label="Close"><svg class="i" viewBox="0 -960 960 960"><path d="M480-424 284-228q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536-480l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480-424Z"/></svg></button></div>
+    <div id="setProfile">
     <div class="row" style="margin-top:16px">
       <div class="avatar me photo-big" id="photoPreview"></div>
       <div class="grow">
@@ -780,6 +794,8 @@
     <input type="file" accept="image/*" id="photoFile" class="hidden">
     <div class="field"><div class="label">Your name</div><input id="nameSet" maxlength="20" placeholder="e.g. Rahul"></div>
     <p class="note" style="margin-top:6px">A new name shows from the next time you join.</p>
+    </div>
+    <div id="setGroups"></div>
     <div style="margin-top:12px" id="toggles"></div>
     <div id="choices"></div>
     <div id="homeBox"></div>
@@ -979,6 +995,7 @@
     twilight: 'M792-670q9 9 9 21t-9 21l-43 43q-9.07 9-21.53 9-12.47 0-21.34-9.05-9.13-9.06-8.63-21.5Q698-619 707-628l43-42q9-8 21-8.5t21 8.5ZM110-170q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32Q97.25-230 110-230h740q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H110Zm370.18-630q12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v60q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37v-60q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62ZM169-672q9-9 21-9t21 9l44 44q9 9.07 9 21.53 0 12.47-9 21.86-9 8.61-21.5 8.11T212-586l-43-44q-8-9-8.5-21t8.5-21Zm31 352q0-117 81.5-198.5T480-600q117 0 198.5 81.5T760-320H200Z',
     check: 'm424-408-86-86q-11-11-28-11t-28 11q-11 11-11 28t11 28l114 114q12 12 28 12t28-12l226-226q11-11 11-28t-11-28q-11-11-28-11t-28 11L424-408Zm56 328q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z',
     play: 'M320-273v-414q0-17 12-28.5t28-11.5q5 0 10.5 1.5T381-721l326 207q9 6 13.5 15t4.5 19q0 10-4.5 19T707-446L381-239q-5 3-10.5 4.5T360-233q-16 0-28-11.5T320-273Z',
+    moon: 'M480-120q-151 0-255.5-104.5T120-480q0-138 90-239.5T440-838q13-2 23 3.5t16 14.5q6 9 6.5 21t-7.5 23q-17 26-25.5 55t-8.5 61q0 90 63 153t153 63q31 0 61.5-9t54.5-25q11-7 22.5-6.5T819-479q10 5 15.5 15t3.5 24q-14 138-117.5 229T480-120Z',
   };
   const icon = (d) => '<svg class="i" viewBox="0 -960 960 960"><path d="' + d + '"/></svg>';
   /** The RideComm motorbike (the logo), also drawn on the shared ride picture. */
@@ -1107,20 +1124,44 @@
     }
     else if (key === 'locked') renderSettings();
   }
+  // Settings in groups (like the app): the list first, then one group at a time. Every switch stays in the page,
+  // the ones of other groups just hidden. [id, title, what's inside, icon, colour, setting keys, extra boxes]
+  const SET_GROUPS = [
+    ['look', 'Look & map', 'Look, map style, night mode', 'moon', '#7C5CFF', ['look', 'mapKind', 'night'], []],
+    ['talk', 'Talking & sound', 'Talk mode, talk to one rider, spoken alerts, screen', 'mic', '#22B8D8', ['talk', 'whisper', 'voice', 'vibrate', 'awake'], []],
+    ['alerts', 'Alerts', 'Hazards, lead & sweep, rain, breaks', 'warning', '#FF8A1F', ['hazards', 'roles', 'rain', 'breakEvery'], []],
+    ['group', 'Group & location', 'Group map, family watching, destination, home safe', 'route', '#0FB5A8', ['map', 'family', 'dest', 'home'], ['homeBox']],
+    ['safety', 'Safety & SOS', 'Emergency info for helpers', 'shield', '#FF4D6D', [], ['infoBox']],
+    ['tools', 'Ride tools', 'Fuel & food finder, planner, history, garage', 'build', '#4F7CFF', ['finder', 'planner', 'history', 'garage'], []],
+    ['points', 'Points & badges', 'Points, badges, Ride Wrapped', 'trophy', '#E0A100', ['points', 'wrapped'], []],
+    ['server', 'Ride server', 'Lock rides to my group', 'lead', '#8A93B0', [], ['serverBox']],
+  ];
+  const SG = { group: null };
+  const groupOf = (k) => (SET_GROUPS.find((g) => g[5].includes(k)) || [])[0];
   function renderSettings() {
     $('nameSet').value = store.get('rc-web-name') || $('nameIn').value || '';
     renderPhotoPreview();
+    const g = SET_GROUPS.find((x) => x[0] === SG.group), hide = (id, on) => $(id).classList.toggle('sethide', on);
+    $('settingsTitle').textContent = g ? g[1] : 'Settings';
+    $('settingsBack').classList.toggle('hidden', !g);
+    hide('setProfile', !!g); hide('setGroups', !!g);
+    ['homeBox', 'infoBox', 'serverBox'].forEach((b) => hide(b, !g || !g[6].includes(b)));
+    $('setGroups').innerHTML = SET_GROUPS.map(([id, t, d, ic, col, keys]) => '<button class="sgroup" data-setgroup="' + id + '" data-keys="' + keys.join(' ') + '">' +
+      '<span class="gi" style="background:' + col + '2e;color:' + col + '">' + icon(P[ic]) + '</span><span class="grow"><div class="t">' + t + '</div><div class="d">' + d + '</div></span>' +
+      '<span class="chev">›</span></button>').join('');
+    const shown = (k) => (g && g[5].includes(k) ? '' : ' sethide');
     $('toggles').innerHTML = TOGGLES.map(([k, t, d]) =>
-      '<label class="setting"><div class="grow"><div class="t">' + t + '</div><div class="d">' + d + '</div></div>' +
+      '<label class="setting' + shown(k) + '"><div class="grow"><div class="t">' + t + '</div><div class="d">' + d + '</div></div>' +
       '<span class="switch"><input type="checkbox" data-setting="' + k + '"' + (SET[k] ? ' checked' : '') + '><span></span></span></label>' +
-      (k === 'history' && rideCount() ? '<button class="btn small" style="margin:0 0 14px" id="historyClear">' + icon(P.del) + 'Clear ride history (' + rideCount() + ')</button>' : '')).join('');
+      (k === 'history' && rideCount() ? '<button class="btn small' + shown(k) + '" style="margin:0 0 14px" id="historyClear">' + icon(P.del) + 'Clear ride history (' + rideCount() + ')</button>' : '')).join('');
     $('choices').innerHTML = CHOICES.map(([k, t, opts, desc]) =>
-      '<div class="setting" style="display:block"><div class="t">' + t + '</div><div class="d">' + desc[SET[k]] + '</div><div class="seg">' +
+      '<div class="setting' + shown(k) + '" style="display:block"><div class="t">' + t + '</div><div class="d">' + desc[SET[k]] + '</div><div class="seg">' +
       opts.map(([v, l]) => '<button class="' + (SET[k] === v ? 'sel' : '') + '" data-choice="' + k + '" data-value="' + v + '">' + l + '</button>').join('') +
       '</div></div>').join('');
     renderInfoBox(); renderHomeBox(); renderServerBox();
   }
-  function openSettings() { renderSettings(); $('settings').classList.remove('hidden'); }
+  function openSettings() { SG.group = null; renderSettings(); $('settings').classList.remove('hidden'); }
+  function openSettingGroup(id) { SG.group = id; renderSettings(); $('settings').querySelector('.sheet-in').scrollTop = 0; }
 
   // ---- Speech, sound, banner ----
   function speak(text) {
@@ -3454,7 +3495,7 @@
     ['WEEKLY', 'Every week', 'Ride 4 weeks in a row', 4, 'weeks', P.fire],
   ];
   const HOWTO = ['1 point for every km', '+10 for each rider with you (up to 5)', '+15 for each break of 10 minutes on rides of an hour or more (up to 3)',
-    '+10 for each hazard you mark for the group (up to 5)', '+25 for leading or riding sweep', '+15 for "I\'m home safe"', 'Never for speed'];
+    '+10 for each hazard you mark for the group (up to 5)', 'Riding together, hazards, lead and sweep count on rides of 5 km or more', '+25 for leading or riding sweep', '+15 for "I\'m home safe"', 'Never for speed'];
   const SC = { ride: null, hz: 0, lead: false, sweep: false, home: false, breaks: 0, movedAt: null, lastMoving: 0, counted: false,
     peers: new Map(), lastSent: -1, lastSentAt: 0, tick: null };
   /** The score book: one entry of plain facts per ride, newest first, kept only on this phone (apart from the ride history). */
@@ -3470,7 +3511,7 @@
     if (km > 0) out.push([km + ' km ridden', km]);
     if (real && o > 0) out.push(['Rode with ' + plural(o, 'rider', 'riders'), o * SR.GROUP]);
     if ((e.min || 0) >= SR.BREAKS_FROM && b > 0) out.push(['Took ' + plural(b, 'break', 'breaks'), b * SR.BREAK]);
-    if (h > 0) out.push(['Marked ' + plural(h, 'hazard', 'hazards'), h * SR.HAZ]);
+    if (real && h > 0) out.push(['Marked ' + plural(h, 'hazard', 'hazards'), h * SR.HAZ]);
     if (real && e.lead) out.push(['Led the group', SR.ROLE]);
     if (real && e.sweep) out.push(['Rode sweep', SR.ROLE]);
     if (e.home) out.push(['Home safe', SR.HOME]);
@@ -4359,6 +4400,9 @@
     if (e.target.closest('#wrShare')) { shareWrapped(); return; }
     if (e.target.closest('#wrAgain')) { WV.at = 0; renderWrapped(); return; }
     if (e.target.closest('[data-open-settings]')) openSettings();
+    const sg = e.target.closest('[data-setgroup]');
+    if (sg) openSettingGroup(sg.dataset.setgroup);
+    if (e.target.closest('#settingsBack')) openSettingGroup(null);
     if (e.target.closest('[data-open-map]')) openMap();
     const chip = e.target.closest('[data-chip]');
     if (chip && G.map) { const p = G.pos.get(chip.dataset.chip); if (p) { G.follow = false; G.map.view(p.lat, p.lon, 16); renderMapBar(); } }

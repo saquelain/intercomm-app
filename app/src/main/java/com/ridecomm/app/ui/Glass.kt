@@ -44,6 +44,7 @@ import androidx.compose.runtime.getValue
 import com.ridecomm.app.night.NightMode
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.ScrollState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -496,7 +497,7 @@ fun GlassTextField(
 
 /** Dialog panel in the same glass style (darker, since the dialog floats over a scrim). */
 @Composable
-fun GlassDialog(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+fun GlassDialog(onDismiss: () -> Unit, scrollKey: Any? = null, content: @Composable ColumnScope.() -> Unit) {
     val night by NightMode.active.collectAsState()
     val look = LocalLook.current
     val glassLook = look == UiLook.GLASS
@@ -526,7 +527,7 @@ fun GlassDialog(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Un
                                 )
                         },
                     )
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(remember(scrollKey) { ScrollState(0) })
                     .padding(22.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 content = content,

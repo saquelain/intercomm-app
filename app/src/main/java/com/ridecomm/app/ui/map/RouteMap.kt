@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.doOnLayout
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.MapView
@@ -27,26 +28,28 @@ import org.osmdroid.views.overlay.Polyline
 private const val ROUTE_COLOR = 0xFFFF6A2B.toInt()
 
 /**
- * A still map of a past ride: the route, where it started (green) and ended (pink), and the stops
- * (yellow). Google's "lite" map when Google Maps is in use (a picture of the map, free and light),
- * otherwise OpenStreetMap; both are fixed in place so the summary page scrolls normally.
+ * A map of a past ride: the route, where it started (green) and ended (pink), and the stops (yellow).
+ * On the summary page it's a still picture (Google's free "lite" map, or OpenStreetMap) so the page scrolls
+ * normally; [interactive] is the full-screen one you can pan and zoom.
  */
 @Composable
-fun RouteMap(route: List<RoutePoint>, stops: List<RideStop>, modifier: Modifier = Modifier) {
+fun RouteMap(route: List<RoutePoint>, stops: List<RideStop>, modifier: Modifier = Modifier, interactive: Boolean = false) {
     val context = LocalContext.current
-    if (remember { GoogleMapSetup.use(context) }) GoogleRouteMap(route, stops, modifier) else OsmRouteMap(route, stops, modifier)
+    if (remember { GoogleMapSetup.use(context) }) GoogleRouteMap(route, stops, modifier, interactive) else OsmRouteMap(route, stops, modifier, interactive)
 }
 
 @Composable
-private fun GoogleRouteMap(route: List<RoutePoint>, stops: List<RideStop>, modifier: Modifier) {
+private fun GoogleRouteMap(route: List<RoutePoint>, stops: List<RideStop>, modifier: Modifier, interactive: Boolean) {
     val context = LocalContext.current
-    val mapView = remember { MapView(context, GoogleMapOptions().liteMode(true).mapToolbarEnabled(false)) }
+    val mapView = remember { MapView(context, GoogleMapOptions().liteMode(!interactive).mapToolbarEnabled(false)) }
     MapLifecycle(mapView)
     LaunchedEffect(mapView, route) {
         mapView.getMapAsync { map ->
             map.clear()
             map.uiSettings.isMapToolbarEnabled = false
             map.setOnMarkerClickListener { true }
+            // A lite map opens the Google Maps app on a tap (showing nothing of the ride): the page handles taps instead.
+            map.setOnMapClickListener { }
             if (route.isEmpty()) return@getMapAsync
             val points = route.map { LatLng(it.lat, it.lon) }
             map.addPolyline(PolylineOptions().addAll(points).color(ROUTE_COLOR).width(10f))
@@ -55,11 +58,14 @@ private fun GoogleRouteMap(route: List<RoutePoint>, stops: List<RideStop>, modif
             stops.forEach {
                 map.addMarker(MarkerOptions().position(LatLng(it.lat, it.lon)).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)))
             }
-            mapView.post {
+            // Fit the route once the map has its size (in a pop-up that comes after the first frame;
+            // fitting before it left the whole world showing).
+            mapView.doOnLayout {
                 val bounds = LatLngBounds.builder().apply { points.forEach { include(it) } }.build()
                 val pad = (32 * context.resources.displayMetrics.density).toInt()
                 if (mapView.width > 0 && mapView.height > 0) {
                     runCatching { map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, mapView.width, mapView.height, pad)) }
+                        .onFailure { map.moveCamera(CameraUpdateFactory.newLatLngZoom(bounds.center, 13f)) }
                 }
                 if (map.cameraPosition.zoom > 16f) map.moveCamera(CameraUpdateFactory.zoomTo(16f))
             }
@@ -70,16 +76,16 @@ private fun GoogleRouteMap(route: List<RoutePoint>, stops: List<RideStop>, modif
 
 @SuppressLint("ClickableViewAccessibility") // a picture of the route: touches are for the page, not the map
 @Composable
-private fun OsmRouteMap(route: List<RoutePoint>, stops: List<RideStop>, modifier: Modifier) {
+private fun OsmRouteMap(route: List<RoutePoint>, stops: List<RideStop>, modifier: Modifier, interactive: Boolean) {
     val context = LocalContext.current
     val map = remember {
         MapSetup.configure(context)
         org.osmdroid.views.MapView(context).apply {
             setTileSource(MapSetup.tiles)
-            setMultiTouchControls(false)
+            setMultiTouchControls(interactive)
             zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
             isTilesScaledToDpi = true
-            setOnTouchListener { _, _ -> true }
+            if (!interactive) setOnTouchListener { _, _ -> true }
         }
     }
     DisposableEffect(map) {

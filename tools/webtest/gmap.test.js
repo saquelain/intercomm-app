@@ -124,7 +124,7 @@ fs.mkdirSync(OUT, { recursive: true });
     // Switch to OpenStreetMap in Settings, mid-ride: the map is rebuilt as Leaflet.
     await a.click('#mapBack');
     await a.click('[data-open-settings]:visible');
-    await a.click('[data-choice="mapKind"][data-value="osm"]');
+    await a.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'mapKind').then(() => a.click('[data-choice="mapKind"][data-value="osm"]'));
     await a.click('#settingsClose');
     await a.click('[data-open-map]');
     await a.waitForSelector('#map .leaflet-marker-icon', { timeout: 10000 });
