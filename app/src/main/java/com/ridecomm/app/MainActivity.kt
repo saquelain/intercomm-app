@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import android.view.WindowManager
 import com.ridecomm.app.night.NightMode
+import com.ridecomm.app.night.NightStyle
 import com.ridecomm.app.ui.nightFilter
 import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
@@ -54,7 +55,10 @@ class MainActivity : ComponentActivity() {
                         screenBrightness = if (night) NIGHT_BRIGHTNESS else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
                     }
                 }
-                val look by LookSetting.current.collectAsStateWithLifecycle()
+                val chosenLook by LookSetting.current.collectAsStateWithLifecycle()
+                val nightStyle by NightMode.style.collectAsStateWithLifecycle()
+                // Dark night mode: the light Soft look gives way to the dark Classic one until morning.
+                val look = if (night && nightStyle == NightStyle.DARK && chosenLook == UiLook.NEU) UiLook.CLASSIC else chosenLook
                 // The Soft look is light: dark status bar and navigation icons.
                 LaunchedEffect(look) {
                     WindowCompat.getInsetsController(window, window.decorView).apply {
@@ -63,7 +67,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val home = state.status == RideStatus.IDLE
-                LookBackground(look, Modifier.nightFilter(night), if (home) GlassSceneStyle.HOME else GlassSceneStyle.RIDE) {
+                LookBackground(look, Modifier.nightFilter(night, nightStyle), if (home) GlassSceneStyle.HOME else GlassSceneStyle.RIDE) {
                     Box(Modifier.fillMaxSize().safeDrawingPadding()) {
                         LookScope(look) { if (home) HomeScreen(state) else RideScreen(state) }
                     }

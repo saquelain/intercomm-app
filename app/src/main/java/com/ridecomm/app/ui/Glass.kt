@@ -499,6 +499,7 @@ fun GlassTextField(
 @Composable
 fun GlassDialog(onDismiss: () -> Unit, scrollKey: Any? = null, content: @Composable ColumnScope.() -> Unit) {
     val night by NightMode.active.collectAsState()
+    val nightStyle by NightMode.style.collectAsState()
     val look = LocalLook.current
     val glassLook = look == UiLook.GLASS
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -507,7 +508,7 @@ fun GlassDialog(onDismiss: () -> Unit, scrollKey: Any? = null, content: @Composa
             Column(
                 Modifier
                     .padding(20.dp)
-                    .nightFilter(night)
+                    .nightFilter(night, nightStyle)
                     .fillMaxWidth()
                     .then(
                         if (look == UiLook.NEU) {

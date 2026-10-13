@@ -974,4 +974,15 @@ open class ScreenshotTest {
     @Test fun settingsTalkSoft() = softShot("133_settings_talk_soft") { SettingsDialog(onClose = {}, startGroup = "TALK") }
     @Test fun settingsToolsSoft() = softShot("134_settings_tools_soft") { SettingsDialog(onClose = {}, startGroup = "TOOLS") }
     @Test fun settingsSafety() = shot("135_settings_safety") { SettingsDialog(onClose = {}, startGroup = "SAFETY") }
+
+    // ---- Choosing a place, night look ----
+
+    @Test fun placeDialogSoft() = softShot("140_place_dialog_soft") { DestinationDialog({}, {}, title = "Where do we meet?", description = "Riders get it in the plan, one tap from directions.", myLocation = true) }
+    @Test fun placeDialog() = shot("141_place_dialog") { DestinationDialog({}, {}) }
+    @Test fun mapPicker() = captureRoboImage("$dir/142_map_picker.png") {
+        RideCommTheme { LookScope(UiLook.NEU) { MapPicker(18.7546 to 73.4062, "Where do we meet?", {}, {}) } }
+    }
+    @Test fun nightDark() = captureRoboImage("$dir/143_night_dark.png") {
+        RideCommTheme { GlassBackground(Modifier.nightFilter(true, com.ridecomm.app.night.NightStyle.DARK)) { Box(Modifier.fillMaxSize().padding(top = 24.dp)) { RideContent(ride, MusicState(), VoteState(), SosState()) } } }
+    }
 }

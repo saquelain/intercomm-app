@@ -224,7 +224,7 @@ fun PlanDialog(onCancel: () -> Unit, onSaved: (RidePlan) -> Unit) {
                 "stop" -> "Add a stop"
                 else -> "Where does the ride go?"
             },
-            description = "Type a place, or paste coordinates or a Google Maps link.",
+            description = "Riders get it in the plan, one tap from directions.",
             myLocation = which == "meet",
         )
     }

@@ -1,9 +1,8 @@
 package com.ridecomm.app.nearby
 
 import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
 import com.ridecomm.app.BuildConfig
+import com.ridecomm.app.group.GoogleApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -11,7 +10,6 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
-import java.security.MessageDigest
 
 /**
  * Finds petrol pumps, food or mechanics around a point. Google Maps' places when this build's key
@@ -56,14 +54,8 @@ object PoiSearch {
 
     /** Around me, and a second circle centred further along the road. */
     private fun google(context: Context, kind: PoiKind, lat: Double, lon: Double, bearing: Double?): List<Poi> {
-        val key = mapsKey(context) ?: throw IllegalStateException("no key")
-        val headers = mapOf(
-            "X-Goog-Api-Key" to key,
-            "X-Goog-FieldMask" to "places.id,places.displayName,places.location",
-            // The key is limited to this app; Google checks these.
-            "X-Android-Package" to context.packageName,
-            "X-Android-Cert" to (signingSha1(context) ?: ""),
-        )
+        val key = GoogleApi.key(context) ?: throw IllegalStateException("no key")
+        val headers = GoogleApi.headers(context, key, "places.id,places.displayName,places.location")
         val circles = buildList {
             add(Triple(lat, lon, 3_000.0))
             if (bearing != null) {
@@ -102,21 +94,4 @@ object PoiSearch {
     }
 
     private class HttpError(val code: Int) : Exception("search $code")
-
-    private fun mapsKey(context: Context): String? = runCatching {
-        context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
-            .metaData?.getString("com.google.android.geo.API_KEY")?.takeIf { it.isNotBlank() }
-    }.getOrNull()
-
-    /** The app's signing certificate as Google wants it (SHA-1, hex, no colons). */
-    @Suppress("DEPRECATION")
-    private fun signingSha1(context: Context): String? = runCatching {
-        val pm = context.packageManager
-        val cert = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            pm.getPackageInfo(context.packageName, PackageManager.GET_SIGNING_CERTIFICATES).signingInfo?.apkContentsSigners?.firstOrNull()
-        } else {
-            pm.getPackageInfo(context.packageName, PackageManager.GET_SIGNATURES).signatures?.firstOrNull()
-        } ?: return null
-        MessageDigest.getInstance("SHA-1").digest(cert.toByteArray()).joinToString("") { "%02X".format(it) }
-    }.getOrNull()
 }

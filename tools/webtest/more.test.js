@@ -25,6 +25,8 @@ fs.mkdirSync(OUT, { recursive: true });
     const ok = r.request().headers()['x-ridecomm-key'] === 'our secret';
     r.fulfill(ok ? { contentType: 'application/json', body: pass(JSON.parse(r.request().postData())) } : { status: 401, contentType: 'application/json', body: '{"error":"wrong group key"}' });
   });
+  // The quick OpenStreetMap search (Photon) is down here, so searches use Nominatim (faked below).
+  await ctx.route(/photon\.komoot\.io/, (r) => r.fulfill({ status: 503, body: 'busy' }));
   await ctx.route(/nominatim\.openstreetmap\.org/, (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify([
     { lat: '18.7546', lon: '73.4062', name: 'Lonavala', display_name: 'Lonavala, Maval, Pune, Maharashtra, India' },
     { lat: '18.75', lon: '73.38', name: 'Lonavala Lake', display_name: 'Lonavala Lake, Pune, Maharashtra, India' },

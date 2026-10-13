@@ -53,4 +53,40 @@ class DestinationLogicTest {
         assertTrue(DestinationLogic.newer(a, a.copy(id = "b")))
         assertTrue(DestinationLogic.newer(a, a.copy(id = "0", atMs = 101)))
     }
+
+    @Test
+    fun googlePlaceSearch() {
+        val json = """{"places":[
+            {"id":"a","displayName":{"text":"Hotel Shivam Dhaba"},"formattedAddress":"Hotel Shivam Dhaba, NH48, Khandala, Maharashtra 410301, India","location":{"latitude":18.76,"longitude":73.38}},
+            {"id":"b","displayName":{"text":"No place"}},
+            {"id":"c","displayName":{"text":"Lonavala"},"formattedAddress":"Lonavala, Maharashtra, India","location":{"latitude":18.75,"longitude":73.40}}]}"""
+        val places = DestinationLogic.parseGoogleText(json)
+        assertEquals(listOf("Hotel Shivam Dhaba", "Lonavala"), places.map { it.name })
+        assertEquals("NH48, Khandala, Maharashtra 410301", places[0].detail)
+        assertEquals(18.76, places[0].lat, 0.0)
+        assertEquals(emptyList<Place>(), DestinationLogic.parseGoogleText("{}"))
+        assertEquals(emptyList<Place>(), DestinationLogic.parseGoogleText("not json"))
+    }
+
+    @Test
+    fun photonSearch() {
+        val json = """{"features":[
+            {"geometry":{"coordinates":[73.4062,18.7546]},"properties":{"name":"Lonavala","state":"Maharashtra","country":"India"}},
+            {"geometry":{"coordinates":[73.4063,18.7547]},"properties":{"name":"Lonavala","state":"Maharashtra","country":"India"}},
+            {"geometry":{"coordinates":[73.85,18.52]},"properties":{"street":"FC Road","housenumber":"12","city":"Pune","state":"Maharashtra"}},
+            {"geometry":{"coordinates":[73.0]},"properties":{"name":"Broken"}}]}"""
+        val places = DestinationLogic.parsePhoton(json)
+        assertEquals(listOf("Lonavala", "FC Road 12"), places.map { it.name })
+        assertEquals("Maharashtra, India", places[0].detail)
+        assertEquals("Pune, Maharashtra", places[1].detail)
+        assertEquals(18.7546, places[0].lat, 0.0)
+        assertEquals(73.4062, places[0].lon, 0.0)
+    }
+
+    @Test
+    fun placeNameInAFullGoogleLink() {
+        assertEquals("Tiger Point", DestinationLogic.placeNameInLink("https://www.google.com/maps/place/Tiger+Point/@18.7,73.3,15z/data=!3d18.71!4d73.37"))
+        assertNull(DestinationLogic.placeNameInLink("https://www.google.com/maps/@18.7,73.3,15z"))
+        assertNull(DestinationLogic.placeNameInLink("https://www.google.com/maps/place/18.7,73.3/@18.7,73.3,15z"))
+    }
 }

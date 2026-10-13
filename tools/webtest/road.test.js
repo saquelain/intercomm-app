@@ -60,6 +60,8 @@ const BASE = 'http://127.0.0.1:8765/';
       meteo.asked.push(u);
       r.fulfill({ contentType: 'application/json', body: JSON.stringify(meteo.answer(u)) });
     });
+    // The quick OpenStreetMap search (Photon) is down here, so searches use Nominatim (faked below).
+    await ctx.route(/photon\.komoot\.io/, (r) => r.fulfill({ status: 503, body: 'busy' }));
     await ctx.route(/nominatim\.openstreetmap\.org/, (r) => r.fulfill({ contentType: 'application/json', body: '[]' }));
     await ctx.route(/leaflet\.min\.(js|css)$/, (r) => {
       const f = __dirname + '/vendor/leaflet.min.' + (r.request().url().endsWith('css') ? 'css' : 'js');

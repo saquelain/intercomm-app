@@ -152,8 +152,9 @@ between phones).
   spoken. Switching happens instantly, without re-connecting the mic. Voice commands still work.
 - **Rider volume:** tap a rider to set how loud you hear them (20–200%, only on your phone, remembered for the
   next ride) or mute them for yourself, which also stops downloading their voice.
-- **Night mode** (Settings: Off / Auto / On): the whole app turns dim red (greyscale tinted red, so bright and
-  dark stay apart) with the screen dimmed, and spoken alerts play at about half volume. Auto works out sunset
+- **Night mode** (Settings: Off / Auto / On) with a **Night look**: **Dark** (default: the dark page in normal
+  colours, a little dimmer; the light Soft look switches to it at night) or **Red** (everything dim red, greyscale
+  tinted red so bright and dark stay apart). The screen is dimmed and spoken alerts play at about half volume. Auto works out sunset
   and sunrise from the phone's location (or 6:30 pm–6 am without one).
 - **Talk to one rider** (Settings, on by default): hold a rider's name (or "Hold to talk only to …" in their
   sheet) to talk only to them, say lead to sweep. Everyone else's phone silences you while you hold (a short
@@ -161,9 +162,10 @@ between phones).
   you again after 5 s). Your mic opens 0.4 s after you press, once the others have silenced you. Bilal sees "Asha is
   talking to you" with a "Hold to reply" button; the others see "Talking only to Bilal" on your card. Private
   between RideComm phones, not encrypted.
-- **Shared destination** (Settings, on by default): "Where are we heading?" searches a place by name
-  (OpenStreetMap search, only when you tap Search) or takes pasted coordinates or a Google Maps link with
-  coordinates in it; long-pressing the group map offers it too. Everyone hears "Amit set the destination:
+- **Shared destination** (Settings, on by default): "Where are we heading?" searches as you type, nearest first
+  (Google Maps' places when the key allows it, else OpenStreetMap), lets you **pick the spot on a map**, or takes
+  pasted coordinates or a Google Maps link; long-pressing the group map offers it too. The ride planner's meeting
+  point and stops use the same search. Everyone hears "Amit set the destination:
   Lonavala, 42 kilometers away", sees the distance on a card with one Navigate button and the green finish flag
   on the map, and hears "You've reached Lonavala" on arrival (300 m). Your own location stays on your phone.
 - **Home safe check-in** (Settings, on by default): "I'm home safe" on the ride screen or in the Leave dialog
@@ -262,7 +264,7 @@ Safety & SOS, Ride tools, Points & badges, Ride server), saved in the browser an
   tap, hear "Pothole in 300 meters", and tap a rider to make them lead or sweep. To warn about hazards the page
   follows the iPhone's location only on the iPhone itself, and only once someone has marked one.
 - **Talk mode:** Open mic or Push to talk (hold the mic button, or tap to lock it open).
-- **Night mode:** Off / Auto / On, dim red screen and quieter alerts.
+- **Night mode:** Off / Auto / On, a dark (or red) dimmer screen and quieter alerts.
 - **Emergency info:** blood group, allergies and a contact, sent with your SOS and shown on your screen for helpers.
 - **Talk to one rider**, **Shared destination**, **Home safe check-in** and **Break reminder**, the same as in
   the app (on iPhone "talk to one rider" mutes the talker's voice element, which Safari allows). The break

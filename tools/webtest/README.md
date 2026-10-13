@@ -47,6 +47,9 @@ mute, a fake signal drop with `goOffline()` / `goOnline()`). GPS is faked too: `
 - `settings.test.js`: Settings in groups: the list, each group showing only its own switches and boxes, Back, a
   switch inside a group, changing the look from inside "Look & map", screenshots in the three looks. (Other suites
   open a group first with `[data-setgroup][data-keys~="<key>"]` before clicking a switch.)
+- `places.test.js`: choosing a place: results as you type (Photon), Search falling back to Nominatim, a Google Maps
+  link with a name, Pick on the map (opens on the first result, the spot's name, dragging, Use this spot, Back),
+  and the Dark / Red night looks with the Soft look.
 - `gmap.test.js`: the Group map on Google Maps (Google's real script in keyless mode, served a stand-in key),
   long press, tap a rider, dark map, switching to OpenStreetMap in Settings, and a refused key falling back.
 
@@ -71,6 +74,7 @@ node tools/webtest/points.test.js
 node tools/webtest/garage.test.js
 node tools/webtest/wrapped.test.js
 node tools/webtest/settings.test.js
+node tools/webtest/places.test.js
 ```
 
 In the Claude cloud container Playwright lives at `/opt/node22/lib/node_modules/playwright` (set

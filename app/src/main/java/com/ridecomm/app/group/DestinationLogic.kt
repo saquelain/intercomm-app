@@ -42,6 +42,47 @@ object DestinationLogic {
         return lat to lon
     }
 
+    private val placeInLink = Regex("""/maps/place/([^/@?]+)""")
+    private val looksLikeNumbers = Regex("""[-\d.,\s°NSEW]+""")
+
+    /** The place's name in a full Google Maps link (…/maps/place/Lonavala+Lake/@…), or null. */
+    fun placeNameInLink(link: String): String? = placeInLink.find(link)?.groupValues?.get(1)
+        ?.let { runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrNull() }
+        ?.trim()?.takeIf { it.isNotBlank() && !looksLikeNumbers.matches(it) }?.take(MAX_LABEL)
+
+    /** Google Maps place search (Text Search) results, best first. */
+    fun parseGoogleText(json: String): List<Place> {
+        val a = runCatching { org.json.JSONObject(json).optJSONArray("places") }.getOrNull() ?: return emptyList()
+        return (0 until a.length()).mapNotNull { i ->
+            val o = a.optJSONObject(i) ?: return@mapNotNull null
+            val loc = o.optJSONObject("location") ?: return@mapNotNull null
+            val lat = loc.optDouble("latitude").takeIf { it.isFinite() } ?: return@mapNotNull null
+            val lon = loc.optDouble("longitude").takeIf { it.isFinite() } ?: return@mapNotNull null
+            val name = o.optJSONObject("displayName")?.optString("text").orEmpty().ifBlank { return@mapNotNull null }
+            // The address usually starts with the name again: leave that out.
+            val detail = o.optString("formattedAddress").split(",").map { it.trim() }.filter { it.isNotEmpty() && it != name }.take(3).joinToString(", ")
+            Place(name.take(MAX_LABEL), detail, lat, lon)
+        }
+    }
+
+    /** Photon (OpenStreetMap) results, best first: a name and where it is ("Lonavala" / "Pune, Maharashtra"). */
+    fun parsePhoton(json: String): List<Place> {
+        val a = runCatching { org.json.JSONObject(json).optJSONArray("features") }.getOrNull() ?: return emptyList()
+        return (0 until a.length()).mapNotNull { i ->
+            val f = a.optJSONObject(i) ?: return@mapNotNull null
+            val c = f.optJSONObject("geometry")?.optJSONArray("coordinates") ?: return@mapNotNull null
+            val lon = c.optDouble(0).takeIf { it.isFinite() } ?: return@mapNotNull null
+            val lat = c.optDouble(1).takeIf { it.isFinite() } ?: return@mapNotNull null
+            val p = f.optJSONObject("properties") ?: return@mapNotNull null
+            fun s(k: String) = p.optString(k).trim()
+            val street = listOf(s("street"), s("housenumber")).filter { it.isNotEmpty() }.joinToString(" ")
+            val name = s("name").ifBlank { street }.ifBlank { s("city") }.ifBlank { return@mapNotNull null }
+            val detail = listOf(if (s("name").isNotBlank()) street else "", s("district"), s("city"), s("state"), s("country"))
+                .filter { it.isNotEmpty() && it != name }.distinct().take(3).joinToString(", ")
+            Place(name.take(MAX_LABEL), detail, lat, lon)
+        }.distinctBy { "${it.name}|${"%.3f".format(java.util.Locale.US, it.lat)}|${"%.3f".format(java.util.Locale.US, it.lon)}" }
+    }
+
     /** OpenStreetMap (Nominatim) search results, best first. */
     fun parseSearch(json: String): List<Place> {
         val a = runCatching { JSONArray(json) }.getOrNull() ?: return emptyList()

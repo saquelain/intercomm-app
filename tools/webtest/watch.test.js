@@ -24,6 +24,8 @@ const BASE = 'http://127.0.0.1:8765/';
     });
     await ctx.route(/livekit-client/, (r) => r.fulfill({ contentType: 'application/javascript', body: fake }));
     await ctx.route(/sandbox\/connection-details/, (r) => r.fulfill({ contentType: 'application/json', body: pass(JSON.parse(r.request().postData())) }));
+    // The quick OpenStreetMap search (Photon) is down here, so searches use Nominatim (faked below).
+    await ctx.route(/photon\.komoot\.io/, (r) => r.fulfill({ status: 503, body: 'busy' }));
     await ctx.route(/nominatim\.openstreetmap\.org/, (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify([
       { lat: '18.7546', lon: '73.4062', name: 'Lonavala', display_name: 'Lonavala, Maval, Pune, Maharashtra, India' }]) }));
     await ctx.route(/leaflet\.min\.(js|css)$/, (r) => {

@@ -155,6 +155,13 @@ fs.mkdirSync(OUT, { recursive: true });
   // Night mode on A.
   await settings(a, () => a.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'night').then(() => a.click('[data-choice="night"][data-value="on"]')));
   check('Night mode on', await a.evaluate(() => document.documentElement.classList.contains('night')));
+  check('Night look Dark by default: dimmed, not red', await a.evaluate(() => document.documentElement.classList.contains('night-dark') &&
+    !document.documentElement.classList.contains('night-red') && getComputedStyle(document.getElementById('nightDim')).display === 'block' &&
+    getComputedStyle(document.getElementById('nightRed')).display === 'none'));
+  await a.screenshot({ path: OUT + 'w16_night_dark.png' });
+  await settings(a, () => a.evaluate((k) => document.querySelector('[data-setgroup][data-keys~="' + k + '"]').click(), 'night').then(() => a.click('[data-choice="nightStyle"][data-value="red"]')));
+  check('Night look Red: the red layer', await a.evaluate(() => document.documentElement.classList.contains('night-red') &&
+    getComputedStyle(document.getElementById('nightRed')).display === 'block'));
   await spoken(a);
   await b.click('[data-say="SLOW_DOWN"]');
   await a.waitForTimeout(300);

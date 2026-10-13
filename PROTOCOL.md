@@ -171,6 +171,21 @@ summary picture.
 
 Each phone finds petrol pumps itself; nothing about places is sent to the group.
 
+## Choosing a place (no messages; same rules in app and web)
+
+Used for the destination, a plan's meeting point, stops and end. Search runs as the rider types (after 0.6 s
+still, 3 letters or more) and on Search / Enter:
+1. Typed or pasted coordinates, or a Google Maps link with them (the app also follows short `maps.app.goo.gl`
+   links), give the spot at once, named after the link's `/maps/place/<name>/` when it has one.
+2. **Google Maps** place search (Places API (New) Text Search; app: REST `places:searchText` with the Android key,
+   web: Maps JS `Place.searchByText`), 8 results, biased to 50 km around me. Once Google refuses (no Places API on
+   the key), it isn't asked again until restart / reload.
+3. **Photon** (OpenStreetMap, `photon.komoot.io/api`, `lat`/`lon` bias), fine for search-as-you-type.
+4. **Nominatim** (OpenStreetMap), only on Search / Enter (its rules forbid search-as-you-type), with a ±0.5° viewbox
+   around me.
+Results say where they came from ("Places from Google Maps."). **Pick on the map**: a map with a pin fixed in the
+middle; the spot is named with Photon's reverse lookup when the map rests; "Use this spot".
+
 ## Places ahead and rain (no messages; same rules in app and web)
 
 - **Search**: Google Places (New) Nearby Search when the Maps key allows it (`gas_station`;

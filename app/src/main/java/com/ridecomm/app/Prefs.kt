@@ -6,6 +6,7 @@ import com.ridecomm.app.ride.RecentRide
 import com.ridecomm.app.ride.DataSaverMode
 import com.ridecomm.app.ride.RecentRides
 import com.ridecomm.app.night.NightModeSetting
+import com.ridecomm.app.night.NightStyle
 import com.ridecomm.app.ride.RiderVolume
 import com.ridecomm.app.ride.TalkMode
 import com.ridecomm.app.sos.EmergencyInfo
@@ -48,6 +49,7 @@ object Prefs {
     private const val KEY_MAP_DARK = "map_dark"
     private const val KEY_TALK_MODE = "talk_mode"
     private const val KEY_NIGHT_MODE = "night_mode"
+    private const val KEY_NIGHT_STYLE = "night_style"
     private const val KEY_HAZARD_ALERTS = "hazard_alerts"
     private const val KEY_ROLE_ALERTS = "lead_sweep_alerts"
     private const val KEY_RIDER_VOLUMES = "rider_volumes"
@@ -282,6 +284,12 @@ object Prefs {
         NightModeSetting.entries.firstOrNull { it.name == prefs(context).getString(KEY_NIGHT_MODE, null) } ?: NightModeSetting.OFF
 
     fun setNightMode(context: Context, mode: NightModeSetting) = prefs(context).edit().putString(KEY_NIGHT_MODE, mode.name).apply()
+
+    /** Night mode's look: Dark (default) or Red. */
+    fun nightStyle(context: Context): NightStyle =
+        NightStyle.entries.firstOrNull { it.name == prefs(context).getString(KEY_NIGHT_STYLE, null) } ?: NightStyle.DARK
+
+    fun setNightStyle(context: Context, style: NightStyle) = prefs(context).edit().putString(KEY_NIGHT_STYLE, style.name).apply()
 
     /** Mark potholes, police and so on for the riders behind, and hear the ones ahead. */
     fun hazardAlerts(context: Context): Boolean = prefs(context).getBoolean(KEY_HAZARD_ALERTS, true)

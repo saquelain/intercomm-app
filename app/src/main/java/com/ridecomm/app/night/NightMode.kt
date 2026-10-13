@@ -18,11 +18,16 @@ object NightMode {
     private val _active = MutableStateFlow(false)
     val active: StateFlow<Boolean> = _active.asStateFlow()
 
+    private val _style = MutableStateFlow(NightStyle.DARK)
+    /** Dark or red, from Settings. */
+    val style: StateFlow<NightStyle> = _style.asStateFlow()
+
     /** Works out whether it's on now (cheap; call as often as needed). */
     fun refresh(context: Context): Boolean {
         val setting = Prefs.nightMode(context)
         val location = if (setting == NightModeSetting.AUTO) LocationHelper.lastKnown(context) else null
         val on = NightLogic.isNight(setting, System.currentTimeMillis(), location?.latitude, location?.longitude)
+        _style.value = Prefs.nightStyle(context)
         _active.value = on
         return on
     }

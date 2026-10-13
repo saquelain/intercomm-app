@@ -18,8 +18,9 @@ so far and what's next.
   page's new lines about points and the garage, and the hazard points rule. They go live with the next
   "publish the web".
 - **Waiting on the owner** (nothing to build until they do):
-  1. *Google Places for the finder:* enable **Places API (New)** in Google Cloud and tick it on both
-     keys' API restrictions. Until then the finder uses OpenStreetMap automatically.
+  1. *Google Places for the finder and place search:* enable **Places API (New)** in Google Cloud and tick it on
+     both keys' API restrictions. Until then both use OpenStreetMap automatically (the owner noticed place search
+     finds less than Google Maps on 13 Oct).
   2. *Private ride server:* Cloudflare account + 6 secrets, then run "Deploy ride server" and send the
      address (steps in README "Private ride server"). Then set `RIDE_SERVER_URL` (secret) and
      `RIDE_SERVER` in `docs/ride/index.html` (also used by the watch page), and turn off the sandbox.
@@ -275,6 +276,18 @@ card. Web: the `WV` block (`#wrapView` overlay, `wrappedPicture` canvas). Both t
   `score_repaired_1`). Hazard points now also need a ride of 5 km or more (no farming while parked). The web page
   never had the distance bug (it counts from its own recording).
 
+## Owner's feedback of 13 Oct (second round)
+
+- **Night mode turned everything red** → Settings → Look & map → **Night look: Dark** (new default: the dark
+  Classic page, a little dimmer; the light Soft look switches to it at night) or **Red** (the old red filter).
+  App: `NightStyle`, `NightMode.style`, `nightFilter(on, style)`, MainActivity swaps NEU → CLASSIC; web:
+  `SET.nightStyle`, classes `night-dark` / `night-red`, `#nightDim`.
+- **Place search found much less than Google Maps, no way to pick on a map** → PROTOCOL.md "Choosing a place":
+  search as you type, Google Places first (needs **Places API (New)** on both keys, still waiting on the owner),
+  then Photon, then Nominatim; "Pick on the map" (app: `MapPicker` + `ui/map/PickerMap.kt`; web: `#pickView`,
+  engines got `center()` / `onIdle()`); short Google Maps links followed in the app. App code: `group/PlaceSearch`,
+  `group/GoogleApi` (the key + Android headers, shared with `PoiSearch`).
+
 ## Ideas not built yet (offered, not picked yet)
 
 - **Group challenges**: a monthly goal for the group ("1,000 km together in October") and a month leaderboard
@@ -342,10 +355,11 @@ phones can't do a mesh group call; voice is only ~10 MB an hour anyway).
    (`commandlinetools-linux-*_latest.zip` from dl.google.com), then
    `sdkmanager "platforms;android-36" "platform-tools" "build-tools;35.0.0"` and write
    `sdk.dir=$HOME/android-sdk` to `local.properties` (gitignored).
-3. `./gradlew testDebugUnitTest` should pass (about 505 tests).
+3. `./gradlew testDebugUnitTest` should pass (about 510 tests).
 4. Store pictures (only when needed): `STORE_SHOTS=1 ./gradlew recordRoborazziDebug --tests '*StoreShotTest*'`.
-5. Web tests: see `tools/webtest/README.md` (11 suites: rides, features, more, gmap, plans, watch, road, points,
-   garage, wrapped, settings; all print "No page errors").
+5. Web tests: see `tools/webtest/README.md` (12 suites: rides, features, more, gmap, plans, watch, road, points,
+   garage, wrapped, settings, places; all print "No page errors"). Suites that search places fake Photon as down
+   so Nominatim (faked) answers.
 6. Skills for Claude in this repo: `.claude/skills/claude-delegate-and-budget` (linked to `.agents/skills/`,
    installed with `npx skills add piplupjs/skills --skill claude-delegate-and-budget`, pinned in
    `skills-lock.json`): when to hand work to helper agents and which model / effort to use.

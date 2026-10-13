@@ -12,6 +12,9 @@ import kotlin.math.tan
 
 enum class NightModeSetting(val label: String) { OFF("Off"), AUTO("Auto"), ON("On") }
 
+/** How night mode looks: a dark screen in normal colours (like other apps), or everything in dim red. */
+enum class NightStyle(val label: String) { DARK("Dark"), RED("Red") }
+
 /** Sunrise and sunset maths (plain Kotlin, so it can be unit-tested). */
 object SunTimes {
     private const val ZENITH = 90.833 // the sun's upper edge at the horizon, with refraction

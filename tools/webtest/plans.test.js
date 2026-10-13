@@ -26,6 +26,8 @@ const BASE = 'http://127.0.0.1:8765/';
     await ctx.route(/livekit-client/, (r) => r.fulfill({ contentType: 'application/javascript', body: fake }));
     await ctx.route(/sandbox\/connection-details/, (r) => r.fulfill({ contentType: 'application/json', body: pass(JSON.parse(r.request().postData())) }));
     // Place search: a few known places; "where am I" answers Swargate.
+    // The quick OpenStreetMap search (Photon) is down here, so searches use Nominatim (faked below).
+    await ctx.route(/photon\.komoot\.io/, (r) => r.fulfill({ status: 503, body: 'busy' }));
     await ctx.route(/nominatim\.openstreetmap\.org/, (r) => {
       const u = new URL(r.request().url());
       if (u.pathname.includes('reverse')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ name: 'Swargate', display_name: 'Swargate, Pune, Maharashtra, India' }) });

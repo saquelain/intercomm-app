@@ -1,5 +1,10 @@
 package com.ridecomm.app.ui
 
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
+import com.ridecomm.app.group.PlaceResults
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -99,60 +104,66 @@ fun DestinationCard(state: DestinationState, onPick: () -> Unit, onClear: () -> 
 }
 
 /**
- * Search a place by name (or paste coordinates / a maps link). Used to set the group's destination,
- * and by the ride planner (with [title], [description] and "Use my location").
+ * Choosing a place (the destination, a plan's meeting point or stops): search as you type, nearest first,
+ * with Google Maps' places when the app's key allows it; or pick the spot on a map; or paste a link.
  */
 @Composable
 fun DestinationDialog(
     onCancel: () -> Unit,
     onPick: (Place) -> Unit,
     title: String = "Where are we heading?",
-    description: String = "Everyone hears it, sees how far it is and gets a Navigate button. Type a place, or paste coordinates or a Google Maps link.",
+    description: String = "Everyone hears it, sees how far it is and gets a Navigate button.",
     myLocation: Boolean = false,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
-    var results by remember { mutableStateOf<List<Place>?>(null) }
+    var results by remember { mutableStateOf<PlaceResults?>(null) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    val search = {
-        if (query.isNotBlank() && !busy) {
+    var picking by remember { mutableStateOf(false) }
+    val near = remember { LocationHelper.lastKnown(context)?.let { it.latitude to it.longitude } }
+    var job by remember { mutableStateOf<Job?>(null) }
+    fun search(typing: Boolean) {
+        if (query.isBlank()) return
+        job?.cancel()
+        job = scope.launch {
             busy = true
             error = null
-            scope.launch {
-                try {
-                    results = PlaceSearch.search(query)
-                    if (results.isNullOrEmpty()) error = "Nothing found. Try a town or landmark name."
-                } catch (e: Exception) {
-                    error = "Couldn't search. Check your internet."
-                } finally {
-                    busy = false
-                }
+            try {
+                val found = PlaceSearch.search(context, query, near, typing)
+                results = found
+                if (found.places.isEmpty() && !typing) error = "Nothing found. Try another spelling, or pick it on the map."
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (!typing) error = "Couldn't search. Check your internet."
+            } finally {
+                busy = false
             }
         }
+    }
+    // Results as you type, once you stop for a moment.
+    LaunchedEffect(query) {
+        if (query.trim().length < 3) return@LaunchedEffect
+        delay(600)
+        search(typing = true)
     }
     GlassDialog(onDismiss = onCancel) {
         Text(title, style = MaterialTheme.typography.headlineMedium)
         Text(description, style = MaterialTheme.typography.bodyMedium)
-        if (myLocation) {
-            GlassButton("Use my location", R.drawable.ms_my_location, Modifier.fillMaxWidth(), height = 52.dp) {
-                val here = LocationHelper.lastKnown(context)
-                if (here == null) error = "Your location isn't known yet. Search instead." else onPick(Place("My location", "", here.latitude, here.longitude))
-            }
-        }
         GlassTextField(
             value = query,
-            onValueChange = { query = it.take(200) },
-            label = "Place",
-            placeholder = "e.g. Lonavala",
+            onValueChange = { query = it.take(300) },
+            label = "Search for a place",
+            placeholder = "e.g. Lonavala, a dhaba, a petrol pump",
             textStyle = MaterialTheme.typography.bodyLarge,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { search() }),
+            keyboardActions = KeyboardActions(onSearch = { search(typing = false) }),
         )
-        PrimaryButton(if (busy) "Searching…" else "Search", R.drawable.ms_search, Modifier.fillMaxWidth(), height = 52.dp, enabled = !busy && query.isNotBlank()) { search() }
+        if (busy) Text("Searching…", style = MaterialTheme.typography.bodyMedium, color = Palette.TextSecondary)
         error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = Palette.Amber) }
-        results?.forEach { place ->
+        results?.places?.forEach { place ->
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -166,13 +177,29 @@ fun DestinationDialog(
                 Column(Modifier.weight(1f)) {
                     Text(place.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     if (place.detail.isNotBlank()) {
-                        Text(place.detail, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(place.detail, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
         }
-        Text("Search by OpenStreetMap.", style = MaterialTheme.typography.labelSmall, color = Palette.TextTertiary)
+        results?.source?.takeIf { it.isNotBlank() && results?.places?.isNotEmpty() == true }?.let {
+            Text("Places from $it.", style = MaterialTheme.typography.labelSmall, color = Palette.TextTertiary)
+        }
+        GlassButton("Pick on the map", R.drawable.ms_map, Modifier.fillMaxWidth(), height = 52.dp) { picking = true }
+        if (myLocation) {
+            GlassButton("Use my location", R.drawable.ms_my_location, Modifier.fillMaxWidth(), height = 52.dp) {
+                val here = LocationHelper.lastKnown(context)
+                if (here == null) error = "Your location isn't known yet. Search or pick it on the map." else onPick(Place("My location", "", here.latitude, here.longitude))
+            }
+        }
+        Text("You can also paste coordinates or a Google Maps link (Share → Copy link in Google Maps).", style = MaterialTheme.typography.labelSmall, color = Palette.TextTertiary)
         GlassButton("Cancel", modifier = Modifier.fillMaxWidth(), onClick = onCancel)
+    }
+    if (picking) {
+        MapPicker(start = results?.places?.firstOrNull()?.let { it.lat to it.lon } ?: near, title = title, onCancel = { picking = false }) {
+            picking = false
+            onPick(it)
+        }
     }
 }
 

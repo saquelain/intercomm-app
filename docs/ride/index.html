@@ -215,7 +215,8 @@
 
   /* Night mode: grey first (keeps brightness), then tinted red, a little dimmer. */
   .night-layer { position: fixed; inset: 0; pointer-events: none; z-index: 2147483646; display: none; }
-  html.night .night-layer { display: block; }
+  html.night.night-red #nightGrey, html.night.night-red #nightRed, html.night.night-dark #nightDim { display: block; }
+  #nightDim { background: rgba(0,0,0,.18); }
   #nightGrey { -webkit-backdrop-filter: grayscale(1) brightness(.8); backdrop-filter: grayscale(1) brightness(.8); }
   #nightRed { background: #FF2A1A; mix-blend-mode: multiply; z-index: 2147483647; }
 
@@ -662,6 +663,20 @@
   .sethide { display: none !important; }
   html.look-neu .sgroup { border-top-color: rgba(120,126,160,.18); }
 
+  /* Picking a place on the map */
+  .pickview { position: fixed; inset: 0; z-index: 60; background: var(--night); }
+  #pickMap { position: absolute; inset: 0; }
+  .pickpin { position: absolute; left: 50%; top: 50%; z-index: 500; pointer-events: none; transform: translate(-50%, -100%); }
+  .pickpin svg { width: 48px; height: 48px; display: block; fill: #FF3D81; filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
+  .pickpin i { position: absolute; left: 50%; bottom: -3px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: #140F2E; }
+  .picktop { position: absolute; top: max(14px, env(safe-area-inset-top)); left: 14px; right: 14px; z-index: 600; display: flex; align-items: center; gap: 10px; }
+  .pickhint { background: rgba(20,15,46,.75); color: #fff; border-radius: 999px; padding: 9px 14px; font-size: 14px; font-weight: 600; }
+  .pickme { position: absolute; right: 16px; bottom: calc(210px + env(safe-area-inset-bottom)); z-index: 600; }
+  .pickpanel { position: absolute; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); z-index: 600; margin: 0; }
+  .picktop .iconbtn, .pickme { background: rgba(20,15,46,.88) !important; color: #fff !important; border-color: rgba(255,255,255,.25) !important; }
+  .pickview .pickpanel { background: rgba(14,11,34,.96); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  html.look-neu .pickview .pickpanel { background: var(--neu-page); }
+
   /* Small phones (iPhone SE and narrower) and large text: nothing overlaps or spills out of its card. */
   .grow { min-width: 0; }
   .btn { min-width: 0; }
@@ -817,7 +832,7 @@
 <!-- A rider: volume, mute for me, lead / sweep -->
 <div class="sheet hidden" id="riderSheet"><div class="sheet-in" id="riderSheetIn"></div></div>
 
-<div class="night-layer" id="nightGrey"></div><div class="night-layer" id="nightRed"></div>
+<div class="night-layer" id="nightGrey"></div><div class="night-layer" id="nightRed"></div><div class="night-layer" id="nightDim"></div>
 
 <!-- Group map -->
 <div class="mapview hidden" id="mapView">
@@ -902,14 +917,26 @@
 <div class="sheet hidden" id="destDialog">
   <div class="sheet-in">
     <h1 id="destTitle">Where are we heading?</h1>
-    <p id="destText">Everyone hears it, sees how far it is and gets a Navigate button. Type a place, or paste coordinates or a Google Maps link.</p>
+    <p id="destText">Everyone hears it, sees how far it is and gets a Navigate button.</p>
     <div class="field hidden" id="placeHereWrap"><button class="btn" id="placeHere"><svg class="i" viewBox="0 -960 960 960"><path d="M450-72v-45q-137-14-228-105T117-450H72q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32Q59.25-510 72-510h45q14-137 105-228t228-105v-45q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v45q137 14 228 105t105 228h45q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5h-45q-14 137-105 228T510-117v45q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63Q450-59.25 450-72Zm30-104q125 0 214.5-89.5T784-480q0-125-89.5-214.5T480-784q-125 0-214.5 89.5T176-480q0 125 89.5 214.5T480-176Zm0-154q-63 0-106.5-43.5T330-480q0-63 43.5-106.5T480-630q63 0 106.5 43.5T630-480q0 63-43.5 106.5T480-330Z"/></svg>Use my location</button></div>
-    <div class="field"><div class="label">Place</div><input id="destQuery" maxlength="200" placeholder="e.g. Lonavala" enterkeyhint="search" autocomplete="off"></div>
+    <div class="field"><div class="label">Search for a place</div><input id="destQuery" maxlength="300" placeholder="e.g. Lonavala, a dhaba, a petrol pump" enterkeyhint="search" autocomplete="off"></div>
     <div class="field"><button class="btn primary" id="destSearch">Search</button></div>
     <div id="destResults"></div>
-    <p class="note" style="font-size:12px">Search by OpenStreetMap.</p>
+    <p class="note" style="font-size:12px" id="destSource"></p>
+    <div class="field"><button class="btn" id="placePick"><svg class="i" viewBox="0 -960 960 960"><path d="M574-129 386-195l-157 61q-17 7-33-3t-16-29v-544q0-12 7-22t19-14l159-55q8-3 16-4t16 0q9 1 17 4l188 66 157-61q17-7 33 3.5t16 29.5v544q0 13-7 22.5T794-781l-158 55q-8 3-16 3.5t-16 0q-8-.5-15.5-3.5L574-129Zm-34-88v-490l-140-49v490l140 49Z"/></svg>Pick on the map</button></div>
+    <p class="note" style="font-size:12px">You can also paste coordinates or a Google Maps link (Share → Copy link in Google Maps).</p>
     <div class="field"><button class="btn" id="destCancel">Cancel</button></div>
   </div>
+</div>
+
+<!-- Picking a place on the map: move the map under the pin -->
+<div class="pickview hidden" id="pickView">
+  <div id="pickMap"></div>
+  <div class="pickpin" aria-hidden="true"><svg viewBox="0 -960 960 960"><path d="M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 400Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Z"/></svg><i></i></div>
+  <div class="picktop"><button class="iconbtn" id="pickBack" aria-label="Back"><svg class="i" viewBox="0 -960 960 960"><path d="m313-440 196 196q12 12 11.5 28T508-188q-12 11-28 11.5T452-188L188-452q-6-6-8.5-13t-2.5-15q0-8 2.5-15t8.5-13l264-264q11-11 27.5-11t28.5 11q12 12 12 28.5T508-715L313-520h447q17 0 28.5 11.5T800-480q0 17-11.5 28.5T760-440H313Z"/></svg></button><span class="pickhint">Move the map to put the pin on the place</span></div>
+  <button class="iconbtn pickme" id="pickMe" aria-label="My location"><svg class="i" viewBox="0 -960 960 960"><path d="M480-330q-63 0-106.5-43.5T330-480q0-63 43.5-106.5T480-630q63 0 106.5 43.5T630-480q0 63-43.5 106.5T480-330Z"/></svg></button>
+  <div class="card pickpanel"><div class="label" id="pickTitle"></div><div class="rname" id="pickName">Move the map</div><div class="rsub" id="pickAt"></div>
+    <div class="field"><button class="btn primary" id="pickUse">Use this spot</button></div></div>
 </div>
 
 <!-- Leaving: offer "I'm home safe" too -->
@@ -1028,7 +1055,7 @@
   };
 
   // ---- Settings: every extra can be switched on or off at any time, also mid-ride ----
-  const DEFAULTS = { map: false, voice: true, vibrate: true, awake: true, darkMap: false, hazards: true, roles: true, talk: 'open', night: 'off', shareInfo: true,
+  const DEFAULTS = { map: false, voice: true, vibrate: true, awake: true, darkMap: false, hazards: true, roles: true, talk: 'open', night: 'off', nightStyle: 'dark', shareInfo: true,
     whisper: true, dest: true, home: true, history: true, points: true, garage: true, wrapped: true, planner: true, family: false, finder: true, rain: false, breakEvery: '120', look: 'classic', mapKind: 'google', locked: !!RIDE_SERVER, server: RIDE_SERVER };
   const SET = Object.assign({}, DEFAULTS, (() => { try { return JSON.parse(store.get('rc-web-settings') || '{}'); } catch (e) { return {}; } })());
   const saveSettings = () => store.set('rc-web-settings', JSON.stringify(SET));
@@ -1066,8 +1093,11 @@
       ptt: 'Silent until you hold the mic button. Tap it once to talk hands-free, tap again to stop.' }],
     ['night', 'Night mode', [['off', 'Off'], ['auto', 'Auto'], ['on', 'On']], {
       off: 'Normal colours, day and night.',
-      auto: 'Dim red screen and quieter alerts from sunset to sunrise.',
-      on: 'Dim red screen and quieter alerts. Red light keeps your eyes used to the dark road.' }],
+      auto: 'A darker, dimmer screen and quieter alerts from sunset to sunrise.',
+      on: 'A darker, dimmer screen and quieter alerts, all the time.' }],
+    ['nightStyle', 'Night look', [['dark', 'Dark'], ['red', 'Red']], {
+      dark: 'A dark screen in normal colours, like other apps at night.',
+      red: 'Everything in dim red. Red light keeps your eyes used to the dark road, as pilots and astronomers do.' }],
     ['breakEvery', 'Break reminder', [['0', 'Off'], ['60', '1 h'], ['90', '1½ h'], ['120', '2 h'], ['180', '3 h']], {
       0: 'No reminders.',
       60: 'After 1 hour in the ride: "Time for a break?" One tap asks the group. A passed Break vote starts the count again.',
@@ -1088,7 +1118,7 @@
       renderHazards(); renderMapView();
     } else if (key === 'talk') {
       PT.talking = false; PT.latched = false; applyTalk(); renderSettings();
-    } else if (key === 'night') {
+    } else if (key === 'night' || key === 'nightStyle') {
       applyNight(); renderSettings();
     } else if (key === 'look') {
       applyLook(); renderSettings();
@@ -1127,7 +1157,7 @@
   // Settings in groups (like the app): the list first, then one group at a time. Every switch stays in the page,
   // the ones of other groups just hidden. [id, title, what's inside, icon, colour, setting keys, extra boxes]
   const SET_GROUPS = [
-    ['look', 'Look & map', 'Look, map style, night mode', 'moon', '#7C5CFF', ['look', 'mapKind', 'night'], []],
+    ['look', 'Look & map', 'Look, map style, night mode', 'moon', '#7C5CFF', ['look', 'mapKind', 'night', 'nightStyle'], []],
     ['talk', 'Talking & sound', 'Talk mode, talk to one rider, spoken alerts, screen', 'mic', '#22B8D8', ['talk', 'whisper', 'voice', 'vibrate', 'awake'], []],
     ['alerts', 'Alerts', 'Hazards, lead & sweep, rain, breaks', 'warning', '#FF8A1F', ['hazards', 'roles', 'rain', 'breakEvery'], []],
     ['group', 'Group & location', 'Group map, family watching, destination, home safe', 'route', '#0FB5A8', ['map', 'family', 'dest', 'home'], ['homeBox']],
@@ -1154,7 +1184,7 @@
       '<label class="setting' + shown(k) + '"><div class="grow"><div class="t">' + t + '</div><div class="d">' + d + '</div></div>' +
       '<span class="switch"><input type="checkbox" data-setting="' + k + '"' + (SET[k] ? ' checked' : '') + '><span></span></span></label>' +
       (k === 'history' && rideCount() ? '<button class="btn small' + shown(k) + '" style="margin:0 0 14px" id="historyClear">' + icon(P.del) + 'Clear ride history (' + rideCount() + ')</button>' : '')).join('');
-    $('choices').innerHTML = CHOICES.map(([k, t, opts, desc]) =>
+    $('choices').innerHTML = CHOICES.filter(([k]) => k !== 'nightStyle' || SET.night !== 'off').map(([k, t, opts, desc]) =>
       '<div class="setting' + shown(k) + '" style="display:block"><div class="t">' + t + '</div><div class="d">' + desc[SET[k]] + '</div><div class="seg">' +
       opts.map(([v, l]) => '<button class="' + (SET[k] === v ? 'sel' : '') + '" data-choice="' + k + '" data-value="' + v + '">' + l + '</button>').join('') +
       '</div></div>').join('');
@@ -1741,6 +1771,8 @@
       },
       onLongPress: (cb) => map.on('contextmenu', (e) => cb(e.latlng.lat, e.latlng.lng)),
       onDrag: (cb) => map.on('dragstart', cb),
+      center: () => { const c = map.getCenter(); return [c.lat, c.lng]; },
+      onIdle: (cb) => map.on('moveend', cb),
       destroy: () => map.remove(),
     };
   }
@@ -1835,6 +1867,8 @@
         map.addListener('contextmenu', (e) => { if (e.latLng) { lastPress = Date.now(); cb(e.latLng.lat(), e.latLng.lng()); } });
       },
       onDrag: (cb) => map.addListener('dragstart', () => { cancelPress(); cb(); }),
+      center: () => { const c = map.getCenter(); return [c.lat(), c.lng()]; },
+      onIdle: (cb) => map.addListener('idle', cb),
       destroy: () => { cancelPress(); g.event.clearInstanceListeners(map); el.innerHTML = ''; },
     };
   }
@@ -2278,16 +2312,21 @@
   /** Classic or Glass (Settings → Look). Screens switch to Glass as their design is done: the join screen so far. */
   function applyLook() {
     const root = document.documentElement;
-    root.classList.toggle('look-glass', SET.look === 'glass');
-    root.classList.toggle('look-neu', SET.look === 'neu');
+    // Dark night mode: the light Soft look gives way to the dark Classic one until morning.
+    const look = SET.look === 'neu' && isNight() && SET.nightStyle !== 'red' ? 'classic' : SET.look;
+    root.classList.toggle('look-glass', look === 'glass');
+    root.classList.toggle('look-neu', look === 'neu');
     root.classList.toggle('in-ride', !$('ride').classList.contains('hidden'));
-    const bar = SET.look === 'neu' ? '#eef0f8' : SET.look === 'glass' && !root.classList.contains('in-ride') ? '#25126c' : '#070A14';
+    const bar = look === 'neu' ? '#eef0f8' : look === 'glass' && !root.classList.contains('in-ride') ? '#25126c' : '#070A14';
     if (!isNight()) document.querySelector('meta[name=theme-color]').setAttribute('content', bar);
   }
   function applyNight() {
     const on = isNight();
+    const red = SET.nightStyle === 'red';
     document.documentElement.classList.toggle('night', on);
-    document.querySelector('meta[name=theme-color]').setAttribute('content', on ? '#140000' : '#070A14');
+    document.documentElement.classList.toggle('night-red', on && red);
+    document.documentElement.classList.toggle('night-dark', on && !red);
+    document.querySelector('meta[name=theme-color]').setAttribute('content', on ? (red ? '#140000' : '#05060c') : '#070A14');
     applyLook();
   }
   setInterval(applyNight, 60000);
@@ -2466,32 +2505,130 @@
     return Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? [lat, lon] : null;
   }
   function openDest() {
-    openPlacePicker({ title: 'Where are we heading?', text: 'Everyone hears it, sees how far it is and gets a Navigate button. Type a place, or paste coordinates or a Google Maps link.',
+    openPlacePicker({ title: 'Where are we heading?', text: 'Everyone hears it, sees how far it is and gets a Navigate button.',
       pick: (p) => setDest(p.lat, p.lon, p.name) });
   }
-  async function searchDest() {
-    const q = $('destQuery').value.trim(); if (!q) return;
-    const out = $('destResults'), btn = $('destSearch');
-    const c = parseCoords(q);
-    let places = [];
-    if (c) places = [{ name: 'Pinned place', detail: c[0].toFixed(5) + ', ' + c[1].toFixed(5), lat: c[0], lon: c[1] }];
-    else {
-      btn.disabled = true; btn.textContent = 'Searching…';
-      try {
-        const res = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=en&q=' + encodeURIComponent(q));
-        if (!res.ok) throw new Error('search');
-        places = (await res.json()).map((o) => {
-          const parts = String(o.display_name || '').split(',').map((x) => x.trim()).filter(Boolean);
-          const name = o.name || parts[0] || '';
-          return { name: name.slice(0, 40), detail: parts.filter((x) => x !== name).slice(0, 3).join(', '), lat: Number(o.lat), lon: Number(o.lon) };
-        }).filter((p) => p.name && isFinite(p.lat) && isFinite(p.lon));
-      } catch (e) { out.innerHTML = '<p style="color:var(--amber)">Couldn\'t search. Check your internet.</p>'; return; }
-      finally { btn.disabled = false; btn.textContent = 'Search'; }
+  // Place search (same order as the app's PlaceSearch): Google Maps' places when this page's key allows it,
+  // else OpenStreetMap: Photon (quick enough to search as you type), then Nominatim when Search is tapped.
+  const PS = { timer: null, seq: 0, googleBad: false };
+  const placeDetail = (parts, name) => parts.map((x) => String(x || '').trim()).filter((x) => x && x !== name).filter((x, i, a) => a.indexOf(x) === i).slice(0, 3).join(', ');
+  async function googleText(q, near) {
+    await loadGoogle();
+    const lib = await google.maps.importLibrary('places');
+    const req = { textQuery: q, fields: ['displayName', 'formattedAddress', 'location'], maxResultCount: 8, language: 'en' };
+    if (near) req.locationBias = { center: { lat: near.lat, lng: near.lon }, radius: 50000 };
+    const res = await lib.Place.searchByText(req);
+    return ((res && res.places) || []).map((p) => {
+      const at = p.location, name = String(p.displayName || '');
+      return { name: name.slice(0, 40), detail: placeDetail(String(p.formattedAddress || '').split(','), name), lat: at && (typeof at.lat === 'function' ? at.lat() : at.lat), lon: at && (typeof at.lng === 'function' ? at.lng() : at.lng) };
+    }).filter((p) => p.name && isFinite(p.lat) && isFinite(p.lon));
+  }
+  /** Photon's GeoJSON: a name and where it is ("Lonavala" / "Maharashtra, India"), like the app's parsePhoton. */
+  function photonPlaces(o) {
+    const seen = new Set();
+    return ((o && o.features) || []).map((f) => {
+      const c = (f.geometry && f.geometry.coordinates) || [], p = f.properties || {}, v = (k) => String(p[k] || '').trim();
+      const street = [v('street'), v('housenumber')].filter(Boolean).join(' '), name = v('name') || street || v('city');
+      return { name: name.slice(0, 40), detail: placeDetail([v('name') ? street : '', v('district'), v('city'), v('state'), v('country')], name), lat: Number(c[1]), lon: Number(c[0]) };
+    }).filter((p) => {
+      const key = p.name + '|' + p.lat.toFixed(3) + '|' + p.lon.toFixed(3);
+      if (!p.name || !isFinite(p.lat) || !isFinite(p.lon) || seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+  }
+  async function placeSearch(q, typing) {
+    const near = G.me;
+    if (GMAPS_KEY && !GM.failed && !PS.googleBad) {
+      try { const list = await withTimeout(googleText(q, near), 12000); if (list.length) return { places: list, source: 'Google Maps' }; }
+      catch (e) { PS.googleBad = true; console.warn('Google place search', e); }
     }
+    try {
+      const res = await fetch('https://photon.komoot.io/api/?limit=8&lang=en&q=' + encodeURIComponent(q) + (near ? '&lat=' + near.lat.toFixed(4) + '&lon=' + near.lon.toFixed(4) : ''));
+      if (!res.ok) throw new Error('photon ' + res.status);
+      const list = photonPlaces(await res.json());
+      if (list.length || typing) return { places: list, source: 'OpenStreetMap' };
+    } catch (e) { if (typing) throw e; }
+    const box = near ? '&viewbox=' + [near.lon - 0.5, near.lat + 0.5, near.lon + 0.5, near.lat - 0.5].map((x) => x.toFixed(3)).join(',') : '';
+    const res = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&accept-language=en&q=' + encodeURIComponent(q) + box);
+    if (!res.ok) throw new Error('search');
+    return { places: (await res.json()).map((o) => {
+      const parts = String(o.display_name || '').split(',').map((x) => x.trim()).filter(Boolean);
+      const name = o.name || parts[0] || '';
+      return { name: name.slice(0, 40), detail: parts.filter((x) => x !== name).slice(0, 3).join(', '), lat: Number(o.lat), lon: Number(o.lon) };
+    }).filter((p) => p.name && isFinite(p.lat) && isFinite(p.lon)), source: 'OpenStreetMap' };
+  }
+  /** The place's name in a full Google Maps link (…/maps/place/Lonavala+Lake/@…). */
+  const linkName = (t) => { const m = /\/maps\/place\/([^/@?]+)/.exec(t); if (!m) return null; try { const n = decodeURIComponent(m[1].replace(/\+/g, ' ')).trim(); return n && !/^[-\d.,\s°NSEW]+$/.test(n) ? n.slice(0, 40) : null; } catch (e) { return null; } };
+  /** Searches what's typed: as you type ([typing]) or when Search is tapped. */
+  async function searchDest(typing) {
+    const raw = $('destQuery').value.trim(); if (!raw) return;
+    const out = $('destResults'), btn = $('destSearch'), seq = ++PS.seq;
+    const c = parseCoords(raw), q = linkName(raw) || raw;
+    let found;
+    if (c) found = { places: [{ name: linkName(raw) || 'Pinned place', detail: c[0].toFixed(5) + ', ' + c[1].toFixed(5), lat: c[0], lon: c[1] }], source: '' };
+    else {
+      if (!typing) { btn.disabled = true; btn.textContent = 'Searching…'; }
+      try { found = await placeSearch(q, typing); }
+      catch (e) { if (seq === PS.seq && !typing) out.innerHTML = '<p style="color:var(--amber)">Couldn\'t search. Check your internet.</p>'; return; }
+      finally { if (!typing) { btn.disabled = false; btn.textContent = 'Search'; } }
+    }
+    if (seq !== PS.seq) return;
+    const places = found.places;
     D.results = places;
     out.innerHTML = places.length ? places.map((p, i) => '<button class="place" data-place="' + i + '"><span style="color:var(--go)">' + icon(P.pin) + '</span><span class="grow"><div class="n">' +
       esc(p.name) + '</div>' + (p.detail ? '<div class="dd">' + esc(p.detail) + '</div>' : '') + '</span></button>').join('')
-      : '<p style="color:var(--amber)">Nothing found. Try a town or landmark name.</p>';
+      : typing ? '' : '<p style="color:var(--amber)">Nothing found. Try another spelling, or pick it on the map.</p>';
+    $('destSource').textContent = places.length && found.source ? 'Places from ' + found.source + '.' : '';
+  }
+
+  // ---- Picking a place on the map: move the map under the pin, see the spot's name, "Use this spot" ----
+  const PK = { map: null, at: null, timer: null, seq: 0 };
+  /** A name for a spot (Photon), or null. */
+  async function spotName(lat, lon) {
+    try {
+      const res = await fetch('https://photon.komoot.io/reverse?lang=en&lat=' + lat.toFixed(6) + '&lon=' + lon.toFixed(6));
+      const p = photonPlaces(await res.json())[0];
+      return p ? [p.name, (p.detail || '').split(',')[0]].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(', ') : null;
+    } catch (e) { return null; }
+  }
+  async function openMapPicker() {
+    const start = (D.results && D.results[0]) || G.me;
+    $('destDialog').classList.add('hidden');
+    $('pickView').classList.remove('hidden');
+    $('pickTitle').textContent = $('destTitle').textContent;
+    $('pickName').textContent = 'Move the map'; $('pickAt').textContent = '';
+    PK.at = null;
+    const google = useGoogle();
+    try { if (google) await loadGoogle(); else await loadLeaflet(); } catch (e) { $('pickName').textContent = "Couldn't load the map. Check your internet."; return; }
+    if ($('pickView').classList.contains('hidden')) return;
+    dropPickMap();
+    const m = PK.map = google ? googleEngine($('pickMap')) : leafletEngine($('pickMap'));
+    m.dark(SET.darkMap);
+    if (start) m.view(start.lat, start.lon, 15);
+    const moved = () => {
+      const [lat, lon] = m.center(); PK.at = { lat, lon };
+      $('pickAt').textContent = lat.toFixed(5) + ', ' + lon.toFixed(5);
+      $('pickName').textContent = 'Finding the name…';
+      clearTimeout(PK.timer);
+      const seq = ++PK.seq;
+      PK.timer = setTimeout(async () => { const n = await spotName(lat, lon); if (seq === PK.seq) { PK.name = n; $('pickName').textContent = n || 'Pinned spot'; } }, 500);
+    };
+    PK.name = null;
+    m.onIdle(moved);
+    moved();
+  }
+  function dropPickMap() {
+    if (!PK.map) return;
+    try { PK.map.destroy(); } catch (e) {}
+    PK.map = null;
+    const el = $('pickMap'), fresh = document.createElement('div'); fresh.id = 'pickMap'; el.replaceWith(fresh);
+  }
+  function closeMapPicker(back) { $('pickView').classList.add('hidden'); dropPickMap(); if (back) $('destDialog').classList.remove('hidden'); }
+  function usePickedSpot() {
+    const at = PK.at; if (!at) return;
+    const cb = PICK.cb;
+    closeMapPicker(false);
+    if (cb) cb({ name: (PK.name || 'Pinned spot').slice(0, 40), lat: at.lat, lon: at.lon });
   }
 
   // ---- Home safe: who got home after the ride (same messages as the app) ----
@@ -3016,7 +3153,8 @@
     PICK.cb = o.pick;
     $('destTitle').textContent = o.title; $('destText').textContent = o.text;
     $('placeHereWrap').classList.toggle('hidden', !o.here);
-    $('destQuery').value = ''; $('destResults').innerHTML = ''; $('destDialog').classList.remove('hidden');
+    $('destQuery').value = ''; $('destResults').innerHTML = ''; $('destSource').textContent = ''; D.results = [];
+    $('destDialog').classList.remove('hidden');
     setTimeout(() => $('destQuery').focus(), 50);
   }
   /** A short name for where I am (OpenStreetMap), or null. */
@@ -3195,7 +3333,7 @@
   };
   function pickForPlan(kind) {
     const titles = { meet: 'Meeting point', stop: 'Add a stop', dest: 'Destination' };
-    openPlacePicker({ title: titles[kind], text: 'Type a place, or paste coordinates or a Google Maps link.', here: kind === 'meet', pick: planPick(kind) });
+    openPlacePicker({ title: titles[kind], text: 'Riders get it in the plan, one tap from directions.', here: kind === 'meet', pick: planPick(kind) });
   }
   function savePlanDraft() {
     const d = PL.draft, err = $('planErr');
@@ -4463,6 +4601,10 @@
     if (pdel && confirm('Delete this planned ride from this phone?')) dropPlan(pdel.dataset.planDel);
     if (e.target.closest('#planSetDest')) { const p = planFor(S.code); if (p && p.dest) setDest(p.dest.lat, p.dest.lon, p.dest.name); }
     if (e.target.closest('#placeHere')) pickMyLocation();
+    if (e.target.closest('#placePick')) openMapPicker();
+    if (e.target.closest('#pickBack')) closeMapPicker(true);
+    if (e.target.closest('#pickUse')) usePickedSpot();
+    if (e.target.closest('#pickMe') && PK.map) { if (G.me) PK.map.view(G.me.lat, G.me.lon, 16); else banner('Your location isn\'t known yet'); }
     // On the road ahead: petrol, food, mechanics, low fuel
     const fd = e.target.closest('[data-find]');
     if (fd) openFinder(fd.dataset.find);
@@ -4491,8 +4633,13 @@
   });
   $('hazCancel').addEventListener('click', () => $('hazPicker').classList.add('hidden'));
   $('destCancel').addEventListener('click', () => $('destDialog').classList.add('hidden'));
-  $('destSearch').addEventListener('click', searchDest);
-  $('destQuery').addEventListener('keydown', (e) => { if (e.key === 'Enter') searchDest(); });
+  $('destSearch').addEventListener('click', () => { clearTimeout(PS.timer); searchDest(false); });
+  $('destQuery').addEventListener('keydown', (e) => { if (e.key === 'Enter') { clearTimeout(PS.timer); searchDest(false); } });
+  // Results as you type, once you stop for a moment.
+  $('destQuery').addEventListener('input', () => {
+    clearTimeout(PS.timer);
+    if ($('destQuery').value.trim().length >= 3) PS.timer = setTimeout(() => searchDest(true), 600);
+  });
   $('rideBack').addEventListener('click', closeRide);
   $('planSheet').addEventListener('input', (e) => {
     if (!PL.draft) return;
