@@ -287,6 +287,9 @@ card. Web: the `WV` block (`#wrapView` overlay, `wrappedPicture` canvas). Both t
   `NeuTokens.dark` (a snapshot state set by MainActivity; every token is a getter with a light and a dark value,
   `neuTypography` too; use `NeuTokens.SurfaceTop` instead of `Color.White` in Soft gradients); screenshots
   150–158. Web: the "Dark Soft" block of `html.look-neu.night-dark` styles (variables + the hard-coded tints).
+- **Night mode locked the phone's brightness** ("brightness is controlled by RideComm") → removed: the app no
+  longer sets the window's `screenBrightness`; the dark colours (and the 18% dim layer) are enough, and the
+  rider keeps the brightness slider.
 - **Place search found much less than Google Maps, no way to pick on a map** → PROTOCOL.md "Choosing a place":
   search as you type, Google Places first (needs **Places API (New)** on both keys, still waiting on the owner),
   then Photon, then Nominatim; "Pick on the map" (app: `MapPicker` + `ui/map/PickerMap.kt`; web: `#pickView`,

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import android.view.WindowManager
 import com.ridecomm.app.night.NightMode
 import com.ridecomm.app.night.NightStyle
 import com.ridecomm.app.ui.nightFilter
@@ -33,7 +32,6 @@ import com.ridecomm.app.ui.RideCommTheme
 import com.ridecomm.app.ui.RideScreen
 
 private const val NIGHT_CHECK_MS = 60_000L
-private const val NIGHT_BRIGHTNESS = 0.18f
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,11 +47,6 @@ class MainActivity : ComponentActivity() {
                     while (true) {
                         NightMode.refresh(this@MainActivity)
                         delay(NIGHT_CHECK_MS)
-                    }
-                }
-                LaunchedEffect(night) {
-                    window.attributes = window.attributes.apply {
-                        screenBrightness = if (night) NIGHT_BRIGHTNESS else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
                     }
                 }
                 val chosenLook by LookSetting.current.collectAsStateWithLifecycle()

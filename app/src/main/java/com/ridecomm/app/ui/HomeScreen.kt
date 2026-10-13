@@ -669,8 +669,8 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                         "Night mode",
                         when (nightMode) {
                             NightModeSetting.OFF -> "Normal colours, day and night."
-                            NightModeSetting.AUTO -> "A darker, dimmer screen and quieter alerts from sunset to sunrise where you are."
-                            NightModeSetting.ON -> "A darker, dimmer screen and quieter alerts, all the time."
+                            NightModeSetting.AUTO -> "A dark screen and quieter alerts from sunset to sunrise where you are."
+                            NightModeSetting.ON -> "A dark screen and quieter alerts, all the time."
                         },
                         NightModeSetting.entries,
                         nightMode,

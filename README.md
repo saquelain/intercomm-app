@@ -154,7 +154,7 @@ between phones).
   next ride) or mute them for yourself, which also stops downloading their voice.
 - **Night mode** (Settings: Off / Auto / On) with a **Night look**: **Dark** (default: the dark page in normal
   colours, a little dimmer; the Soft look turns into a dark Soft) or **Red** (everything dim red, greyscale
-  tinted red so bright and dark stay apart). The screen is dimmed and spoken alerts play at about half volume. Auto works out sunset
+  tinted red so bright and dark stay apart). Spoken alerts play at about half volume; the phone's brightness stays yours to set. Auto works out sunset
   and sunrise from the phone's location (or 6:30 pm–6 am without one).
 - **Talk to one rider** (Settings, on by default): hold a rider's name (or "Hold to talk only to …" in their
   sheet) to talk only to them, say lead to sweep. Everyone else's phone silences you while you hold (a short
@@ -264,7 +264,7 @@ Safety & SOS, Ride tools, Points & badges, Ride server), saved in the browser an
   tap, hear "Pothole in 300 meters", and tap a rider to make them lead or sweep. To warn about hazards the page
   follows the iPhone's location only on the iPhone itself, and only once someone has marked one.
 - **Talk mode:** Open mic or Push to talk (hold the mic button, or tap to lock it open).
-- **Night mode:** Off / Auto / On, a dark (or red) dimmer screen and quieter alerts.
+- **Night mode:** Off / Auto / On, a dark (or red) screen and quieter alerts.
 - **Emergency info:** blood group, allergies and a contact, sent with your SOS and shown on your screen for helpers.
 - **Talk to one rider**, **Shared destination**, **Home safe check-in** and **Break reminder**, the same as in
   the app (on iPhone "talk to one rider" mutes the talker's voice element, which Safari allows). The break
