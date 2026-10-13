@@ -110,11 +110,12 @@ between phones).
   When a rider drifts more than 1 km away everyone hears "Rahul is 1.2 kilometers behind" (again at each further
   kilometre), and "Rahul is back with the group" once they're within 500 m.
 - **Crash detection:** during a ride the accelerometer (100 readings a second) watches for a hard impact (over
-  4 g), or a fall (free fall, then a landing over 2.5 g), followed by the phone lying still for 10 s; with GPS it
-  also requires that the rider was moving (over 10 km/h in the last 45 s) and has stopped. It then starts a
-  15-second SOS countdown ("Crash detected", tap anywhere to cancel); others hear "Rahul may have crashed".
+  4 g), or a fall (under 0.5 g for 0.12 s, then a landing over 2 g), followed by the phone lying still for 10 s.
+  No speed check (it kept the owner's real tests from firing), so a phone dropped at a stop can start the
+  countdown too; the rider cancels it. It then starts a 15-second SOS countdown ("Crash detected", tap anywhere to cancel); others hear "Rahul may have crashed".
   A cancelled alarm mutes detection for a minute. Can be turned off in Settings. **Settings → Safety → Test crash
-  detection** shows it working at home (throw the phone onto a bed): same logic without the speed check, sends nothing.
+  detection** shows it working at home (throw the phone onto a bed): same logic, sends nothing; while it is open the
+  ride's own detector ignores hits.
 - **Battery saver warning:** a home card (and a button in Settings → Background & over apps) when Android may stop
   RideComm in the background, opening RideComm's App info with the steps for the phone's brand (Xiaomi, Samsung,
   Oppo/Realme/OnePlus, Vivo, Huawei/Honor…).

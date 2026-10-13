@@ -29,8 +29,7 @@ import java.util.Locale
 
 /**
  * Settings → Safety → Test crash detection: the rider throws the phone onto a bed and sees, step by
- * step, what the detector felt. Same logic as on a ride, except it doesn't ask whether you were
- * riding, and it never sends anything. Riders trust a safety feature they've seen work.
+ * step, what the detector felt. Same logic as on a ride, except it never sends anything. Riders trust a safety feature they've seen work.
  */
 @Composable
 fun CrashTestDialog(onClose: () -> Unit) {
@@ -97,8 +96,8 @@ fun CrashTestContent(state: CrashDetector.TestState, onAgain: () -> Unit, onClos
         }
     }
     Text(
-        "On a ride it also checks you were moving just before (when GPS is on), so a phone dropped at a stop " +
-            "doesn't count. It works only during a ride, with Crash detection on.",
+        "On a ride it works the same way, with Crash detection on. A phone dropped at a stop can start the " +
+            "countdown too: just tap to cancel it.",
         style = MaterialTheme.typography.bodyMedium,
     )
     ButtonRow(2) {

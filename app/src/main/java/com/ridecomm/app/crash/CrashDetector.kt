@@ -1,13 +1,10 @@
 package com.ridecomm.app.crash
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.location.LocationListener
-import android.location.LocationManager
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
@@ -15,7 +12,6 @@ import android.os.SystemClock
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideStatus
-import com.ridecomm.app.sos.LocationHelper
 import com.ridecomm.app.sos.SosManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,12 +20,10 @@ import kotlin.math.sqrt
 
 /**
  * Watches the accelerometer during a ride and starts the SOS countdown (15 s, cancellable) when
- * [CrashLogic] sees a hard impact followed by no movement. GPS speed, when allowed, helps tell a
- * crash from a phone dropped at a stop.
+ * [CrashLogic] sees a hard impact (or a fall) followed by no movement.
  */
 object CrashDetector {
     const val COUNTDOWN_SECONDS = 15
-    private const val SPEED_UPDATE_MS = 3_000L
     /**
      * 100 readings a second. A hard hit lasts only a few hundredths of a second, so the old 50 a
      * second ("game" rate) often read either side of the peak and missed it.
@@ -38,23 +32,21 @@ object CrashDetector {
 
     private var appContext: Context? = null
     private var thread: HandlerThread? = null
-    private var logic = CrashLogic()
+    @Volatile private var logic = CrashLogic()
     private val main = Handler(Looper.getMainLooper())
 
     private val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
             val (x, y, z) = event.values
             val magnitude = sqrt(x * x + y * y + z * z)
+            // The test in Settings is running: a test throw mid-ride must not send a real SOS.
+            if (testing) return
             if (logic.onSample(SystemClock.elapsedRealtime(), magnitude)) {
                 main.post { SosManager.startCountdown(COUNTDOWN_SECONDS, crash = true) }
             }
         }
 
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
-    }
-
-    private val speedListener = LocationListener { location ->
-        if (location.hasSpeed()) logic.onSpeed(SystemClock.elapsedRealtime(), location.speed)
     }
 
     val running: Boolean get() = thread != null
@@ -71,14 +63,12 @@ object CrashDetector {
         logic = CrashLogic()
         val handler = Handler(t.looper)
         sensors.registerListener(sensorListener, accelerometer, SAMPLING_US, handler)
-        startSpeed(app, t.looper)
     }
 
     /** Called when the ride ends. */
     fun stop() {
         val app = appContext ?: return
         app.getSystemService(SensorManager::class.java).unregisterListener(sensorListener)
-        app.getSystemService(LocationManager::class.java).removeUpdates(speedListener)
         thread?.quitSafely()
         thread = null
     }
@@ -98,18 +88,7 @@ object CrashDetector {
         }
     }
 
-    @SuppressLint("MissingPermission") // checked by LocationHelper.hasPermission
-    private fun startSpeed(context: Context, looper: Looper) {
-        if (!LocationHelper.hasPermission(context)) return
-        val lm = context.getSystemService(LocationManager::class.java)
-        if (!runCatching { lm.isProviderEnabled(LocationManager.GPS_PROVIDER) }.getOrDefault(false)) return
-        try {
-            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, SPEED_UPDATE_MS, 0f, speedListener, looper)
-        } catch (_: SecurityException) {
-        }
-    }
-
-    // ---- Test mode (Settings → Safety → Test crash detection): same logic, no speed check, never sends ----
+    // ---- Test mode (Settings → Safety → Test crash detection): same logic, never sends ----
 
     /** What the test screen shows. */
     data class TestState(
@@ -124,7 +103,8 @@ object CrashDetector {
     private val _test = MutableStateFlow(TestState())
     val test: StateFlow<TestState> = _test.asStateFlow()
     private var testThread: HandlerThread? = null
-    private var testLogic = CrashLogic(requireRiding = false)
+    @Volatile private var testing = false
+    private var testLogic = CrashLogic()
     private var testShownAt = 0L
 
     private val testListener = object : SensorEventListener {
@@ -154,7 +134,8 @@ object CrashDetector {
             _test.value = TestState(noSensor = true)
             return
         }
-        testLogic = CrashLogic(requireRiding = false)
+        testLogic = CrashLogic()
+        testing = true
         val t = HandlerThread("RideComm-crash-test").apply { start() }
         testThread = t
         _test.value = TestState(running = true)
@@ -166,5 +147,8 @@ object CrashDetector {
         testThread?.quitSafely()
         testThread = null
         _test.value = _test.value.copy(running = false)
+        // The ride's detector starts afresh, so the test throw doesn't count afterwards either.
+        if (testing) logic = CrashLogic()
+        testing = false
     }
 }

@@ -28,17 +28,14 @@ class CrashLogicTest {
     @Test
     fun impactThenLyingStillIsACrash() {
         val logic = CrashLogic()
-        logic.onSpeed(0, 15f)
         assertFalse(logic.feed(0, 10_000) { riding() })
         assertFalse(logic.onSample(10_000, 6 * g)) // hard hit
-        logic.onSpeed(11_000, 0f)
         assertTrue(logic.feed(10_020, 14_000) { still() })
     }
 
     @Test
     fun impactButKeepsRidingIsNotACrash() {
         val logic = CrashLogic()
-        logic.onSpeed(0, 15f)
         logic.onSample(10_000, 5 * g) // pothole
         assertFalse(logic.feed(10_020, 14_000) { riding() })
     }
@@ -46,18 +43,8 @@ class CrashLogicTest {
     @Test
     fun bumpsBelowThresholdAreIgnored() {
         val logic = CrashLogic()
-        logic.onSpeed(0, 15f)
         logic.onSample(10_000, 3 * g)
         assertFalse(logic.feed(10_020, 14_000) { still() })
-    }
-
-    @Test
-    fun phoneDroppedWhileStoppedIsIgnored() {
-        val logic = CrashLogic()
-        logic.onSpeed(0, 0f) // parked for a while
-        logic.onSpeed(55_000, 0f)
-        logic.onSample(60_000, 6 * g)
-        assertFalse(logic.feed(60_020, 14_000) { still() })
     }
 
     @Test
@@ -78,7 +65,7 @@ class CrashLogicTest {
     @Test
     fun aFallThenASoftLandingCounts() {
         // Thrown onto a bed: about 0.3 s in the air, a 3 g landing, then still.
-        val logic = CrashLogic(requireRiding = false)
+        val logic = CrashLogic()
         assertFalse(logic.feed(0, 2_000) { still() })
         assertFalse(logic.feed(2_000, 300) { 0.05f * g })
         assertFalse(logic.onSample(2_300, 3 * g))
@@ -88,7 +75,7 @@ class CrashLogicTest {
 
     @Test
     fun aSoftBumpWithoutAFallIsIgnored() {
-        val logic = CrashLogic(requireRiding = false)
+        val logic = CrashLogic()
         logic.onSample(1_000, 3 * g)
         assertFalse(logic.feed(1_020, 14_000) { still() })
         assertEquals(CrashLogic.Phase.WAITING, logic.phase)
@@ -96,7 +83,7 @@ class CrashLogicTest {
 
     @Test
     fun pickingThePhoneUpEndsTheWatchEarly() {
-        val logic = CrashLogic(requireRiding = false)
+        val logic = CrashLogic()
         logic.onSample(1_000, 6 * g)
         assertEquals(CrashLogic.Phase.SETTLING, logic.phase)
         assertFalse(logic.feed(1_020, 4_000) { still() })
@@ -105,29 +92,36 @@ class CrashLogicTest {
         assertEquals(CrashLogic.Phase.MOVED, logic.phase)
     }
 
+
     @Test
-    fun theTestSkipsTheSpeedCheck() {
-        // At home: GPS says standing still, which on a ride means "dropped at a stop".
-        val ride = CrashLogic()
-        val test = CrashLogic(requireRiding = false)
-        for (l in listOf(ride, test)) {
-            l.onSpeed(0, 0f)
-            l.onSpeed(9_000, 0f)
-            l.onSample(10_000, 6 * g)
-        }
-        assertFalse(ride.feed(10_020, 14_000) { still() })
-        assertTrue(test.feed(10_020, 14_000) { still() })
-        assertEquals(6f, test.peakG, 0.01f)
+    fun aDropAtAStopNowCountsToo() {
+        // No speed check any more: GPS speed kept real tests from firing. The rider cancels the countdown.
+        val logic = CrashLogic()
+        logic.onSample(60_000, 6 * g)
+        assertTrue(logic.feed(60_020, 14_000) { still() })
     }
 
     @Test
-    fun aSlowSpillStillCounts() {
-        // 12 km/h a few seconds before the crash (the old rule needed 15 km/h).
+    fun aSlowSensorWithTheScreenOffStillDecides() {
+        // Some phones send only a few readings a second with the screen off: 4 a second here.
         val logic = CrashLogic()
-        logic.onSpeed(0, 3.4f)
-        logic.onSpeed(3_000, 3.3f)
-        logic.onSample(5_000, 5 * g)
-        logic.onSpeed(6_000, 0f)
-        assertTrue(logic.feed(5_020, 14_000) { still() })
+        logic.onSample(1_000, 6 * g)
+        var fired = false
+        var t = 1_250L
+        while (t < 15_000) {
+            if (logic.onSample(t, still())) fired = true
+            t += 250
+        }
+        assertTrue(fired)
+    }
+
+    @Test
+    fun aSpinningThrowOntoABedCounts() {
+        // In the air the phone spins, so it reads a little above zero; a bed gives a soft 2.2 g landing.
+        val logic = CrashLogic()
+        assertFalse(logic.feed(0, 1_000) { still() })
+        assertFalse(logic.feed(1_000, 200) { 0.4f * g })
+        assertFalse(logic.onSample(1_200, 2.2f * g))
+        assertTrue(logic.feed(1_220, 14_000) { still() })
     }
 }

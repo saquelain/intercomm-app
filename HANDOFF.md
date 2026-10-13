@@ -328,8 +328,11 @@ and the overlay, costs at scale. The plan: private ride server → feature freez
 different brands → crash reports → test SOS/crash on purpose → fix → Play Store. Done in this round:
 - **Crash detection didn't fire** when the owner threw the phone: at home GPS says "standing still", which the
   rule reads as "dropped at a stop"; 50 Hz sampling also missed short hits; and it only runs during a ride. Now
-  100 Hz, a fall + landing also counts, 10 km/h in the last 45 s, gives up early when the phone is picked up, and
-  **Test crash detection** (`CrashTestUi.kt`, `CrashDetector.startTest`, `CrashLogic(requireRiding = false)`).
+  100 Hz, a fall + landing also counts, gives up early when the phone is picked up, and **Test crash detection**
+  (`CrashTestUi.kt`, `CrashDetector.startTest`). Build #65 still didn't fire for the owner, so (build #66) the
+  **speed check is gone** entirely (no GPS in `CrashDetector`), the still window needs only 15 readings (phones that
+  slow the sensor with the screen off), the fall is < 0.5 g for 0.12 s and the landing > 2 g. The ride's detector
+  ignores hits while the test is open (no real SOS from a test throw mid-ride).
 - **Battery savers** (`ride/BatteryGuard.kt`, `BatteryTips`): home card + Settings button, brand steps.
 - **First join in a dead zone** ended the ride at once: now ~1 minute of retries (`FIRST_JOIN_TRIES`), only a
   setting the rider must fix (`RidePassError.retryable = false`) ends it straight away.
