@@ -10,7 +10,7 @@ the owner, who rides with it on real phones and reports back.
 
 - **Android app** (`app/`): Kotlin, Jetpack Compose, LiveKit Android SDK 2.29.0, Media3, Google Maps (Play services) with osmdroid
   as the fallback.
-  minSdk 26, target 35. Package `com.ridecomm.app`.
+  minSdk 26, target 36. Package `com.ridecomm.app`.
 - **iPhone / browser version** (`docs/ride/index.html`): one self-contained page (HTML + CSS + vanilla JS,
   LiveKit JS 2.22.3 from jsdelivr, Google Maps JS with Leaflet 1.9.4 as the fallback), served by GitHub Pages. iPhones can't
   install the APK, so this is how iPhone riders join. It must stay compatible with the app.
@@ -61,6 +61,8 @@ Links the owner uses:
   With the `UPLOAD_KEYSTORE_*` secrets, CI also builds the Play bundle (`bundlePlay`) as a run artifact.
 - The web page's Google key (`GMAPS_KEY` in `docs/ride/index.html` and `docs/watch/index.html`) is public by
   design and only works on `saquelain.github.io`; tests blank it out via a route.
+- The repo's skill `claude-delegate-and-budget` (`.claude/skills/`) says when helper agents are worth it.
+  The owner hasn't asked for helpers in the fourth chat; everything was done in the main session.
 - Big jobs went faster with a background helper agent doing the web side (docs/ + tools/webtest only)
   from a written spec in PROTOCOL.md while the main session did `app/`; review and rerun its tests.
 
@@ -70,7 +72,7 @@ Links the owner uses:
   `https://maven-central.storage-download.googleapis.com/maven2/` (recreate it in a new container; the
   content is in HANDOFF.md).
 - Compile: `./gradlew compileDebugKotlin`
-- Unit tests (about 320, all must pass): `./gradlew testDebugUnitTest` (Robolectric runs them on SDK 35,
+- Unit tests (about 485, all must pass): `./gradlew testDebugUnitTest` (Robolectric runs them on SDK 35,
   see `app/src/test/resources/robolectric.properties`; the app targets 36)
 - Same as CI: `./gradlew testReleaseUnitTest assembleRelease`
 - Lint: `./gradlew lintDebug`

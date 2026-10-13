@@ -45,7 +45,7 @@ Artifacts) holding `RideComm-play-N.aab`. It's not put on the public release pag
 
 ## 4. Store listing (copy and paste)
 
-**Short description (80):** Group intercom for bike riders: talk, group map, SOS and ride history.
+**Short description (80):** Group intercom for bike riders: talk, group map, SOS, ride history and badges.
 
 **Full description:**
 
@@ -60,6 +60,8 @@ Artifacts) holding `RideComm-play-N.aab`. It's not put on the public release pag
 > • Hazard alerts: mark a pothole and riders behind hear "Pothole in 300 metres"
 > • SOS with your location and emergency info, crash detection, "Home safe" check-in
 > • Ride planner with reminders, ride history with your route and a picture to share
+> • Points, levels and badges for riding well (never for speed), and your year in review to share
+> • My garage: oil change and service reminders by km, insurance and PUC renewal reminders
 > • Family can follow the ride on a live map (only if you allow it)
 > • iPhone riders join from the browser, no app needed
 >
@@ -80,6 +82,8 @@ https://saquelain.github.io/intercomm-app/privacy/
     the rider allows), for app functionality; optional; not stored on a server.
   - Audio (voice): collected and shared with riders in the ride, for app functionality; not stored.
   - Photos (profile photo) and name: shared with riders in the ride; optional.
+  - App activity (points and level, "other actions"): shared with the riders in the ride while Points & badges
+    is on; optional; not stored on a server. Garage details (bikes, odometer, dates) stay on the phone.
   - Data is encrypted in transit; no account, so no deletion request is needed (everything else stays on
     the phone and is deleted with the app).
 - **Foreground service permissions** (Play asks for a short description and a video link):

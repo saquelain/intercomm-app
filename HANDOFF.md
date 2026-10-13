@@ -1,7 +1,8 @@
 # RideComm handoff: where we are, how to carry on
 
-Last updated 9 Oct 2026, at **build #51**, end of the third chat (looks, Google Maps, small screens, ride
-history, planner, family watching, fuel & food finder, low fuel, rain alerts, Play Store groundwork).
+Last updated 13 Oct 2026, at **build #59**, end of the fourth chat (web published, Play Store steps explained,
+Points & badges, My garage, Ride Wrapped, a planning skill for Claude). Third chat: looks, Google Maps, small
+screens, ride history, planner, family watching, fuel & food finder, low fuel, rain alerts, Play Store groundwork.
 Read `CLAUDE.md` first (how to build, test and work with the owner); this file is the project's story
 so far and what's next.
 
@@ -10,9 +11,11 @@ so far and what's next.
 - **Branches:** development continues on the newest `ccr-…` branch a chat is given (fourth chat:
   `ccr-fd3621d0-ybje5a`, started from `ccr-3351f022-4fqzov`). Start a new chat from whichever branch has
   the newest commit (`git log --all --oneline | head`). GitHub Pages serves `claude/laughing-fermat-oevz8c`,
-  last fast-forwarded to `751010a` on 9 Oct (owner said "publish the web"): the finder, low fuel, rain
-  alerts and the privacy page are live. To publish later web changes, only when the owner says so:
-  `git push origin HEAD:claude/laughing-fermat-oevz8c` (check it's a fast-forward first).
+  last fast-forwarded to `94116d7` on 9 Oct (owner said "publish the web"): the finder, low fuel, rain
+  alerts, Points & badges and the privacy page are live. To publish later web changes, only when the owner
+  says so: `git push origin HEAD:claude/laughing-fermat-oevz8c` (check it's a fast-forward first).
+- **Web not yet published:** My garage and Ride Wrapped on the iPhone page (commit `cc2d290`), and the privacy
+  page's new lines about points and the garage. They go live with the next "publish the web".
 - **Waiting on the owner** (nothing to build until they do):
   1. *Google Places for the finder:* enable **Places API (New)** in Google Cloud and tick it on both
      keys' API restrictions. Until then the finder uses OpenStreetMap automatically.
@@ -20,15 +23,17 @@ so far and what's next.
      address (steps in README "Private ride server"). Then set `RIDE_SERVER_URL` (secret) and
      `RIDE_SERVER` in `docs/ride/index.html` (also used by the watch page), and turn off the sandbox.
   3. *Play Store:* developer account, upload key secrets, closed test with 12 testers for 14 days
-     (all in `PLAY_STORE.md`). Claude offered to generate the upload key file and send it.
-- **Play Store:** on 9 Oct the owner asked how to put the app on the Play Store; they got the steps
-  from `PLAY_STORE.md` in plain words. Next step is theirs (developer account, upload key).
-- **Points & badges** built on 9 Oct (fourth chat, app + web, build #55); web published the same day (Pages at `94116d7`).
-- **Owner's last feedback:** Google Maps group map "working fine"; small-screen fixes, history, planner,
-  family, finder, rain not yet reported on from a real ride. The owner's phone uses big text: check
-  `app/screenshots/small/` for every new screen.
-- **Last "what next" offer** (not picked yet): Hindi language, replay of voice missed in a dead zone,
-  ride chat log, fuel range reminder.
+     (all in `PLAY_STORE.md`). On 9 Oct the owner got the steps in plain words and said "leave the key for
+     now": Claude can generate the upload key file and the 4 secret values when they ask ("make the key").
+- **Fourth chat, in order:** published the web (finder, low fuel, rain) → Play Store steps → Points & badges
+  (build #55, web published) → My garage + Ride Wrapped (build #58, web not published) → the
+  `claude-delegate-and-budget` skill (build #59, no app change).
+- **Owner's last feedback:** Google Maps group map "working fine". Nothing reported yet from a real ride on
+  small-screen fixes, history, planner, family, finder, rain, points, garage or Wrapped. The owner's phone
+  uses big text: check `app/screenshots/small/` for every new screen.
+- **How the owner picks features:** they skipped two menus of safety/map ideas with "Something else" and picked
+  from a "something different" menu (fun, bike care). Offer fresh kinds of ideas, not the same list again.
+  Offered and not picked yet: see "Ideas not built yet".
 
 ## Starting a new chat (for the owner)
 
@@ -122,7 +127,8 @@ group map + regroup → web photo/map/settings → hazards, lead & sweep, PTT, v
 (app, then web) → own photo on the map → talk to one rider, shared destination, home safe, break
 reminder, lock-screen emergency info, lock rides to the group (app and web together) → (third chat)
 Glass look, Soft look, Google Maps group map, small-screen fixes, ride history / planner / family watching,
-fuel & food finder + low fuel + rain alerts, Play Store groundwork.
+fuel & food finder + low fuel + rain alerts, Play Store groundwork → (fourth chat) Points & badges with a ride
+leaderboard, My garage, Ride Wrapped.
 
 ## Glass look
 
@@ -250,8 +256,10 @@ composable lambdas, `WrappedPicture` share image). Opened from the Points & badg
 card. Web: the `WV` block (`#wrapView` overlay, `wrappedPicture` canvas). Both tests (`WrappedLogicTest`,
 `wrapped.test.js`) use the same rides and expect the same numbers.
 
-## Ideas not built yet (from the last "what next" list)
+## Ideas not built yet (offered, not picked yet)
 
+- **Group challenges**: a monthly goal for the group ("1,000 km together in October") and a month leaderboard
+  among riding friends (builds on Points & badges).
 - **Hindi language**: app, web page and spoken alerts in Hindi (a Settings choice).
 - **Missed voice replay**: what was said while you were in a dead zone plays when you're back
   (catch-up today only covers open votes and SOS).
@@ -260,6 +268,11 @@ card. Web: the `WV` block (`#wrapView` overlay, `wrappedPicture` canvas). Both t
 - **Private ride server**: everything is ready (app switch, web settings, keys in invite links, CORS,
   watch page); the owner still has to deploy it (see "Where things stand"). Important before sharing the
   app widely: the sandbox token server lets anyone with the ID join.
+- From the fourth chat's menus: **Shared route + off-route alert** (the lead's route on everyone's map), **Find
+  a rider** (compass arrow and distance), **Daylight warning** ("Sunset in 30 minutes, 45 km to go"), **Trip
+  expenses split**, **Read my messages aloud** (WhatsApp/SMS with voice reply), **Ride moments** (photo or spot
+  saved on the route), **Ride reel** (a short video of the route drawing itself), **Custom quick messages**,
+  **Weather for planned rides**.
 - Smaller: a "Hazard" option on the floating button, voice commands on the web page, night mode for the
   floating overlays.
 
@@ -281,6 +294,13 @@ phones can't do a mesh group call; voice is only ~10 MB an hour anyway).
 - Robolectric runs the unit tests on SDK 35 (it can't simulate 36 on this JDK); the app targets 36.
 - Talk to one rider is enforced by the listeners' phones (they silence the talker), not by the server: fine
   for a group of friends, not a secret channel. Riders on an old app version still hear everything.
+- Points, garage and Wrapped live only on each phone: uninstalling the app (or clearing the browser on iPhone)
+  loses them, and two phones don't merge. Points only started counting at build #55, so 2026's Wrapped only
+  covers rides since then. Switching Points on in the middle of a ride counts from the next ride in the app (the
+  web page starts at once). The Ride points board only shows riders on build #55 or newer.
+- The garage odometer adds my GPS distance per ride: rides with location off, or GPS lost in tunnels, add less,
+  so the rider should correct the odometer now and then (Edit bike). On the web page, paper reminders are a
+  calendar file (no notifications).
 - Nothing can be tested against real LiveKit from the cloud container; every feature is tested with unit
   tests, screenshots and the fake-LiveKit web tests (`tools/webtest/`), then by the owner on a ride.
 
@@ -303,9 +323,11 @@ phones can't do a mesh group call; voice is only ~10 MB an hour anyway).
    (`commandlinetools-linux-*_latest.zip` from dl.google.com), then
    `sdkmanager "platforms;android-36" "platform-tools" "build-tools;35.0.0"` and write
    `sdk.dir=$HOME/android-sdk` to `local.properties` (gitignored).
-3. `./gradlew testDebugUnitTest` should pass (about 385 tests).
+3. `./gradlew testDebugUnitTest` should pass (about 485 tests).
 4. Store pictures (only when needed): `STORE_SHOTS=1 ./gradlew recordRoborazziDebug --tests '*StoreShotTest*'`.
 5. Web tests: see `tools/webtest/README.md` (10 suites: rides, features, more, gmap, plans, watch, road, points,
-   garage, wrapped;
-   all print "No page errors").
+   garage, wrapped; all print "No page errors").
+6. Skills for Claude in this repo: `.claude/skills/claude-delegate-and-budget` (linked to `.agents/skills/`,
+   installed with `npx skills add piplupjs/skills --skill claude-delegate-and-budget`, pinned in
+   `skills-lock.json`): when to hand work to helper agents and which model / effort to use.
 6. GitHub access goes through the GitHub MCP tools (no `gh` CLI in the container).
