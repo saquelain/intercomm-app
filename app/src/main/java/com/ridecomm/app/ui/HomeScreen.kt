@@ -647,7 +647,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                         when (look) {
                             UiLook.CLASSIC -> "The original RideComm look."
                             UiLook.GLASS -> "Frosted glass over a violet glow, on every screen."
-                            UiLook.NEU -> "Light \"neumorphism\": soft raised cards and buttons on a pale page. Easier to read in bright sun."
+                            UiLook.NEU -> "Light \"neumorphism\": soft raised cards and buttons on a pale page. Easier to read in bright sun, and dark at night with the Dark night look."
                         },
                         UiLook.entries,
                         look,

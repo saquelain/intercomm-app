@@ -677,6 +677,56 @@
   .pickview .pickpanel { background: rgba(14,11,34,.96); -webkit-backdrop-filter: none; backdrop-filter: none; }
   html.look-neu .pickview .pickpanel { background: var(--neu-page); }
 
+  /* ---- Dark Soft: the Soft look at night (night mode with the Dark night look). Same raised cards, deep slate page. ---- */
+  html.look-neu.night-dark {
+    --text: #e9ebf7; --muted: #a5aac4; --faint: #6f7592; --go: #34e89e; --stop: #ff4d6d; --amber: #ffc93c; --cyan: #22d3ee;
+    --neu-page: #1c1f2b; --neu-surface: linear-gradient(135deg, #272b3a, #1e2130);
+    --neu-out: 6px 6px 14px rgba(11,13,20,.85), -6px -6px 14px rgba(255,255,255,.06);
+    --neu-out-sm: 4px 4px 9px rgba(11,13,20,.8), -4px -4px 9px rgba(255,255,255,.05);
+    --neu-in: inset 3px 3px 7px rgba(11,13,20,.85), inset -3px -3px 7px rgba(255,255,255,.05);
+    --blue: linear-gradient(135deg, #5b8cff, #2563eb);
+  }
+  html.look-neu.night-dark body { background: radial-gradient(circle at 100% 0, rgba(124,92,255,.18) 0, transparent 38%), radial-gradient(circle at 0 62%, rgba(219,39,119,.12) 0, transparent 30%),
+      radial-gradient(circle at 100% 92%, rgba(91,140,255,.14) 0, transparent 36%), var(--neu-page); background-attachment: fixed; }
+  html.look-neu.night-dark .card.dest, html.look-neu.night-dark .card.home { background: linear-gradient(135deg, #22302c, #1b2420); }
+  html.look-neu.night-dark .card.brk, html.look-neu.night-dark .card.fuel { background: linear-gradient(135deg, #322b20, #241f18); }
+  html.look-neu.night-dark .card.plan { background: linear-gradient(135deg, #2a2640, #1f1c30); }
+  html.look-neu.night-dark .rsub.whisper { color: #a78bfa; }
+  html.look-neu.night-dark input { background: #171a24; }
+  html.look-neu.night-dark input[type=datetime-local], html.look-neu.night-dark .gdoc input.gdate { color-scheme: dark; }
+  html.look-neu.night-dark .tile.say svg, html.look-neu.night-dark .miclabel, html.look-neu.night-dark .linkbtn, html.look-neu.night-dark .pts.me, html.look-neu.night-dark .pts.big { color: #7fa2ff; }
+  html.look-neu.night-dark .hztile { background: linear-gradient(135deg, #352328, #2a1c20); }
+  html.look-neu.night-dark .timeline, html.look-neu.night-dark .switch span { background: #343a50; }
+  html.look-neu.night-dark #ride [data-open-dest].btn svg, html.look-neu.night-dark #ride [data-open-hazards].btn:not(.card *) svg, html.look-neu.night-dark #ride #homeBtn:not(.card *) svg { background: linear-gradient(135deg, #272b3a, #2d2852); color: #a78bfa; }
+  html.look-neu.night-dark #ride [data-open-hazards].btn:not(.card *) svg { background: linear-gradient(135deg, #272b3a, #3d2330); color: #ff4d6d; }
+  html.look-neu.night-dark #ride #homeBtn:not(.card *) svg { background: linear-gradient(135deg, #272b3a, #1f3a30); color: #34e89e; }
+  html.look-neu.night-dark #ride [data-open-dest].btn::after, html.look-neu.night-dark #ride [data-open-hazards].btn:not(.card *)::after, html.look-neu.night-dark #ride #homeBtn:not(.card *)::after { box-shadow: var(--neu-out-sm); }
+  html.look-neu.night-dark .mapview, html.look-neu.night-dark .rv-map, html.look-neu.night-dark #rideMap { background: #171a24; }
+  html.look-neu.night-dark #mapCard .avatar { background: linear-gradient(135deg, #272b3a, #233154) !important; color: #7fa2ff !important; }
+  html.look-neu.night-dark #leaveBtn .circ { background: linear-gradient(135deg, #272b3a, #3d2330); color: #ff4d6d !important; }
+  html.look-neu.night-dark #shareBtn .circ { background: linear-gradient(135deg, #272b3a, #2b2845); }
+  html.look-neu.night-dark .mic { border-color: #1c1f2b; box-shadow: 0 0 0 1px rgba(255,255,255,.08), var(--neu-out), 0 10px 26px rgba(91,140,255,.3); }
+  html.look-neu.night-dark .mic.off, html.look-neu.night-dark .mic.ptt { background: linear-gradient(135deg, #4a4f66, #353a4f); box-shadow: var(--neu-out); }
+  html.look-neu.night-dark .mic.ptt.talking { background: var(--blue); box-shadow: var(--neu-out), 0 10px 26px rgba(91,140,255,.3); }
+  html.look-neu.night-dark .sheet { background: rgba(0,0,0,.5); }
+  html.look-neu.night-dark .sheet-in { box-shadow: 0 -10px 30px rgba(0,0,0,.5); }
+  html.look-neu.night-dark .setting, html.look-neu.night-dark .planitem + .planitem, html.look-neu.night-dark .prow + .prow,
+  html.look-neu.night-dark .fuelpanel, html.look-neu.night-dark .fplace + .fplace { border-color: rgba(255,255,255,.08); }
+  html.look-neu.night-dark .sgroup { border-top-color: rgba(255,255,255,.08); }
+  html.look-neu.night-dark .mapbar, html.look-neu.night-dark .mappanel .box, html.look-neu.night-dark .chip { background: rgba(28,31,43,.95); }
+  html.look-neu.night-dark .attrib { background: rgba(28,31,43,.9); }
+  html.look-neu.night-dark .ic.violet { background: #2d2852; color: #a78bfa; } html.look-neu.night-dark .ic.cyan { background: #1d3540; color: #22d3ee; }
+  html.look-neu.night-dark .ride-row .ic, html.look-neu.night-dark .pdot.food { background: #3d2330; color: #ff6b9a; }
+  html.look-neu.night-dark .pdot { background: #3b2e24; color: #ff8a1f; } html.look-neu.night-dark .pdot.stop { background: #3a3220; color: #ffc93c; }
+  html.look-neu.night-dark .pdot.dest { background: #1f3a30; color: #34e89e; } html.look-neu.night-dark .pdot.mech { background: #1d3540; color: #22d3ee; }
+  html.look-neu.night-dark .tile.vote svg, html.look-neu.night-dark .find-fuel svg, html.look-neu.night-dark .lowfuel svg, html.look-neu.night-dark .streak { color: #ff8a1f; }
+  html.look-neu.night-dark .find-food svg { color: #ff6b9a; } html.look-neu.night-dark .find-mech svg, html.look-neu.night-dark .pill.rain svg, html.look-neu.night-dark .pill.fam svg { color: #22d3ee; }
+  html.look-neu.night-dark .fuelpanel .ic { background: linear-gradient(135deg, #272b3a, #3b2e24) !important; color: #ff8a1f !important; }
+  html.look-neu.night-dark .fuelpanel .rsub.ahead { color: #ffc93c; }
+  html.look-neu.night-dark .badge.got, html.look-neu.night-dark .newbadge { background: linear-gradient(135deg, #3a3220, #2a2418); }
+  html.look-neu.night-dark .pbar, html.look-neu.night-dark .bic { background: #2a2e3f; }
+  html.look-neu.night-dark .bchip.gpick.sel { background: linear-gradient(135deg, #1d3540, #173039); }
+
   /* Small phones (iPhone SE and narrower) and large text: nothing overlaps or spills out of its card. */
   .grow { min-width: 0; }
   .btn { min-width: 0; }
@@ -1082,7 +1132,7 @@
     ['look', 'Look', [['classic', 'Classic'], ['glass', 'Glass'], ['neu', 'Soft']], {
       classic: 'The original RideComm look.',
       glass: 'Frosted glass over a violet glow, on every screen.',
-      neu: 'Light "neumorphism": soft raised cards and buttons on a pale page. Easier to read in bright sun.' }],
+      neu: 'Light "neumorphism": soft raised cards and buttons on a pale page. Easier to read in bright sun, and dark at night with the Dark night look.' }],
     ['mapKind', 'Map', [['google', 'Google Maps'], ['osm', 'OpenStreetMap']], GMAPS_KEY ? {
       google: 'The Group map looks like the Google Maps app: same roads, places and labels.',
       osm: 'The free OpenStreetMap map, as before.' } : {
@@ -2312,8 +2362,8 @@
   /** Classic or Glass (Settings → Look). Screens switch to Glass as their design is done: the join screen so far. */
   function applyLook() {
     const root = document.documentElement;
-    // Dark night mode: the light Soft look gives way to the dark Classic one until morning.
-    const look = SET.look === 'neu' && isNight() && SET.nightStyle !== 'red' ? 'classic' : SET.look;
+    // At night with the Dark night look, Soft stays Soft but turns dark (html.night-dark, see the Dark Soft styles).
+    const look = SET.look;
     root.classList.toggle('look-glass', look === 'glass');
     root.classList.toggle('look-neu', look === 'neu');
     root.classList.toggle('in-ride', !$('ride').classList.contains('hidden'));

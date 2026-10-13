@@ -98,11 +98,21 @@ const BASE = 'http://127.0.0.1:8765/';
   check('Back: the search sheet again', (await p.isHidden('#pickView')) && (await p.isVisible('#destDialog')));
   await p.click('#destCancel');
 
-  // Night looks with the Soft look: Dark shows the dark page, Red the red layer.
+  // Night looks with the Soft look: Dark turns Soft dark, Red puts on the red layer.
   await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('rc-web-settings') || '{}'); s.look = 'neu'; s.night = 'on'; localStorage.setItem('rc-web-settings', JSON.stringify(s)); });
   await p.reload();
-  check('Night (Dark) with Soft: the dark Classic page, dimmed', await p.evaluate(() => { const c = document.documentElement.classList; return c.contains('night-dark') && !c.contains('look-neu') && getComputedStyle(document.getElementById('nightDim')).display === 'block'; }));
+  check('Night (Dark) with Soft: still Soft, on a dark page, dimmed', await p.evaluate(() => { const c = document.documentElement.classList; return c.contains('night-dark') && c.contains('look-neu') && getComputedStyle(document.getElementById('nightDim')).display === 'block'; }));
+  check('Dark Soft: light text, dark cards', await p.evaluate(() => {
+    const lum = (c) => { const [r, g, b] = c.match(/\d+/g).map(Number); return (r + g + b) / 3; };
+    const card = document.querySelector('#join .card');
+    return lum(getComputedStyle(document.body).color) > 180 && lum(getComputedStyle(document.body).backgroundColor) < 60 && (!card || lum(getComputedStyle(card).color) > 180);
+  }));
   await p.screenshot({ path: OUT + 'pl3_night_dark.png' });
+  await p.click('#join [data-open-settings]');
+  await p.click('[data-setgroup=look]').catch(() => {});
+  await p.waitForTimeout(300);
+  await p.screenshot({ path: OUT + 'pl3_night_dark_settings.png' });
+  await p.keyboard.press('Escape');
   await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('rc-web-settings')); s.nightStyle = 'red'; localStorage.setItem('rc-web-settings', JSON.stringify(s)); });
   await p.reload();
   check('Night (Red) keeps the Soft look under the red layer', await p.evaluate(() => { const c = document.documentElement.classList; return c.contains('night-red') && c.contains('look-neu'); }));

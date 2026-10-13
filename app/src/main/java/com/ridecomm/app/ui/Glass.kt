@@ -144,7 +144,7 @@ internal fun Modifier.neuSurface(shape: Shape, tint: Color, fillAlpha: Float, de
 
 /** The page colour with a hint of [tint], lit from the top-left. */
 internal fun neuTinted(tint: Color, amount: Float = 0.12f): Brush = Brush.linearGradient(
-    listOf(lerp(Color(0xFFF8F9FE), tint, amount), lerp(Color(0xFFE9ECF6), tint, amount)),
+    listOf(lerp(NeuTokens.SurfaceTop, tint, amount), lerp(NeuTokens.SurfaceBottom, tint, amount)),
 )
 
 private fun Modifier.classicGlass(shape: Shape, tint: Color, fillAlpha: Float, rimAlpha: Float): Modifier = this

@@ -985,4 +985,37 @@ open class ScreenshotTest {
     @Test fun nightDark() = captureRoboImage("$dir/143_night_dark.png") {
         RideCommTheme { GlassBackground(Modifier.nightFilter(true, com.ridecomm.app.night.NightStyle.DARK)) { Box(Modifier.fillMaxSize().padding(top = 24.dp)) { RideContent(ride, MusicState(), VoteState(), SosState()) } } }
     }
+
+    // ---- Dark Soft (night mode, Dark night look, Soft look chosen) ----
+
+    private fun darkSoftShot(name: String, content: @Composable () -> Unit) {
+        NeuTokens.dark = true
+        try {
+            captureRoboImage("$dir/$name.png") {
+                RideCommTheme {
+                    NeuScene(Modifier.nightFilter(true, com.ridecomm.app.night.NightStyle.DARK)) {
+                        Box(Modifier.fillMaxSize().padding(top = 24.dp)) { LookScope(UiLook.NEU) { content() } }
+                    }
+                }
+            }
+        } finally {
+            NeuTokens.dark = false
+        }
+    }
+
+    @Test fun homeDarkSoft() = darkSoftShot("150_home_dark_soft") { HomeScreen(RideState()) }
+    @Test fun rideDarkSoft() = darkSoftShot("151_ride_dark_soft") {
+        val vote = Vote("v", VoteKind.BREAK, "Amit", System.currentTimeMillis(), 4, mapOf("a" to Ballot("Amit", true), "r" to Ballot("Rahul", true)))
+        RideContent(
+            ride, MusicState(), VoteState(active = vote, activeSinceMs = System.currentTimeMillis()), SosState(), roles = roles, hazards = hazards,
+            trip = trip0,
+        )
+    }
+    @Test fun settingsDarkSoft() = darkSoftShot("152_settings_dark_soft") { SettingsDialog(onClose = {}, startGroup = "LOOK") }
+    @Test fun cardsDarkSoft() = darkSoftShot("153_home_extras_dark_soft") { HomeExtras() }
+    @Test fun pointsDarkSoft() = darkSoftShot("154_points_dark_soft") { PointsContent(scoreBook, now, {}, {}) }
+    @Test fun summaryDarkSoft() = darkSoftShot("155_summary_dark_soft") { RideSummaryContent(sampleRide, {}, {}, {}, routeStandIn) }
+    @Test fun placeDarkSoft() = darkSoftShot("156_place_dark_soft") { DestinationDialog({}, {}, myLocation = true) }
+    @Test fun garageDarkSoft() = darkSoftShot("157_garage_dark_soft") { GarageContent(garage, now, {}, { _, _, _ -> }, {}, {}, {}, {}) }
+    @Test fun roadDarkSoft() = darkSoftShot("158_road_dark_soft") { RoadCards() }
 }

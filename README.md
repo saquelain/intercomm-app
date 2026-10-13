@@ -153,7 +153,7 @@ between phones).
 - **Rider volume:** tap a rider to set how loud you hear them (20–200%, only on your phone, remembered for the
   next ride) or mute them for yourself, which also stops downloading their voice.
 - **Night mode** (Settings: Off / Auto / On) with a **Night look**: **Dark** (default: the dark page in normal
-  colours, a little dimmer; the light Soft look switches to it at night) or **Red** (everything dim red, greyscale
+  colours, a little dimmer; the Soft look turns into a dark Soft) or **Red** (everything dim red, greyscale
   tinted red so bright and dark stay apart). The screen is dimmed and spoken alerts play at about half volume. Auto works out sunset
   and sunrise from the phone's location (or 6:30 pm–6 am without one).
 - **Talk to one rider** (Settings, on by default): hold a rider's name (or "Hold to talk only to …" in their

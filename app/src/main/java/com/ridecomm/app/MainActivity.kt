@@ -24,6 +24,7 @@ import com.ridecomm.app.ride.RideStatus
 import com.ridecomm.app.ui.LookBackground
 import com.ridecomm.app.ui.LookSetting
 import com.ridecomm.app.ui.LookScope
+import com.ridecomm.app.ui.NeuTokens
 import com.ridecomm.app.ui.GlassSceneStyle
 import com.ridecomm.app.ui.UiLook
 import androidx.core.view.WindowCompat
@@ -57,13 +58,15 @@ class MainActivity : ComponentActivity() {
                 }
                 val chosenLook by LookSetting.current.collectAsStateWithLifecycle()
                 val nightStyle by NightMode.style.collectAsStateWithLifecycle()
-                // Dark night mode: the light Soft look gives way to the dark Classic one until morning.
-                val look = if (night && nightStyle == NightStyle.DARK && chosenLook == UiLook.NEU) UiLook.CLASSIC else chosenLook
-                // The Soft look is light: dark status bar and navigation icons.
-                LaunchedEffect(look) {
+                val look = chosenLook
+                // Dark night mode: the light Soft look turns into dark Soft until morning.
+                val darkSoft = night && nightStyle == NightStyle.DARK
+                NeuTokens.dark = darkSoft
+                // The light Soft look: dark status bar and navigation icons.
+                LaunchedEffect(look, darkSoft) {
                     WindowCompat.getInsetsController(window, window.decorView).apply {
-                        isAppearanceLightStatusBars = look == UiLook.NEU
-                        isAppearanceLightNavigationBars = look == UiLook.NEU
+                        isAppearanceLightStatusBars = look == UiLook.NEU && !darkSoft
+                        isAppearanceLightNavigationBars = look == UiLook.NEU && !darkSoft
                     }
                 }
                 val home = state.status == RideStatus.IDLE

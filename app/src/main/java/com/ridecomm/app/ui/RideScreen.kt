@@ -658,10 +658,10 @@ private fun TripTile(
         // Soft: a raised tile with a hint of colour, the icon in a small raised circle.
         Column(
             modifier
-                .neuRaised(RoundedCornerShape(24.dp), 6.dp, Brush.linearGradient(listOf(Color.White, softTile)))
+                .neuRaised(RoundedCornerShape(24.dp), 6.dp, Brush.linearGradient(listOf(NeuTokens.SurfaceTop, softTile)))
                 .padding(horizontal = 14.dp, vertical = 14.dp),
         ) {
-            Box(Modifier.size(38.dp).neuRaised(CircleShape, 3.dp, Brush.linearGradient(listOf(Color.White, softTile))), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(38.dp).neuRaised(CircleShape, 3.dp, Brush.linearGradient(listOf(NeuTokens.SurfaceTop, softTile))), contentAlignment = Alignment.Center) {
                 Ico(icon, 20.dp, softIcon)
             }
             Spacer(Modifier.height(10.dp))
@@ -788,7 +788,7 @@ private fun SoftDockSide(icon: Int, label: String, iconColor: Color, fill: Color
         Box(
             Modifier
                 .size(64.dp)
-                .neuRaised(CircleShape, 6.dp, Brush.linearGradient(listOf(Color.White, fill)))
+                .neuRaised(CircleShape, 6.dp, Brush.linearGradient(listOf(NeuTokens.SurfaceTop, fill)))
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) { Ico(icon, 28.dp, iconColor, label) }

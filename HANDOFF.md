@@ -279,9 +279,14 @@ card. Web: the `WV` block (`#wrapView` overlay, `wrappedPicture` canvas). Both t
 ## Owner's feedback of 13 Oct (second round)
 
 - **Night mode turned everything red** → Settings → Look & map → **Night look: Dark** (new default: the dark
-  Classic page, a little dimmer; the light Soft look switches to it at night) or **Red** (the old red filter).
-  App: `NightStyle`, `NightMode.style`, `nightFilter(on, style)`, MainActivity swaps NEU → CLASSIC; web:
-  `SET.nightStyle`, classes `night-dark` / `night-red`, `#nightDim`.
+  page, a little dimmer) or **Red** (the old red filter).
+  App: `NightStyle`, `NightMode.style`, `nightFilter(on, style)`; web: `SET.nightStyle`, classes `night-dark` /
+  `night-red`, `#nightDim`.
+- **Soft look jumped to Classic at night** (the first Dark night look did that) → **dark Soft**: the Soft look
+  stays Soft and turns dark (deep slate page, same raised cards, light text, bright accents). App:
+  `NeuTokens.dark` (a snapshot state set by MainActivity; every token is a getter with a light and a dark value,
+  `neuTypography` too; use `NeuTokens.SurfaceTop` instead of `Color.White` in Soft gradients); screenshots
+  150–158. Web: the "Dark Soft" block of `html.look-neu.night-dark` styles (variables + the hard-coded tints).
 - **Place search found much less than Google Maps, no way to pick on a map** → PROTOCOL.md "Choosing a place":
   search as you type, Google Places first (needs **Places API (New)** on both keys, still waiting on the owner),
   then Photon, then Nominatim; "Pick on the map" (app: `MapPicker` + `ui/map/PickerMap.kt`; web: `#pickView`,

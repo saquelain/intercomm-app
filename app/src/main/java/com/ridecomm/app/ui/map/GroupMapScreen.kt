@@ -313,7 +313,7 @@ private val MapPanel = Color(0xE0101222)
 @Composable
 private fun mapPanel() = when (LocalLook.current) {
     UiLook.GLASS -> GlassMapPanel
-    UiLook.NEU -> Color(0xF2EEF0F8)
+    UiLook.NEU -> NeuTokens.Page.copy(alpha = 0.95f)
     UiLook.CLASSIC -> MapPanel
 }
 

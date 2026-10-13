@@ -13,7 +13,7 @@ private val NightRed = Color(0xFFFF2A1A)
 
 /**
  * Night mode. [NightStyle.DARK]: the screen a little dimmer in its normal colours (the light Soft look
- * switches to the dark one, see MainActivity). [NightStyle.RED]: everything drawn in shades of red, a
+ * turns into dark Soft, see [NeuTokens.dark]). [NightStyle.RED]: everything drawn in shades of red, a
  * little dimmer; red light keeps the eyes adjusted to the dark road. Brightness is kept, so buttons and
  * text stay as easy to tell apart as by day.
  */
