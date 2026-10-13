@@ -64,6 +64,8 @@ import kotlinx.coroutines.launch
 object RideManager {
 
     private const val MAX_RETRY_DELAY_MS = 15_000L
+    /** Tries to join (about a minute with the backoff) before telling the rider it didn't work. */
+    private const val FIRST_JOIN_TRIES = 6
     private const val NETWORK_CHECK_MS = 2_000L
     /** Let the phone hand audio back to the ride before speaking. */
     private const val CALL_END_SETTLE_MS = 1_500L
@@ -86,7 +88,7 @@ object RideManager {
     /** I muted the mic because a phone call started, so unmute when it ends. */
     private var mutedForCall = false
 
-    private class RideError(message: String) : Exception(message)
+    private class RideError(message: String, val retryable: Boolean = false) : Exception(message)
 
     fun start(context: Context, code: String) {
         if (rideJob != null) return
@@ -321,6 +323,7 @@ object RideManager {
      */
     private suspend fun runRide(code: String) {
         var everConnected = false
+        var firstTries = 0
         var retryDelay = 2_000L
         while (true) {
             val reason = try {
@@ -329,8 +332,17 @@ object RideManager {
                 throw e
             } catch (e: Exception) {
                 if (!everConnected) {
-                    endWithError(e.message ?: "Could not start the ride")
-                    return
+                    // Weak signal at the meeting point: keep trying for a while before giving up.
+                    // A setting the rider must fix (wrong key, no server) ends it straight away.
+                    firstTries++
+                    val fixable = e is RideError && !e.retryable
+                    if (fixable || firstTries >= FIRST_JOIN_TRIES) {
+                        endWithError(e.message ?: "Could not start the ride")
+                        return
+                    }
+                    delay(retryDelay)
+                    retryDelay = (retryDelay * 2).coerceAtMost(MAX_RETRY_DELAY_MS)
+                    continue
                 }
                 null
             }
@@ -349,7 +361,7 @@ object RideManager {
         val details = try {
             RidePass.fetch(appContext, code)
         } catch (e: RidePassError) {
-            throw RideError(e.message ?: "Could not get into the ride")
+            throw RideError(e.message ?: "Could not get into the ride", e.retryable)
         }
 
         val r = LiveKit.create(
@@ -426,6 +438,7 @@ object RideManager {
                             RideDestination.onRiderJoined(it)
                             Hazards.onRiderJoined(it)
                             Score.onRiderJoined(it)
+                            SosManager.onRiderJoined(it.value)
                         }
                         RiderAlerts.onRiderJoined(event.participant)
                     }

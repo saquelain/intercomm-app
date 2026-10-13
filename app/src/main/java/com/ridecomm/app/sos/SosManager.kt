@@ -20,6 +20,7 @@ import com.ridecomm.app.ride.RideStatus
 import com.ridecomm.app.ride.safeMainScope
 import com.ridecomm.app.ride.Riders
 import com.ridecomm.app.ride.privateAudience
+import com.ridecomm.app.ride.riderIds
 import com.ridecomm.app.ride.trySendText
 import io.livekit.android.room.Room
 import io.livekit.android.room.participant.Participant
@@ -172,16 +173,19 @@ object SosManager {
         _state.update { it.copy(mySosActive = true, mySosStatus = "Sending…") }
         scope.launch {
             lastSos = sosMessage(name, quick, startedAt, crash)
-            val sentOnline = online && broadcast(lastSos!!)
+            // Alone in the ride (the others dropped out or haven't joined): "sent" would reach nobody.
+            val alone = room?.riderIds()?.isEmpty() ?: true
+            val sentOnline = online && broadcast(lastSos!!) && !alone
             deliveredOnline = sentOnline
             var status = if (sentOnline) "Sent to the group" else null
             if (!sentOnline) {
+                val why = if (online && alone) "No other rider is online" else "No internet"
                 val numbers = SmsSender.parseNumbers(Prefs.emergencyNumbers(appContext))
                 val opened = SmsSender.compose(appContext, numbers, smsText(name, quick, crash))
                 status = when {
-                    opened -> "No internet: SOS text is ready in Messages, tap Send"
-                    numbers.isEmpty() -> "No internet and no emergency numbers set"
-                    else -> "No internet and couldn't open Messages"
+                    opened -> "$why: SOS text is ready in Messages, tap Send"
+                    numbers.isEmpty() -> "$why and no emergency numbers set"
+                    else -> "$why and couldn't open Messages"
                 }
             }
             _state.update { it.copy(mySosStatus = status) }
@@ -201,10 +205,26 @@ object SosManager {
             broadcast(JSONObject().put("t", "catchup").put("since", sinceMs))
             val sos = lastSos ?: return@launch
             if (!_state.value.mySosActive || deliveredOnline) return@launch
+            if (room?.riderIds().isNullOrEmpty()) return@launch
             if (broadcast(sos)) {
                 deliveredOnline = true
                 _state.update { it.copy(mySosStatus = "Sent to the group") }
                 Announcer.speak(appContext, "Back online. SOS sent to the group.")
+            }
+        }
+    }
+
+    /** A rider joined (or came back) while my SOS is on: they get it too, and it counts as delivered. */
+    fun onRiderJoined(identity: String) {
+        val sos = lastSos ?: return
+        if (!_state.value.mySosActive) return
+        val r = room ?: return
+        scope.launch {
+            if (!r.trySendText(sos.toString(), TOPIC, listOf(Participant.Identity(identity)))) return@launch
+            if (!deliveredOnline) {
+                deliveredOnline = true
+                _state.update { it.copy(mySosStatus = "Sent to the group") }
+                Announcer.speak(appContext, "A rider joined. SOS sent to them.")
             }
         }
     }

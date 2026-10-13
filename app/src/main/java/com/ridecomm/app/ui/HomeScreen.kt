@@ -1,5 +1,9 @@
 package com.ridecomm.app.ui
 
+import android.net.Uri
+import android.provider.Settings
+import androidx.core.app.ActivityCompat
+import android.app.Activity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.annotation.DrawableRes
 import com.ridecomm.app.nearby.LowFuel
@@ -71,6 +75,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.ridecomm.app.CrashLog
+import com.ridecomm.app.Support
 import com.ridecomm.app.BuildConfig
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.garage.MyGarage
@@ -92,6 +97,9 @@ import com.ridecomm.app.R
 import com.ridecomm.app.audio.MicGate
 import com.ridecomm.app.audio.GateSettings
 import com.ridecomm.app.crash.CrashDetector
+import com.ridecomm.app.ride.BatteryGuard
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.ridecomm.app.profile.Profile
 import com.ridecomm.app.group.GroupTracker
 import com.ridecomm.app.headset.HeadsetButtons
@@ -177,7 +185,17 @@ fun HomeScreen(state: RideState) {
         if (code != null && result[Manifest.permission.RECORD_AUDIO] == true) {
             RideManager.start(context, code)
         } else if (code != null) {
-            Toast.makeText(context, "RideComm needs the microphone to talk to your group", Toast.LENGTH_LONG).show()
+            val activity = context as? Activity
+            val askedForGood = activity != null && !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.RECORD_AUDIO)
+            if (askedForGood) {
+                // "Don't allow" was chosen before, so Android won't ask again: the switch is in App info.
+                Toast.makeText(context, "Allow the microphone in Permissions to talk to your group", Toast.LENGTH_LONG).show()
+                runCatching {
+                    context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + context.packageName)))
+                }
+            } else {
+                Toast.makeText(context, "RideComm needs the microphone to talk to your group", Toast.LENGTH_LONG).show()
+            }
         }
     }
 
@@ -231,6 +249,7 @@ fun HomeScreen(state: RideState) {
         }
 
         CrashReportCard()
+        BatteryCard()
 
         state.error?.let { error ->
             GlassCard(tint = Palette.Stop, fillAlpha = 0.18f) {
@@ -577,6 +596,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
     var keepMusic by remember { mutableStateOf(Prefs.keepOtherMusic(context)) }
     var riderName by remember { mutableStateOf(Prefs.riderName(context)) }
     var crashDetection by remember { mutableStateOf(Prefs.crashDetection(context)) }
+    var crashTest by remember { mutableStateOf(false) }
     var speakerOverlay by remember { mutableStateOf(Prefs.speakerOverlay(context)) }
     var headsetButtons by remember { mutableStateOf(Prefs.headsetButtons(context)) }
     var windGate by remember { mutableStateOf(Prefs.windGate(context)) }
@@ -634,6 +654,8 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                     SettingsRow(s) { section = s }
                 }
             }
+            GlassButton("Report a problem", R.drawable.ms_build, Modifier.fillMaxWidth(), height = 52.dp) { Support.reportProblem(context) }
+            Text(Support.deviceInfo(), style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp), color = Palette.TextTertiary)
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 GlassIconButton(R.drawable.ms_arrow_back, "Back to settings", size = 44.dp, iconSize = 20.dp) { section = null }
@@ -817,9 +839,11 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 }
                 SettingSwitch(
                     "Crash detection",
-                    "After a hard impact and no movement, starts a 15-second SOS countdown you can cancel",
+                    "During a ride: after a hard hit or a fall, if the phone then lies still, starts a 15-second SOS countdown you can cancel",
                     crashDetection,
                 ) { crashDetection = it }
+                GlassButton("Test crash detection", R.drawable.ms_car_crash, Modifier.fillMaxWidth(), height = 52.dp) { crashTest = true }
+                if (crashTest) CrashTestDialog { crashTest = false }
                 }
                 SettingsSection.TOOLS -> {
                     SettingSwitch(
@@ -876,6 +900,15 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 }
                 SettingsSection.SCREEN -> {
                     SettingSwitch("Floating ride button", "Controls over Maps and other apps", bubbleOn) { bubbleOn = it }
+                    if (BatteryGuard.restricted(context)) {
+                        Text(
+                            "Battery saver may stop RideComm with the screen off. In RideComm's settings: " + BatteryGuard.tip(context).replaceFirstChar { it.lowercase() },
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        GlassButton("Let RideComm run in the background", R.drawable.ms_battery_alert, Modifier.fillMaxWidth(), height = 52.dp) {
+                            BatteryGuard.openSettings(context)
+                        }
+                    }
                     SettingSwitch("Show who's talking", "Small photos at the top-left over Maps and other apps", speakerOverlay) {
                         speakerOverlay = it
                 }
@@ -1277,7 +1310,7 @@ private enum class SettingsSection(val title: String, val summary: String, @Draw
     SAFETY("Safety & SOS", "SOS numbers, emergency info, crash detection", R.drawable.ms_emergency, Color(0xFFFF4D6D)),
     TOOLS("Ride tools", "Fuel & food finder, planner, history, garage", R.drawable.ms_build, Color(0xFF4F7CFF)),
     POINTS("Points & badges", "Points, badges, Ride Wrapped", R.drawable.ms_emoji_events, Color(0xFFE0A100)),
-    SCREEN("Over other apps", "Floating ride button, who's talking", R.drawable.ms_picture_in_picture, Color(0xFFB45CFF)),
+    SCREEN("Background & over apps", "Floating button, who's talking, battery", R.drawable.ms_picture_in_picture, Color(0xFFB45CFF)),
     SERVER("Ride server", "Token server, lock rides to my group", R.drawable.ms_shield, Color(0xFF8A93B0)),
 }
 
@@ -1340,7 +1373,7 @@ private fun CrashReportCard() {
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text("RideComm closed unexpectedly", style = MaterialTheme.typography.titleMedium)
-                Text("Share the report so it can be fixed.", style = MaterialTheme.typography.bodyMedium)
+                Text("Send the report so it can be fixed. You choose where it goes.", style = MaterialTheme.typography.bodyMedium)
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1348,10 +1381,46 @@ private fun CrashReportCard() {
                 CrashLog.clear(context)
                 report = null
             }
-            PrimaryButton("Share report", R.drawable.ms_share, Modifier.weight(1f), height = 56.dp) {
-                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
-                context.startActivity(Intent.createChooser(send, "Share crash report"))
+            PrimaryButton("Send report", R.drawable.ms_share, Modifier.weight(1f), height = 56.dp) {
+                Support.send(context, "RideComm crash report (build ${BuildConfig.VERSION_CODE})", text)
             }
+        }
+    }
+}
+
+/**
+ * "Keep RideComm running in your pocket": shown while Android's battery saver may stop the ride in
+ * the background, with the steps for this phone's brand. Checks again whenever the rider comes back
+ * from Settings, and goes away once it's fixed (or when closed).
+ */
+@Composable
+private fun BatteryCard() {
+    val context = LocalContext.current
+    var restricted by remember { mutableStateOf(BatteryGuard.restricted(context)) }
+    var hidden by remember { mutableStateOf(Prefs.batteryTipHidden(context)) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { restricted = BatteryGuard.restricted(context) }
+    if (!restricted || hidden) return
+    BatteryTipContent(BatteryGuard.tip(context), onFix = { BatteryGuard.openSettings(context) }) {
+        Prefs.setBatteryTipHidden(context, true)
+        hidden = true
+    }
+}
+
+@Composable
+internal fun BatteryTipContent(tip: String, onFix: () -> Unit, onHide: () -> Unit) {
+    GlassCard(tint = Palette.Amber, fillAlpha = 0.14f) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Ico(R.drawable.ms_battery_alert, 24.dp, Palette.Amber)
+            Spacer(Modifier.width(12.dp))
+            Text("Keep RideComm running in your pocket", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+        }
+        Text(
+            "Your phone's battery saver can stop the intercom mid-ride when the screen is off. Tap Open settings, then ${tip.replaceFirstChar { it.lowercase() }}",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        ButtonRow(2) {
+            GlassButton("Not now", modifier = Modifier.share()) { onHide() }
+            PrimaryButton("Open settings", R.drawable.ms_settings, Modifier.share(), height = 56.dp) { onFix() }
         }
     }
 }

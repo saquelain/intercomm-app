@@ -49,7 +49,9 @@ mute, a fake signal drop with `goOffline()` / `goOnline()`). GPS is faked too: `
   open a group first with `[data-setgroup][data-keys~="<key>"]` before clicking a switch.)
 - `places.test.js`: choosing a place: results as you type (Photon), Search falling back to Nominatim, a Google Maps
   link with a name, Pick on the map (opens on the first result, the spot's name, dragging, Use this spot, Back),
-  and the Dark / Red night looks with the Soft look.
+  and the Dark / Red night looks with the Soft look (Dark keeps Soft, dark).
+- `sos.test.js`: an SOS sent alone in the ride says "No other rider is online"; the rider who joins gets it at once
+  and it then says "Sent to the group".
 - `gmap.test.js`: the Group map on Google Maps (Google's real script in keyless mode, served a stand-in key),
   long press, tap a rider, dark map, switching to OpenStreetMap in Settings, and a refused key falling back.
 

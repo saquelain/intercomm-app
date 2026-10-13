@@ -38,6 +38,9 @@ the same format plus header `X-RideComm-Key: <group key>`.
 | `ok` | `name` | I'm OK: stop alarms |
 | `catchup` | `since` | sent after a drop; riders with an active SOS re-send it to that rider |
 
+A rider with an active SOS also sends it straight to every rider who joins. An SOS sent while no other rider is
+in the ride doesn't count as delivered ("No other rider is online"; the app opens the SMS fallback) until one joins.
+
 `info` (emergency info, only if the rider allows it): `{ "blood": "O+", "medical": "…", "contact": "Ammi", "phone": "+91…" }`,
 every field optional; receivers cut `blood`/`contact`/`phone` to 40 and `medical` to 200 characters.
 

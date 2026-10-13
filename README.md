@@ -109,10 +109,17 @@ between phones).
 - **Group tracking (beta, off by default):** each phone shares its GPS position with the ride every 15 s. Rider cards show distance and whether they're ahead or behind; tap to open their spot in Maps.
   When a rider drifts more than 1 km away everyone hears "Rahul is 1.2 kilometers behind" (again at each further
   kilometre), and "Rahul is back with the group" once they're within 500 m.
-- **Crash detection:** during a ride the accelerometer watches for a hard impact (over 4 g) followed by the
-  phone lying still for 10 s; with GPS it also requires that the rider was moving and has stopped. It then starts
-  a 15-second SOS countdown ("Crash detected", tap anywhere to cancel); others hear "Rahul may have crashed".
-  A cancelled alarm mutes detection for a minute. Can be turned off in Settings.
+- **Crash detection:** during a ride the accelerometer (100 readings a second) watches for a hard impact (over
+  4 g), or a fall (free fall, then a landing over 2.5 g), followed by the phone lying still for 10 s; with GPS it
+  also requires that the rider was moving (over 10 km/h in the last 45 s) and has stopped. It then starts a
+  15-second SOS countdown ("Crash detected", tap anywhere to cancel); others hear "Rahul may have crashed".
+  A cancelled alarm mutes detection for a minute. Can be turned off in Settings. **Settings → Safety → Test crash
+  detection** shows it working at home (throw the phone onto a bed): same logic without the speed check, sends nothing.
+- **Battery saver warning:** a home card (and a button in Settings → Background & over apps) when Android may stop
+  RideComm in the background, opening RideComm's App info with the steps for the phone's brand (Xiaomi, Samsung,
+  Oppo/Realme/OnePlus, Vivo, Huawei/Honor…).
+- **Report a problem:** at the bottom of Settings, and "Send report" after a crash: the phone's details (and the
+  last crash) in a message the rider sends by email or any app. `Support.EMAIL` sets the developer's address.
 - **Profile:** name and photo are set once (first run, then Settings). Photos are shared with the ride and shown
   on rider cards and, while another app is open, as small semi-transparent bubbles of whoever is talking at the
   top-left corner (they ignore touches, so Maps underneath stays usable).

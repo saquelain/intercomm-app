@@ -37,7 +37,7 @@ object CrashLog {
         val trace = StringWriter().also { error.printStackTrace(PrintWriter(it)) }.toString()
         val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
         return buildString {
-            appendLine("RideComm ${BuildConfig.VERSION_NAME} crashed at $time")
+            appendLine("RideComm ${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE}) crashed at $time")
             appendLine("Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}), ${Build.MANUFACTURER} ${Build.MODEL}")
             appendLine("Thread: ${thread.name}")
             appendLine()

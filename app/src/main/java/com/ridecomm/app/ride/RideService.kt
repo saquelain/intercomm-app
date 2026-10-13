@@ -10,6 +10,7 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
@@ -50,12 +51,15 @@ class RideService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        ServiceCompat.startForeground(
-            this,
-            NOTIFICATION_ID,
-            buildNotification(RideManager.state.value, VoteManager.state.value),
-            foregroundTypes(),
-        )
+        val notification = buildNotification(RideManager.state.value, VoteManager.state.value)
+        try {
+            ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, foregroundTypes())
+        } catch (e: Exception) {
+            // Android refused the location part (e.g. location allowed only "this time" and gone):
+            // keep the ride with the microphone alone rather than crash.
+            Log.w("RideService", "Foreground with location refused, trying microphone only", e)
+            runCatching { ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, micOnly()) }
+        }
         wakeLock = (getSystemService(POWER_SERVICE) as PowerManager)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "RideComm:ride")
             .apply { acquire(WAKE_LOCK_TIMEOUT_MS) }
@@ -137,6 +141,9 @@ class RideService : Service() {
         if (LocationHelper.hasPermission(this)) types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
         return types
     }
+
+    private fun micOnly(): Int =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0
 
     private fun buildNotification(state: RideState, vote: VoteState): android.app.Notification {
         val pending = vote.active?.takeIf { vote.needsMyVote }

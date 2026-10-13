@@ -72,7 +72,7 @@ Links the owner uses:
   `https://maven-central.storage-download.googleapis.com/maven2/` (recreate it in a new container; the
   content is in HANDOFF.md).
 - Compile: `./gradlew compileDebugKotlin`
-- Unit tests (about 510, all must pass): `./gradlew testDebugUnitTest` (Robolectric runs them on SDK 35,
+- Unit tests (about 570, all must pass): `./gradlew testDebugUnitTest` (Robolectric runs them on SDK 35,
   see `app/src/test/resources/robolectric.properties`; the app targets 36)
 - Same as CI: `./gradlew testReleaseUnitTest assembleRelease`
 - Lint: `./gradlew lintDebug`

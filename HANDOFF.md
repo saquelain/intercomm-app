@@ -84,7 +84,7 @@ fake-LiveKit web tests but has not been confirmed on a ride yet.
 | Floating ride button over other apps (slide menu, drag onto ✕ to hide), who's-talking overlay | app only | owner-tested |
 | Votes (Break / Fuel / Food) and quick messages (Slow down, Wait for me) | app + web | owner-tested |
 | SOS (countdown, siren, location, I'm OK), SMS fallback without internet | app (+ web without SMS) | owner-tested |
-| Crash detection → SOS countdown | app only | built, not seen in a real crash |
+| Crash detection → SOS countdown | app only | built, not seen in a real crash; Settings → Safety → Test crash detection |
 | Helmet headset button (1 mute, 2 music, 3 SOS) | app only | built |
 | Wind noise gate with presets, fine-tune sliders and a visual before/after test | app only | owner-tested |
 | Rider alerts (joined, dropped, back, low battery, on a phone call) | app + web | owner-tested |
@@ -319,6 +319,27 @@ card. Web: the `WV` block (`#wrapView` overlay, `wrappedPicture` canvas). Both t
 Ideas looked at and dropped: Bluetooth or Wi-Fi Direct voice instead of the internet (10–100 m range,
 phones can't do a mesh group call; voice is only ~10 MB an hour anyway).
 
+## Production push (13 Oct, after build #64)
+
+The owner asked whether the app is production ready (Android only); the honest answer was "ready for your group
+and a closed beta, not yet the public": sandbox token server open to anyone, tested on one phone, safety features
+unproven, ~40 features little ridden, crashes not reaching the developer, Play review of background mic/location
+and the overlay, costs at scale. The plan: private ride server → feature freeze → closed test with 12+ riders on
+different brands → crash reports → test SOS/crash on purpose → fix → Play Store. Done in this round:
+- **Crash detection didn't fire** when the owner threw the phone: at home GPS says "standing still", which the
+  rule reads as "dropped at a stop"; 50 Hz sampling also missed short hits; and it only runs during a ride. Now
+  100 Hz, a fall + landing also counts, 10 km/h in the last 45 s, gives up early when the phone is picked up, and
+  **Test crash detection** (`CrashTestUi.kt`, `CrashDetector.startTest`, `CrashLogic(requireRiding = false)`).
+- **Battery savers** (`ride/BatteryGuard.kt`, `BatteryTips`): home card + Settings button, brand steps.
+- **First join in a dead zone** ended the ride at once: now ~1 minute of retries (`FIRST_JOIN_TRIES`), only a
+  setting the rider must fix (`RidePassError.retryable = false`) ends it straight away.
+- **SOS alone in the ride** said "Sent to the group" to nobody: now SMS fallback + "No other rider is online", and
+  a joining rider gets the SOS (`SosManager.onRiderJoined`; web `onJoined`). Test: `tools/webtest/sos.test.js`.
+- **Foreground service** falls back to microphone-only if Android refuses the location type (no crash).
+- **Microphone refused for good** ("Don't allow"): opens App info instead of a dead end.
+- **Report a problem** + crash report via `Support.kt` (`Support.EMAIL` empty until the owner gives an address).
+- Night mode no longer sets the window brightness (the owner couldn't raise it); dark Soft instead of Classic.
+
 ## Known limits
 
 - iPhone: Safari pauses the mic and location when the screen locks or another app is in front; keep the
@@ -363,10 +384,10 @@ phones can't do a mesh group call; voice is only ~10 MB an hour anyway).
    (`commandlinetools-linux-*_latest.zip` from dl.google.com), then
    `sdkmanager "platforms;android-36" "platform-tools" "build-tools;35.0.0"` and write
    `sdk.dir=$HOME/android-sdk` to `local.properties` (gitignored).
-3. `./gradlew testDebugUnitTest` should pass (about 510 tests).
+3. `./gradlew testDebugUnitTest` should pass (about 570 tests).
 4. Store pictures (only when needed): `STORE_SHOTS=1 ./gradlew recordRoborazziDebug --tests '*StoreShotTest*'`.
-5. Web tests: see `tools/webtest/README.md` (12 suites: rides, features, more, gmap, plans, watch, road, points,
-   garage, wrapped, settings, places; all print "No page errors"). Suites that search places fake Photon as down
+5. Web tests: see `tools/webtest/README.md` (13 suites: rides, features, more, gmap, plans, watch, road, points,
+   garage, wrapped, settings, places, sos; all print "No page errors"). Suites that search places fake Photon as down
    so Nominatim (faked) answers.
 6. Skills for Claude in this repo: `.claude/skills/claude-delegate-and-budget` (linked to `.agents/skills/`,
    installed with `npx skills add piplupjs/skills --skill claude-delegate-and-budget`, pinned in

@@ -1018,4 +1018,26 @@ open class ScreenshotTest {
     @Test fun placeDarkSoft() = darkSoftShot("156_place_dark_soft") { DestinationDialog({}, {}, myLocation = true) }
     @Test fun garageDarkSoft() = darkSoftShot("157_garage_dark_soft") { GarageContent(garage, now, {}, { _, _, _ -> }, {}, {}, {}, {}) }
     @Test fun roadDarkSoft() = darkSoftShot("158_road_dark_soft") { RoadCards() }
+
+    // ---- Test crash detection ----
+
+    private fun crashTestShot(name: String, state: com.ridecomm.app.crash.CrashDetector.TestState) = softShot(name) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) { CrashTestContent(state, {}, {}) }
+    }
+    @Test fun crashTestWaiting() = crashTestShot("160_crash_test_waiting", com.ridecomm.app.crash.CrashDetector.TestState(true, peakG = 1.3f))
+    @Test fun crashTestStill() = crashTestShot("161_crash_test_still", com.ridecomm.app.crash.CrashDetector.TestState(true, com.ridecomm.app.crash.CrashLogic.Phase.STILL, 6.2f, 6.2f, 0.4f))
+    @Test fun crashTestDone() = crashTestShot("162_crash_test_done", com.ridecomm.app.crash.CrashDetector.TestState(true, com.ridecomm.app.crash.CrashLogic.Phase.CRASH, 6.2f, 6.2f, 1f))
+    @Test fun crashTestClassic() = shot("163_crash_test_classic") {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            CrashTestContent(com.ridecomm.app.crash.CrashDetector.TestState(true, com.ridecomm.app.crash.CrashLogic.Phase.MOVED, 4.8f, 4.8f), {}, {})
+        }
+    }
+    @Test fun settingsSafetySoft() = softShot("164_settings_safety_soft") { SettingsDialog(onClose = {}, startGroup = "SAFETY") }
+
+    @Test fun batteryCardSoft() = softShot("165_battery_card_soft") {
+        Column(Modifier.padding(20.dp)) { BatteryTipContent(com.ridecomm.app.ride.BatteryTips.forBrand("Xiaomi"), {}, {}) }
+    }
+    @Test fun batteryCard() = shot("166_battery_card") {
+        Column(Modifier.padding(20.dp)) { BatteryTipContent(com.ridecomm.app.ride.BatteryTips.forBrand("samsung"), {}, {}) }
+    }
 }

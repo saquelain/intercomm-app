@@ -134,6 +134,13 @@ object Prefs {
     fun setKeepOtherMusic(context: Context, keep: Boolean) =
         prefs(context).edit().putBoolean(KEY_KEEP_OTHER_MUSIC, keep).apply()
 
+    /** The rider closed the "keep RideComm running" card on the home screen. */
+    fun batteryTipHidden(context: Context): Boolean = prefs(context).getBoolean("battery_tip_hidden", false)
+
+    fun setBatteryTipHidden(context: Context, hidden: Boolean) {
+        prefs(context).edit().putBoolean("battery_tip_hidden", hidden).apply()
+    }
+
     /** Start the SOS countdown automatically after a hard impact followed by no movement. */
     fun crashDetection(context: Context): Boolean = prefs(context).getBoolean(KEY_CRASH_DETECTION, true)
 

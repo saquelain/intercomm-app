@@ -1400,14 +1400,18 @@
   }
   async function sendSos() {
     S.mySos = { at: Date.now(), lat: null, lon: null };
-    S.mySosDelivered = await sendMine(T.sos, sosMsg());
+    // Alone in the ride (the others dropped out or haven't joined): "sent" would reach nobody.
+    S.mySosAlone = !!S.room && riderIds().length <= 1;
+    const sent = await sendMine(T.sos, sosMsg());
+    S.mySosDelivered = sent && !S.mySosAlone;
     renderMySos();
-    speak(S.mySosDelivered ? 'SOS sent to the group' : 'No connection. Your SOS will go out when you are back online.');
+    speak(S.mySosDelivered ? 'SOS sent to the group' : S.mySosAlone ? 'No other rider is online. Your SOS goes to the next rider who joins.'
+      : 'No connection. Your SOS will go out when you are back online.');
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((p) => {
         if (!S.mySos) return;
         S.mySos.lat = p.coords.latitude; S.mySos.lon = p.coords.longitude;
-        sendMine(T.sos, sosMsg(S.mySos.lat, S.mySos.lon)).then((ok) => { if (ok) S.mySosDelivered = true; renderMySos(); });
+        sendMine(T.sos, sosMsg(S.mySos.lat, S.mySos.lon)).then((ok) => { if (ok && riderIds().length > 1) S.mySosDelivered = true; renderMySos(); });
       }, () => {}, { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 });
     }
   }
@@ -1457,6 +1461,11 @@
     S.byes.delete(id);
     const back = S.dropped.delete(id);
     S.seen.add(id);
+    // My SOS is on: the rider who just joined gets it too.
+    if (S.mySos) sendMine(T.sos, sosMsg(S.mySos.lat, S.mySos.lon), [id]).then((ok) => {
+      if (!ok || S.mySosDelivered || !S.mySos) return;
+      S.mySosDelivered = true; S.mySosAlone = false; renderMySos(); speak('A rider joined. SOS sent to them.');
+    });
     speak((p.name || 'A rider') + (back ? ' is back' : ' joined the ride'));
     // Song files are for the Android app; tell a DJ not to send them here.
     send(T.music, { t: 'saving', on: true }, [id]);
@@ -4342,7 +4351,9 @@
   }
   function renderMySos() {
     $('mySos').classList.toggle('hidden', !S.mySos);
-    if (S.mySos) $('mySosText').textContent = S.mySosDelivered ? 'Sent to the group. They can see where you are.' : 'Waiting for internet: it goes out as soon as you are back online.';
+    if (S.mySos) $('mySosText').textContent = S.mySosDelivered ? 'Sent to the group. They can see where you are.'
+      : S.mySosAlone ? 'No other rider is online: it goes to the next rider who joins. Call for help too.'
+      : 'Waiting for internet: it goes out as soon as you are back online.';
     // Big and plain, for a passer-by or medic holding my phone.
     $('helper').classList.toggle('hidden', !S.mySos);
     if (!S.mySos) return;
@@ -4475,7 +4486,7 @@
     if (SET.dest) send(T.dest, { t: 'sync' });
     if (S.mySos && !S.mySosDelivered) {
       sendMine(T.sos, sosMsg(S.mySos.lat, S.mySos.lon)).then((ok) => {
-        if (ok) { S.mySosDelivered = true; renderMySos(); speak('Back online. SOS sent to the group.'); }
+        if (ok && riderIds().length > 1) { S.mySosDelivered = true; S.mySosAlone = false; renderMySos(); speak('Back online. SOS sent to the group.'); }
       });
     } else if (Date.now() - since > 5000) speak('Back online');
   }

@@ -11,8 +11,11 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
-/** A problem getting into a ride, worded for the rider. */
-class RidePassError(message: String) : Exception(message)
+/**
+ * A problem getting into a ride, worded for the rider. [retryable]: a network or server hiccup that
+ * may pass (weak signal at the meeting point), not a setting the rider must fix.
+ */
+class RidePassError(message: String, val retryable: Boolean = false) : Exception(message)
 
 /**
  * Gets the pass (LiveKit access token) for a ride: from the group's private ride server when one
@@ -32,7 +35,7 @@ object RidePass {
         if (tokenServerId.isBlank()) throw RidePassError("Set up the ride server in Settings first")
         return TokenSource.fromDevelopmentTokenServer(tokenServerId)
             .fetch(TokenRequestOptions(roomName = room, participantName = name, participantIdentity = identity))
-            .getOrElse { throw RidePassError("Could not reach the ride server. Check internet and the token server ID.") }
+            .getOrElse { throw RidePassError("Could not reach the ride server. Check internet and the token server ID.", retryable = true) }
     }
 
     private suspend fun fromPrivateServer(
@@ -59,7 +62,7 @@ object RidePass {
                 outputStream.use { it.write(body.toByteArray()) }
             }
         } catch (e: Exception) {
-            throw RidePassError("Could not reach the ride server. Check your internet connection.")
+            throw RidePassError("Could not reach the ride server. Check your internet connection.", retryable = true)
         }
         try {
             when (val status = connection.responseCode) {
@@ -71,12 +74,12 @@ object RidePass {
                     )
                 }
                 401 -> throw RidePassError("Wrong group key. Check it in Settings.")
-                else -> throw RidePassError("The ride server had a problem ($status). Try again in a moment.")
+                else -> throw RidePassError("The ride server had a problem ($status). Try again in a moment.", retryable = status >= 500 || status == 429)
             }
         } catch (e: RidePassError) {
             throw e
         } catch (e: Exception) {
-            throw RidePassError("Could not reach the ride server. Check your internet connection.")
+            throw RidePassError("Could not reach the ride server. Check your internet connection.", retryable = true)
         } finally {
             connection.disconnect()
         }
