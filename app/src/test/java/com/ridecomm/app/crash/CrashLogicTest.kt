@@ -186,4 +186,43 @@ class CrashLogicTest {
         assertTrue(logic.feed(10_020, 14_000) { still() })
         assertEquals(CrashLogic.Reason.STILL, logic.reason)
     }
+
+    // ---- The rider's own numbers (test screen → Fine-tune) ----
+
+    @Test
+    fun aLowerHitStrengthCatchesASofterHit() {
+        val usual = CrashLogic()
+        val soft = CrashLogic.tuned(CrashTuning(g = 2.5f))
+        for (l in listOf(usual, soft)) l.onSample(1_000, 3 * g)
+        assertFalse(usual.feed(1_020, 14_000) { still() })
+        assertTrue(soft.feed(1_020, 14_000) { still() })
+    }
+
+    @Test
+    fun aShorterWatchDecidesSooner() {
+        val quick = CrashLogic.tuned(CrashTuning(waitS = 5))
+        quick.onSample(1_000, 6 * g)
+        // 2 s to settle + 5 s watching: decided by 8.1 s, well before the usual 13 s.
+        assertTrue(quick.feed(1_020, 7_100) { still() })
+    }
+
+    @Test
+    fun aLargerDistanceStillCountsAsStopped() {
+        // 80 m from the crash spot: "rode on" with the usual 50 m, "stayed put" with 120 m.
+        fun run(t: CrashTuning): Boolean {
+            val l = CrashLogic.tuned(t)
+            l.onLocation(9_500, lat, lon, 8f, 0f)
+            l.onSample(10_000, 6 * g)
+            l.onLocation(14_000, north(80.0), lon, 8f, 1f)
+            return l.feed(10_020, 14_000) { still() }
+        }
+        assertFalse(run(CrashTuning()))
+        assertTrue(run(CrashTuning(moveM = 120)))
+    }
+
+    @Test
+    fun storedNumbersAreKeptSensible() {
+        assertEquals(CrashTuning(2f, 30, 200), CrashTuning(0.5f, 99, 5_000).safe())
+        assertTrue(CrashTuning().isDefault)
+    }
 }

@@ -237,6 +237,12 @@ object Score {
         return load(appContext).filter { it.id != id && ScoreBook.yearOf(it.atMs) == year }.sumOf(ScoreRules::points) + myRidePoints()
     }
 
+    /** All my points, this ride included (for friends' leaderboards). */
+    private fun myTotalPoints(): Int {
+        val id = ride?.id
+        return load(appContext).filter { it.id != id }.sumOf(ScoreRules::points) + myRidePoints()
+    }
+
     private fun myLevel(): Int {
         val id = ride?.id
         return Levels.of(load(appContext).filter { it.id != id }.sumOf(ScoreRules::points) + myRidePoints()).index
@@ -284,6 +290,7 @@ object Score {
         if (ride == null) return
         val pts = myRidePoints()
         val o = JSONObject().put("t", "score").put("name", myName()).put("level", myLevel()).put("ride", pts).put("year", myYearPoints())
+            .put("total", myTotalPoints())
         lastSentRide = pts
         lastSentMs = System.currentTimeMillis()
         scope.launch { r.trySendText(o.toString(), TOPIC, to) }
@@ -291,14 +298,43 @@ object Score {
 
     private fun onMessage(o: JSONObject, from: String) {
         if (o.optString("t") != "score" || ride == null) return
-        peers[from] = RiderScore(
+        val score = RiderScore(
             id = from,
             name = o.optString("name").ifBlank { "Rider" }.take(40),
             level = o.optInt("level", 0).coerceIn(0, Levels.all.lastIndex),
             ride = o.optInt("ride", 0).coerceAtLeast(0),
             year = o.optInt("year", 0).coerceAtLeast(0),
         )
+        peers[from] = score
+        val total = if (o.has("total")) o.optInt("total", 0).coerceAtLeast(0) else null
+        remember(Friend(from, score.name, score.level, total, score.year, System.currentTimeMillis()))
         publish()
+    }
+
+    // ---- Friends: who I've ridden with, at which level ----
+
+    private val _friends = MutableStateFlow<List<Friend>>(emptyList())
+    /** Riding friends as of our last ride together (loaded by [loadFriends]). */
+    val friends: StateFlow<List<Friend>> = _friends.asStateFlow()
+
+    fun loadFriends(context: Context): List<Friend> {
+        val list = Friends.fromJson(Prefs.scoreFriends(context))
+        _friends.value = list
+        return list
+    }
+
+    private fun remember(f: Friend) {
+        if (!::appContext.isInitialized) return
+        val list = Friends.update(loadFriends(appContext), f)
+        Prefs.setScoreFriends(appContext, Friends.toJson(list))
+        _friends.value = list
+    }
+
+    /** Me, for the friends board. */
+    fun meAsFriend(context: Context): Friend {
+        val total = ScoreBook.total(load(context))
+        return Friend(Prefs.deviceId(context), Prefs.riderName(context).ifBlank { "You" }, Levels.of(total).index, total,
+            ScoreBook.year(load(context), ScoreBook.yearOf(System.currentTimeMillis())).points, System.currentTimeMillis())
     }
 
     private fun publish() {

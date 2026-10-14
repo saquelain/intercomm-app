@@ -247,11 +247,16 @@ the week streak (weeks in a row up to this one or last week with a ride of 5 km 
 
 | `t` | Fields | Meaning |
 |---|---|---|
-| `score` | `name`, `level` (0–6), `ride` (points this ride so far), `year` (points this year, this ride included) | My points |
+| `score` | `name`, `level` (0–6), `ride` (points this ride so far), `year` (points this year, this ride included), `total` (all my points, this ride included; newer phones) | My points |
 
 Sent to everyone on joining (and after a drop), to a rider who joins, and every 2 minutes when `ride` changed.
 Riders show a "Ride points" leaderboard of the riders present. A phone with the setting off sends nothing and
 shows nothing.
+
+**Friends board:** every `score` received is also kept on the phone (app: Prefs `score_friends`; web: localStorage
+`rc-web-friends`), newest 50, as `[{ "id", "name", "level", "total"?, "year", "seen": <ms> }]`. The Points page shows
+me and them, best first by `total` (a phone that sends no `total` ranks at its level's lowest points), with each
+one's level and "rode together N days ago". There's no server: it's as of the last ride together.
 
 ## My garage (Settings → "My garage", on by default; no messages)
 

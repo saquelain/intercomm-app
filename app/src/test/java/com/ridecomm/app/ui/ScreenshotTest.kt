@@ -2,6 +2,7 @@ package com.ridecomm.app.ui
 
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -1021,8 +1022,14 @@ open class ScreenshotTest {
 
     // ---- Test crash detection ----
 
-    private fun crashTestShot(name: String, state: com.ridecomm.app.crash.CrashDetector.TestState) = softShot(name) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) { CrashTestContent(state, {}, {}) }
+    private fun crashTestShot(
+        name: String,
+        state: com.ridecomm.app.crash.CrashDetector.TestState,
+        tuning: com.ridecomm.app.crash.CrashTuning = com.ridecomm.app.crash.CrashTuning(),
+    ) = softShot(name) {
+        Column(Modifier.padding(20.dp).verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            CrashTestContent(state, {}, {}, tuning)
+        }
     }
     @Test fun crashTestWaiting() = crashTestShot("160_crash_test_waiting", com.ridecomm.app.crash.CrashDetector.TestState(true, peakG = 1.3f))
     @Test fun crashTestStill() = crashTestShot("161_crash_test_still", com.ridecomm.app.crash.CrashDetector.TestState(true, com.ridecomm.app.crash.CrashLogic.Phase.STILL, 6.2f, 6.2f, 0.4f))
@@ -1042,4 +1049,21 @@ open class ScreenshotTest {
     }
     @Test fun crashTestGps() = crashTestShot("167_crash_test_gps", com.ridecomm.app.crash.CrashDetector.TestState(true, com.ridecomm.app.crash.CrashLogic.Phase.STILL, 5.1f, 5.1f, 0.3f, gps = true))
     @Test fun crashTestStopped() = crashTestShot("168_crash_test_stopped", com.ridecomm.app.crash.CrashDetector.TestState(true, com.ridecomm.app.crash.CrashLogic.Phase.CRASH, 5.1f, 5.1f, 1f, gps = true, reason = com.ridecomm.app.crash.CrashLogic.Reason.STOPPED))
+
+    // ---- Friends leaderboard ----
+
+    private val friendsList = listOf(
+        com.ridecomm.app.score.Friend("a", "Amit", 3, 1_820, 960, now - 2 * 86_400_000L),
+        com.ridecomm.app.score.Friend("r", "Rahul", 1, 380, 380, now - 9 * 86_400_000L),
+        com.ridecomm.app.score.Friend("v", "Vikram Singh Rathore", 2, 1_140, 610, now - 40 * 86_400_000L),
+        com.ridecomm.app.score.Friend("o", "Old phone", 0, null, 40, now),
+    )
+    @Test fun friendsBoardSoft() = softShot("170_friends_soft") { PointsContent(scoreBook, now, {}, {}, friends = friendsList) }
+    @Test fun friendsBoard() = shot("171_friends") { PointsContent(scoreBook, now, {}, {}, friends = friendsList) }
+    @Test fun friendsBoardEmpty() = softShot("172_friends_empty_soft") { PointsContent(emptyList(), now, {}, {}) }
+    @Test fun crashTestTuned() = crashTestShot(
+        "173_crash_test_tuned",
+        com.ridecomm.app.crash.CrashDetector.TestState(true, peakG = 2.8f),
+        com.ridecomm.app.crash.CrashTuning(g = 3f, waitS = 15, moveM = 80),
+    )
 }

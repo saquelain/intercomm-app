@@ -52,6 +52,8 @@ import com.ridecomm.app.R
 import com.ridecomm.app.score.WrappedLogic
 import com.ridecomm.app.score.Badge
 import com.ridecomm.app.score.BadgeProgress
+import com.ridecomm.app.score.Friend
+import com.ridecomm.app.score.Friends
 import com.ridecomm.app.score.Levels
 import com.ridecomm.app.score.RideScoreState
 import com.ridecomm.app.score.Score
@@ -169,8 +171,12 @@ private fun BadgeChip(badge: Badge, modifier: Modifier = Modifier) {
 @Composable
 fun PointsScreen(onClose: () -> Unit) {
     val context = LocalContext.current
-    LaunchedEffect(Unit) { Score.load(context) }
+    LaunchedEffect(Unit) {
+        Score.load(context)
+        Score.loadFriends(context)
+    }
     val entries by Score.entries.collectAsState()
+    val friends by Score.friends.collectAsState()
     val now = remember { System.currentTimeMillis() }
     val year = WrappedLogic.yearFor(now)
     var wrapped by remember { mutableStateOf(false) }
@@ -178,6 +184,7 @@ fun PointsScreen(onClose: () -> Unit) {
         PointsContent(
             entries, now, onClose, onReset = { Score.reset(context) },
             onWrapped = if (Prefs.wrapped(context) && entries.any { ScoreBook.yearOf(it.atMs) == year }) { { wrapped = true } } else null,
+            friends = friends,
         )
     }
     if (wrapped) WrappedScreen(year) { wrapped = false }
@@ -185,7 +192,14 @@ fun PointsScreen(onClose: () -> Unit) {
 
 /** The page's content for given entries (screenshots render it straight). */
 @Composable
-fun PointsContent(entries: List<ScoreEntry>, nowMs: Long, onClose: () -> Unit, onReset: () -> Unit, onWrapped: (() -> Unit)? = null) {
+fun PointsContent(
+    entries: List<ScoreEntry>,
+    nowMs: Long,
+    onClose: () -> Unit,
+    onReset: () -> Unit,
+    onWrapped: (() -> Unit)? = null,
+    friends: List<Friend> = emptyList(),
+) {
     val total = ScoreBook.total(entries)
     val level = Levels.of(total)
     val year = ScoreBook.year(entries, ScoreBook.yearOf(nowMs))
@@ -210,6 +224,8 @@ fun PointsContent(entries: List<ScoreEntry>, nowMs: Long, onClose: () -> Unit, o
             ProgressBar(level.progress(total))
             Text(toNext(total), style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
         }
+
+        FriendsCard(friends, Friend(ME, "You", level.index, total, year.points, nowMs), nowMs)
 
         if (onWrapped != null) WrappedCard(WrappedLogic.yearFor(nowMs), WrappedLogic.season(nowMs), onWrapped)
         GlassCard(spacing = 12.dp) {
@@ -287,6 +303,74 @@ fun PointsContent(entries: List<ScoreEntry>, nowMs: Long, onClose: () -> Unit, o
                 }
             }
         }
+    }
+}
+
+private const val ME = "\u0000me"
+private const val FRIENDS_SHOWN = 10
+
+/**
+ * Friends leaderboard: everyone I've ridden with (Points & badges on), with their level, as of our
+ * last ride together. There's no server, so it updates whenever we ride together.
+ */
+@Composable
+private fun FriendsCard(friends: List<Friend>, me: Friend, nowMs: Long) {
+    GlassCard(spacing = 8.dp) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Ico(R.drawable.ms_groups, 22.dp, Palette.Accent)
+            Spacer(Modifier.width(8.dp))
+            SectionLabel("Friends", Modifier.weight(1f))
+        }
+        if (friends.isEmpty()) {
+            Text(
+                "Ride with friends who have Points & badges on and they show up here, with their level.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            return@GlassCard
+        }
+        val board = Friends.board(friends, me)
+        board.take(FRIENDS_SHOWN).forEachIndexed { i, f ->
+            val isMe = f.id == ME
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("${i + 1}", style = MaterialTheme.typography.titleMedium, color = if (i == 0) Palette.Amber else Palette.TextTertiary, modifier = Modifier.width(26.dp))
+                LevelMedal(f.level, 30.dp)
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(if (isMe) "You" else f.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        Levels.name(f.level) + if (isMe) "" else " · " + seenAgo(f.seenAtMs, nowMs),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Palette.TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Text(
+                    f.total?.let(::num) ?: "–",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (isMe) Palette.Accent else Palette.TextPrimary,
+                )
+            }
+        }
+        if (board.size > FRIENDS_SHOWN) {
+            Text("and ${board.size - FRIENDS_SHOWN} more", style = MaterialTheme.typography.labelSmall, color = Palette.TextTertiary)
+        }
+        Text(
+            "Points as of your last ride together. They update whenever you ride with them.",
+            style = MaterialTheme.typography.labelSmall,
+            color = Palette.TextTertiary,
+        )
+    }
+}
+
+/** "rode together today / yesterday / 5 days ago / 12 Sep". */
+internal fun seenAgo(atMs: Long, nowMs: Long): String {
+    val days = ((nowMs - atMs) / 86_400_000L).toInt()
+    return when {
+        days <= 0 -> "rode together today"
+        days == 1 -> "rode together yesterday"
+        days < 30 -> "rode together $days days ago"
+        else -> "rode together " + java.text.SimpleDateFormat("d MMM", Locale.US).format(java.util.Date(atMs))
     }
 }
 

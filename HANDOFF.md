@@ -337,6 +337,12 @@ different brands → crash reports → test SOS/crash on purpose → fix → Pla
   moves". After the hit, GPS (every 2 s, fixes better than 30 m) decides for 10 s: riding speed (≥ 3 m/s) or 50 m
   away = rode on, not a crash; GPS answering and the bike staying put = crash (`Reason.STOPPED`), however the
   phone moves; no usable GPS = the phone must lie still (`Reason.STILL`). GPS is asked only after the hit.
+- **Fine-tune (build #68):** the owner asked to change the g value, the time and the distance to test. Sliders on
+  the test screen (`CrashTuning`, Prefs `crash_g` / `crash_wait_s` / `crash_move_m`, `CrashLogic.tuned`), saved and
+  used on rides too; the test restarts when a slider is let go.
+- **Friends leaderboard (build #68, app + web):** `rc-score` now carries `total`; each phone keeps riding friends'
+  latest level and points (`score/Friends`, Prefs `score_friends`; web `rc-web-friends`) and the Points page shows
+  them with mine, best first. Web needs "publish the web".
 - **Battery savers** (`ride/BatteryGuard.kt`, `BatteryTips`): home card + Settings button, brand steps.
 - **First join in a dead zone** ended the ride at once: now ~1 minute of retries (`FIRST_JOIN_TRIES`), only a
   setting the rider must fix (`RidePassError.retryable = false`) ends it straight away.

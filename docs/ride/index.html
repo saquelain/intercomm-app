@@ -603,7 +603,8 @@
   html.look-neu .badge.got, html.look-neu .newbadge { background: linear-gradient(135deg, #fff8e6, #fdebc8); border: 0; box-shadow: var(--neu-out-sm); }
   html.look-neu .pbar { background: #dfe2ef; box-shadow: var(--neu-in); }
   html.look-neu .bic { background: #dfe2ef; }
-  html.look-neu .pts.me, html.look-neu .pts.big { color: #2f6bff; } html.look-neu .streak { color: #e5670c; }
+  html.look-neu .pts.me, html.look-neu .pts.big { color: #2f6bff; }
+  .ficon { color: #FF8A1F; display: inline-flex; } html.look-neu .ficon { color: #2f6bff; } html.look-glass .ficon { color: #fff; } html.look-neu .streak { color: #e5670c; }
 
   /* My garage: notes with a coloured dot, odometer, service rows, papers with a date */
   .gnote { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 16px; }
@@ -3774,7 +3775,8 @@
   }
   const ridePoints = () => { const e = scoreEntry(); return e ? points(e) : 0; };
   function myYear() { const y = new Date().getFullYear(), id = SC.ride && SC.ride.id; return total(loadScore().filter((e) => e.id !== id && new Date(e.at).getFullYear() === y)) + ridePoints(); }
-  function myLevel() { const id = SC.ride && SC.ride.id; return levelOf(total(loadScore().filter((e) => e.id !== id)) + ridePoints()); }
+  function myTotal() { const id = SC.ride && SC.ride.id; return total(loadScore().filter((e) => e.id !== id)) + ridePoints(); }
+  function myLevel() { return levelOf(myTotal()); }
   function scoreTick() {
     const r = SC.ride; if (!r) return;
     const now = Date.now();
@@ -3790,14 +3792,47 @@
   function sendScore(to) {
     if (!SC.ride || !S.room) return;
     const p = ridePoints(); SC.lastSent = p; SC.lastSentAt = Date.now();
-    send(T.score, { t: 'score', name: S.name, level: myLevel(), ride: p, year: myYear() }, to);
+    send(T.score, { t: 'score', name: S.name, level: myLevel(), ride: p, year: myYear(), total: myTotal() }, to);
   }
   function onScore(o, from) {
     // Kept even before my own count starts: riders already there answer the moment I join.
     if (o.t !== 'score' || !SET.points) return;
     SC.peers.set(from, { name: String(o.name || 'Rider').slice(0, 40), level: Math.max(0, Math.min(LEVELS.length - 1, o.level | 0)),
       ride: Math.max(0, o.ride | 0), year: Math.max(0, o.year | 0) });
+    const p = SC.peers.get(from);
+    rememberFriend({ id: from, name: p.name, level: p.level, total: typeof o.total === 'number' ? Math.max(0, o.total | 0) : null, year: p.year, seen: Date.now() });
     renderScoreCard();
+  }
+
+  // ---- Friends: who I've ridden with, at which level (as of our last ride together; same rules as the app's Friends) ----
+  function loadFriends() {
+    try { const l = JSON.parse(store.get('rc-web-friends') || '[]'); return Array.isArray(l) ? l.filter((f) => f && f.id) : []; } catch (e) { return []; }
+  }
+  function rememberFriend(f) {
+    const list = [f].concat(loadFriends().filter((x) => x.id !== f.id)).sort((a, b) => b.seen - a.seen).slice(0, 50);
+    store.set('rc-web-friends', JSON.stringify(list));
+  }
+  /** What the board sorts by: the real total, or the least a rider at that level has (older apps send no total). */
+  const rankPts = (f) => (f.total != null ? f.total : LEVELS[Math.max(0, Math.min(LEVELS.length - 1, f.level | 0))][1]);
+  function friendsBoard(me) {
+    return loadFriends().filter((f) => f.id !== me.id).concat([me])
+      .sort((a, b) => rankPts(b) - rankPts(a) || (b.year || 0) - (a.year || 0) || (a.me ? 0 : 1) - (b.me ? 0 : 1));
+  }
+  function seenAgo(at, now) {
+    const d = Math.floor((now - at) / 86400000);
+    return 'rode together ' + (d <= 0 ? 'today' : d === 1 ? 'yesterday' : d < 30 ? d + ' days ago'
+      : new Date(at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
+  }
+  function friendsHtml(t, lv, yearPts, now) {
+    const friends = loadFriends();
+    const head = '<div class="card" id="friendsCard"><div class="row"><span class="ficon">' + icon(P.groups) + '</span><div class="label grow">Friends</div></div>';
+    if (!friends.length) return head + '<p style="margin-top:6px">Ride with friends who have Points &amp; badges on and they show up here, with their level.</p></div>';
+    const board = friendsBoard({ id: myId, name: 'You', level: lv, total: t, year: yearPts, seen: now, me: true });
+    return head + board.slice(0, 10).map((f, i) => '<div class="rider"><span class="rank' + (i === 0 ? ' first' : '') + '">' + (i + 1) + '</span>' + medal(f.level, 'sm') +
+      '<div class="grow"><div class="rname">' + (f.me ? 'You' : esc(f.name)) + '</div><div class="rsub">' + LEVELS[f.level][0] + (f.me ? '' : ' · ' + seenAgo(f.seen, now)) + '</div></div>' +
+      '<div class="pts' + (f.me ? ' me' : '') + '">' + (f.total != null ? num(f.total) : '–') + '</div></div>').join('') +
+      (board.length > 10 ? '<p class="note" style="font-size:13px">and ' + (board.length - 10) + ' more</p>' : '') +
+      '<p class="note" style="font-size:13px">Points as of your last ride together. They update whenever you ride with them.</p></div>';
   }
   function saveScore() { const e = scoreEntry(); if (e) writeScore([e].concat(loadScore().filter((x) => x.id !== e.id))); }
   /** The ride ended: keep its entry (if the ride was long enough) and say any new badge. */
@@ -3846,6 +3881,7 @@
       '<p>Kept on this phone · never for speed</p>' + wrappedButton(now) +
       '<div class="card"><div class="row">' + medal(lv, 'big') + '<div class="grow"><div class="label">Level ' + (lv + 1) + ' of ' + LEVELS.length + '</div><div class="lvname">' + LEVELS[lv][0] + '</div>' +
       '<div class="rsub">' + num(t) + ' points</div></div></div>' + pbar(levelProgress(t)) + '<div class="rsub small">' + toNext(t) + '</div></div>' +
+      friendsHtml(t, lv, y.points, now) +
       '<div class="card"><div class="label">This year · ' + y.year + '</div><div class="stats" style="margin-top:10px">' +
       statTile(num(Math.floor(y.km)), 'km', 'Distance') + statTile(y.rides, '', y.rides === 1 ? 'Ride' : 'Rides') + statTile(hours > 0 ? hours : y.min, hours > 0 ? 'h' : 'min', 'Riding time') +
       statTile(num(y.points), '', 'Points') + statTile(num(Math.floor(y.longest)), 'km', 'Longest ride') + statTile(streak, streak === 1 ? 'week' : 'weeks', 'Week streak') + '</div>' +

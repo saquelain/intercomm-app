@@ -120,6 +120,11 @@ between phones).
 - **Battery saver warning:** a home card (and a button in Settings → Background & over apps) when Android may stop
   RideComm in the background, opening RideComm's App info with the steps for the phone's brand (Xiaomi, Samsung,
   Oppo/Realme/OnePlus, Vivo, Huawei/Honor…).
+- **Friends leaderboard** (Points page): everyone you've ridden with who has Points & badges on, with their level
+  (Rookie… Legend) and total points as of your last ride together, best first. Kept on the phone, updated each ride.
+- **Fine-tune crash detection** (on the test screen, also used on rides): hit strength (2–8 g, usually 4), how long
+  to watch after the hit (5–30 s, usually 10) and how far the bike may move and still count as stopped (20–200 m,
+  usually 50). "Back to the usual settings" undoes it.
 - **Report a problem:** at the bottom of Settings, and "Send report" after a crash: the phone's details (and the
   last crash) in a message the rider sends by email or any app. `Support.EMAIL` sets the developer's address.
 - **Profile:** name and photo are set once (first run, then Settings). Photos are shared with the ride and shown

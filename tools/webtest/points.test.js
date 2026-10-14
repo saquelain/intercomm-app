@@ -118,6 +118,9 @@ const BASE = 'http://127.0.0.1:8765/';
     check('Asha leads the ride points: You +134', /1\s*You.*\+134/.test(mine));
     check('Bilal sees Asha +134 at the top', /1\s*Asha\s*Rookie\s*\+134/.test(theirs));
     await shot(b, 'p1_ride_board.png', '#scoreCard');
+    // (Both test riders share one browser's storage, so the list also holds Bilal, as Asha's friend.)
+    const bf = (await b.evaluate(() => JSON.parse(localStorage.getItem('rc-web-friends') || '[]'))).find((f) => f.id === 'web-a');
+    check('Bilal remembers Asha as a friend: Rookie, 134 points', !!bf && bf.name === 'Asha' && bf.total === 134 && bf.level === 0);
 
     // Leaving (not home yet): the summary with the points and the new badge.
     await a.click('#leaveBtn');
@@ -156,6 +159,9 @@ const BASE = 'http://127.0.0.1:8765/';
     check('Page: badges 1 of 16, progress on the locked ones', pg.includes('1 of 16') && pg.includes('74 / 100 km') && pg.includes('1 / 10 hazards') && pg.includes('1 / 5 rides'));
     check('Page: one bar for this month', (await a.$$('#pointsSheetIn .mb i:not(.none)')).length === 1);
     check('Page: how to earn points, never for speed', pg.includes('Never for speed') && pg.includes('Legend 12,000'));
+    const fr = await text(a, '#friendsCard');
+    check('Page: friends board, me first (149) above Bilal (0), with levels', /1\s*You\s*Rookie\s*149/.test(fr) && /2\s*Bilal\s*Rookie · rode together today\s*0/.test(fr));
+    await shot(a, 'p_friends.png', '#friendsCard');
     await shot(a, 'p4_page_classic.png');
     await a.click('#pointsClose');
     for (const look of ['glass', 'neu']) {

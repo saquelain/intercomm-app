@@ -346,3 +346,54 @@ class BreakCounter {
         const val MIN_MS = 10 * 60_000L
     }
 }
+
+/**
+ * A riding friend's level and points, as they last shared them in a ride together (`rc-score`).
+ * [total] is null for phones on an older version, which share only their level and year.
+ */
+data class Friend(val id: String, val name: String, val level: Int, val total: Int?, val year: Int, val seenAtMs: Long) {
+    /** What the board sorts by: the real total, or the least a rider at that level has. */
+    val rankPoints: Int get() = total ?: Levels.all[level.coerceIn(0, Levels.all.lastIndex)].minPoints
+}
+
+/**
+ * The friends leaderboard: everyone I've ridden with who shares points, kept on this phone and
+ * updated each time we ride together (there's no server, so it's "as of our last ride").
+ */
+object Friends {
+    const val KEEP = 50
+
+    fun update(list: List<Friend>, f: Friend): List<Friend> =
+        (listOf(f) + list.filter { it.id != f.id }).sortedByDescending { it.seenAtMs }.take(KEEP)
+
+    /** Me and my friends, best first (ties: the higher year, then me first). */
+    fun board(list: List<Friend>, me: Friend): List<Friend> =
+        (list.filter { it.id != me.id } + me).sortedWith(
+            compareByDescending<Friend> { it.rankPoints }.thenByDescending { it.year }.thenBy { it.id != me.id },
+        )
+
+    fun toJson(list: List<Friend>): String = JSONArray().apply {
+        list.forEach { f ->
+            put(
+                JSONObject().put("id", f.id).put("name", f.name).put("level", f.level).put("year", f.year).put("seen", f.seenAtMs)
+                    .apply { f.total?.let { put("total", it) } },
+            )
+        }
+    }.toString()
+
+    fun fromJson(text: String?): List<Friend> = runCatching {
+        val a = JSONArray(text ?: return emptyList())
+        (0 until a.length()).mapNotNull { i ->
+            val o = a.optJSONObject(i) ?: return@mapNotNull null
+            val id = o.optString("id").ifBlank { return@mapNotNull null }
+            Friend(
+                id = id,
+                name = o.optString("name").ifBlank { "Rider" }.take(40),
+                level = o.optInt("level", 0).coerceIn(0, Levels.all.lastIndex),
+                total = if (o.has("total")) o.optInt("total", 0).coerceAtLeast(0) else null,
+                year = o.optInt("year", 0).coerceAtLeast(0),
+                seenAtMs = o.optLong("seen", 0),
+            )
+        }
+    }.getOrDefault(emptyList())
+}

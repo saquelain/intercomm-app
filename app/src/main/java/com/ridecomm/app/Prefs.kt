@@ -141,6 +141,21 @@ object Prefs {
         prefs(context).edit().putBoolean("battery_tip_hidden", hidden).apply()
     }
 
+    /** Crash detection's own numbers (hit strength, watch time, distance), set on the test screen. */
+    fun crashTuning(context: Context): com.ridecomm.app.crash.CrashTuning {
+        val p = prefs(context)
+        return com.ridecomm.app.crash.CrashTuning(
+            p.getFloat("crash_g", com.ridecomm.app.crash.CrashLogic.IMPACT_G),
+            p.getInt("crash_wait_s", 10),
+            p.getInt("crash_move_m", 50),
+        ).safe()
+    }
+
+    fun setCrashTuning(context: Context, t: com.ridecomm.app.crash.CrashTuning) {
+        val s = t.safe()
+        prefs(context).edit().putFloat("crash_g", s.g).putInt("crash_wait_s", s.waitS).putInt("crash_move_m", s.moveM).apply()
+    }
+
     /** Start the SOS countdown automatically after a hard impact followed by no movement. */
     fun crashDetection(context: Context): Boolean = prefs(context).getBoolean(KEY_CRASH_DETECTION, true)
 
@@ -418,6 +433,11 @@ object Prefs {
 
     /** Points & badges: earn points for each ride; riders in the ride see each other's. On by default. */
     fun points(context: Context): Boolean = prefs(context).getBoolean(KEY_POINTS, true)
+
+    /** Riding friends' levels and points from our last ride together (JSON, see score/Friends). */
+    fun scoreFriends(context: Context): String? = prefs(context).getString("score_friends", null)
+
+    fun setScoreFriends(context: Context, json: String) = prefs(context).edit().putString("score_friends", json).apply()
 
     fun setPoints(context: Context, on: Boolean) = prefs(context).edit().putBoolean(KEY_POINTS, on).apply()
 

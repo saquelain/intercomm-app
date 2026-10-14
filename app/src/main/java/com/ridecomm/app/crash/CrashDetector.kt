@@ -70,7 +70,7 @@ object CrashDetector {
         val accelerometer = sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) ?: return
         val t = HandlerThread("RideComm-crash").apply { start() }
         thread = t
-        logic = CrashLogic()
+        logic = CrashLogic.tuned(Prefs.crashTuning(app))
         val handler = Handler(t.looper)
         sensors.registerListener(sensorListener, accelerometer, SAMPLING_US, handler)
         startGps(app, gpsListener, t.looper)
@@ -167,7 +167,7 @@ object CrashDetector {
             _test.value = TestState(noSensor = true)
             return
         }
-        testLogic = CrashLogic()
+        testLogic = CrashLogic.tuned(Prefs.crashTuning(app))
         testing = true
         val t = HandlerThread("RideComm-crash-test").apply { start() }
         testThread = t
@@ -183,7 +183,7 @@ object CrashDetector {
         testThread = null
         _test.value = _test.value.copy(running = false)
         // The ride's detector starts afresh, so the test throw doesn't count afterwards either.
-        if (testing) logic = CrashLogic()
+        if (testing) logic = CrashLogic.tuned(Prefs.crashTuning(context))
         testing = false
     }
 }

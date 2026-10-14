@@ -29,6 +29,8 @@ class CrashLogic(
     private val freeFallMs: Long = 120,
     private val settleMs: Long = 2_000,
     private val windowMs: Long = 10_000,
+    /** Further than this (metres) from the hit means the bike moved on (a crash slide stays shorter). */
+    private val movedM: Float = 50f,
     /** Std-dev of acceleration (m/s²) below which the phone counts as still. */
     private val stillStdDev: Float = 0.8f,
     private val cooldownMs: Long = 60_000,
@@ -84,7 +86,7 @@ class CrashLogic(
             fixesInWindow++
             val from = hitFix ?: fix.also { hitFix = it }
             val away = distanceM(from, fix)
-            if ((speedMs ?: 0f) >= RIDING_SPEED_MS || away > maxOf(MOVED_M, from.accuracyM + fix.accuracyM)) bikeMoved = true
+            if ((speedMs ?: 0f) >= RIDING_SPEED_MS || away > maxOf(movedM, from.accuracyM + fix.accuracyM)) bikeMoved = true
         }
         lastFix = fix
     }
@@ -181,6 +183,9 @@ class CrashLogic(
         const val GRAVITY = 9.81f
         /** A hit this hard (in g) starts the watch. */
         const val IMPACT_G = 4.0f
+
+        /** A detector with the rider's own settings (Settings → Safety → Test crash detection → Fine-tune). */
+        fun tuned(t: CrashTuning) = CrashLogic(impactG = t.g, windowMs = t.waitS * 1_000L, movedM = t.moveM.toFloat())
         /**
          * Readings needed in the still window to judge it. Low on purpose: some phones slow the
          * sensor right down with the screen off (a few readings a second), and 50 used to make
@@ -189,8 +194,6 @@ class CrashLogic(
         private const val MIN_SAMPLES = 15
         /** Faster than this (about 11 km/h) after the hit means riding on. Walking is well below. */
         private const val RIDING_SPEED_MS = 3.0f
-        /** Further than this from the hit means the bike moved on (a crash slide stays shorter). */
-        private const val MOVED_M = 50f
         private const val GOOD_FIX_M = 30f
         private const val FIX_STALE_MS = 15_000L
 
@@ -201,5 +204,25 @@ class CrashLogic(
             return (r * sqrt(dLat * dLat + dLon * dLon)).toFloat()
         }
         private const val LANDING_WINDOW_MS = 1_000L
+    }
+}
+
+/**
+ * The three numbers a rider can change on the test screen to fit their phone and bike: how hard a
+ * hit must be, how long to watch afterwards, and how far the bike may go and still count as stopped.
+ */
+data class CrashTuning(val g: Float = CrashLogic.IMPACT_G, val waitS: Int = 10, val moveM: Int = 50) {
+    /** Kept inside sensible limits whatever is stored. */
+    fun safe() = CrashTuning(g.coerceIn(G_MIN, G_MAX), waitS.coerceIn(WAIT_MIN, WAIT_MAX), moveM.coerceIn(MOVE_MIN, MOVE_MAX))
+
+    val isDefault: Boolean get() = this == CrashTuning()
+
+    companion object {
+        const val G_MIN = 2f
+        const val G_MAX = 8f
+        const val WAIT_MIN = 5
+        const val WAIT_MAX = 30
+        const val MOVE_MIN = 20
+        const val MOVE_MAX = 200
     }
 }
