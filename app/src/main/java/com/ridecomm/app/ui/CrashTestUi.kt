@@ -29,7 +29,8 @@ import java.util.Locale
 
 /**
  * Settings → Safety → Test crash detection: the rider throws the phone onto a bed and sees, step by
- * step, what the detector felt. Same logic as on a ride, except it never sends anything. Riders trust a safety feature they've seen work.
+ * step, what the detector felt and whether GPS or the phone's stillness decided. Same logic as on a
+ * ride, except it never sends anything. Riders trust a safety feature they've seen work.
  */
 @Composable
 fun CrashTestDialog(onClose: () -> Unit) {
@@ -50,7 +51,7 @@ fun CrashTestContent(state: CrashDetector.TestState, onAgain: () -> Unit, onClos
     Text("Test crash detection", style = MaterialTheme.typography.headlineMedium)
     Text(
         "1. Throw your phone onto a bed or sofa, or drop it onto a cushion.\n" +
-            "2. Leave it there, untouched, for about 12 seconds.",
+            "2. Wait about 12 seconds. You can pick it up and walk around: as long as you don't ride off, it counts.",
         style = MaterialTheme.typography.bodyLarge,
         color = Palette.TextPrimary,
     )
@@ -61,21 +62,23 @@ fun CrashTestContent(state: CrashDetector.TestState, onAgain: () -> Unit, onClos
             "A hit needs ${CrashLogic.IMPACT_G.toInt()} g, or a fall and a landing. Hardest so far: ${g(state.peakG)}.",
             Palette.TextSecondary,
         )
-        state.phase == CrashLogic.Phase.SETTLING -> Triple("Hit felt: ${g(state.impactG)}", "Now don't touch the phone…", Palette.Amber)
+        state.phase == CrashLogic.Phase.SETTLING -> Triple("Hit felt: ${g(state.impactG)}", "Checking what happens next…", Palette.Amber)
         state.phase == CrashLogic.Phase.STILL -> Triple(
             "Hit felt: ${g(state.impactG)}",
-            "Keep it still… ${((1 - state.stillProgress) * 10).toInt().coerceAtLeast(1)} s",
+            (if (state.gps) "GPS: checking the bike stays put… " else "No GPS yet: keep the phone still… ") +
+                "${((1 - state.stillProgress) * 10).toInt().coerceAtLeast(1)} s",
             Palette.Amber,
         )
         state.phase == CrashLogic.Phase.MOVED -> Triple(
-            "It moved, so not a crash",
-            "After a crash the phone lies still. Leave it alone for the whole 12 seconds, or try again.",
+            "Not a crash",
+            "Either GPS showed you moving on (riding), or, without GPS, the phone moved. " +
+                "Without GPS the phone has to lie still for the 12 seconds. Try again.",
             Palette.TextSecondary,
         )
         else -> Triple(
             "Crash detected ✓",
-            "On a ride, the SOS countdown would start now: 15 seconds to cancel before your group gets the SOS. " +
-                "Nothing was sent.",
+            (if (state.reason == CrashLogic.Reason.STOPPED) "GPS showed the bike stayed put after the hit. " else "The phone lay still after the hit. ") +
+                "On a ride, the SOS countdown would start now: 15 seconds to cancel before your group gets the SOS. Nothing was sent.",
             Palette.Go,
         )
     }
@@ -96,8 +99,9 @@ fun CrashTestContent(state: CrashDetector.TestState, onAgain: () -> Unit, onClos
         }
     }
     Text(
-        "On a ride it works the same way, with Crash detection on. A phone dropped at a stop can start the " +
-            "countdown too: just tap to cancel it.",
+        "On a ride it works the same way, with Crash detection on: after a hard hit, if the bike doesn't move on, " +
+            "the SOS countdown starts, even if you got up. A phone dropped at a stop can start it too: tap to cancel. " +
+            "With location off it falls back to the phone lying still.",
         style = MaterialTheme.typography.bodyMedium,
     )
     ButtonRow(2) {

@@ -1040,4 +1040,6 @@ open class ScreenshotTest {
     @Test fun batteryCard() = shot("166_battery_card") {
         Column(Modifier.padding(20.dp)) { BatteryTipContent(com.ridecomm.app.ride.BatteryTips.forBrand("samsung"), {}, {}) }
     }
+    @Test fun crashTestGps() = crashTestShot("167_crash_test_gps", com.ridecomm.app.crash.CrashDetector.TestState(true, com.ridecomm.app.crash.CrashLogic.Phase.STILL, 5.1f, 5.1f, 0.3f, gps = true))
+    @Test fun crashTestStopped() = crashTestShot("168_crash_test_stopped", com.ridecomm.app.crash.CrashDetector.TestState(true, com.ridecomm.app.crash.CrashLogic.Phase.CRASH, 5.1f, 5.1f, 1f, gps = true, reason = com.ridecomm.app.crash.CrashLogic.Reason.STOPPED))
 }

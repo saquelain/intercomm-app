@@ -110,9 +110,10 @@ between phones).
   When a rider drifts more than 1 km away everyone hears "Rahul is 1.2 kilometers behind" (again at each further
   kilometre), and "Rahul is back with the group" once they're within 500 m.
 - **Crash detection:** during a ride the accelerometer (100 readings a second) watches for a hard impact (over
-  4 g), or a fall (under 0.5 g for 0.12 s, then a landing over 2 g), followed by the phone lying still for 10 s.
-  No speed check (it kept the owner's real tests from firing), so a phone dropped at a stop can start the
-  countdown too; the rider cancels it. It then starts a 15-second SOS countdown ("Crash detected", tap anywhere to cancel); others hear "Rahul may have crashed".
+  4 g), or a fall (under 0.5 g for 0.12 s, then a landing over 2 g). For the next 10 s it checks GPS: if the bike
+  stays put (no riding speed, not 50 m away), it's a crash **even if the rider got up and walked around**; if
+  the bike moves on, it was a pothole. Without GPS the phone must lie still instead. A phone dropped at a stop
+  can start the countdown too; the rider cancels it. It then starts a 15-second SOS countdown ("Crash detected", tap anywhere to cancel); others hear "Rahul may have crashed".
   A cancelled alarm mutes detection for a minute. Can be turned off in Settings. **Settings → Safety → Test crash
   detection** shows it working at home (throw the phone onto a bed): same logic, sends nothing; while it is open the
   ride's own detector ignores hits.

@@ -82,16 +82,15 @@ class CrashLogicTest {
     }
 
     @Test
-    fun pickingThePhoneUpEndsTheWatchEarly() {
+    fun withoutGpsPickingThePhoneUpIsNotACrash() {
         val logic = CrashLogic()
         logic.onSample(1_000, 6 * g)
         assertEquals(CrashLogic.Phase.SETTLING, logic.phase)
         assertFalse(logic.feed(1_020, 4_000) { still() })
         assertEquals(CrashLogic.Phase.STILL, logic.phase)
-        assertFalse(logic.feed(5_020, 2_000) { g + random.nextFloat() * 10f - 5f })
+        assertFalse(logic.feed(5_020, 10_000) { g + random.nextFloat() * 10f - 5f })
         assertEquals(CrashLogic.Phase.MOVED, logic.phase)
     }
-
 
     @Test
     fun aDropAtAStopNowCountsToo() {
@@ -123,5 +122,68 @@ class CrashLogicTest {
         assertFalse(logic.feed(1_000, 200) { 0.4f * g })
         assertFalse(logic.onSample(1_200, 2.2f * g))
         assertTrue(logic.feed(1_220, 14_000) { still() })
+    }
+
+    // ---- GPS after the hit: did the bike stay put? ----
+
+    private val lat = 18.7546
+    private val lon = 73.4062
+    /** About [m] metres north of the start. */
+    private fun north(m: Double) = lat + m / 111_000.0
+
+    @Test
+    fun riderGetsUpAndWalksAroundButTheBikeStaysIsACrash() {
+        val logic = CrashLogic()
+        logic.onLocation(9_000, lat, lon, 8f, 12f) // riding at 43 km/h
+        logic.onSample(10_000, 7 * g) // the crash
+        // Up on their feet, phone in hand (shaking), walking about near the bike.
+        var fired = false
+        var t = 10_020L
+        while (t < 24_000) {
+            if (logic.onSample(t, g + random.nextFloat() * 8f - 4f)) fired = true
+            if (t % 2_000 == 20L) logic.onLocation(t, north(((t - 10_000) / 1_000) * 0.8), lon, 6f, 1.1f)
+            t += 20
+        }
+        assertTrue(fired)
+        assertEquals(CrashLogic.Reason.STOPPED, logic.reason)
+    }
+
+    @Test
+    fun aPotholeAndRidingOnIsNotACrash() {
+        val logic = CrashLogic()
+        logic.onLocation(9_000, lat, lon, 8f, 14f)
+        logic.onSample(10_000, 5 * g)
+        var fired = false
+        var t = 10_020L
+        while (t < 24_000) {
+            if (logic.onSample(t, still())) fired = true // even a phone that reads calm on the mount
+            if (t % 2_000 == 20L) logic.onLocation(t, north((t - 9_000) / 1_000 * 14.0), lon, 6f, 14f)
+            t += 20
+        }
+        assertFalse(fired)
+        assertEquals(CrashLogic.Phase.MOVED, logic.phase)
+    }
+
+    @Test
+    fun ridingOffSlowlyWithoutASpeedReadingIsNotACrash() {
+        // No speed from GPS, but 60 m away within the window: rode on.
+        val logic = CrashLogic()
+        logic.onLocation(9_500, lat, lon, 8f, null)
+        logic.onSample(10_000, 5 * g)
+        logic.onLocation(13_000, north(20.0), lon, 8f, null)
+        logic.onLocation(17_000, north(60.0), lon, 8f, null)
+        assertFalse(logic.feed(10_020, 14_000) { still() })
+        assertEquals(CrashLogic.Phase.MOVED, logic.phase)
+    }
+
+    @Test
+    fun wanderingIndoorGpsIsIgnored() {
+        // Poor fixes (60 m accuracy) jumping about: ignored, so the phone's stillness decides.
+        val logic = CrashLogic()
+        logic.onSample(10_000, 6 * g)
+        logic.onLocation(13_000, lat, lon, 60f, 4f)
+        logic.onLocation(15_000, north(120.0), lon, 60f, 5f)
+        assertTrue(logic.feed(10_020, 14_000) { still() })
+        assertEquals(CrashLogic.Reason.STILL, logic.reason)
     }
 }

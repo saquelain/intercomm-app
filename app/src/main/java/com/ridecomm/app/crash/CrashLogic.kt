@@ -3,19 +3,23 @@ package com.ridecomm.app.crash
 import kotlin.math.sqrt
 
 /**
- * Decides from accelerometer readings whether the rider has crashed:
+ * Decides whether the rider has crashed:
  *
  * 1. **Impact**: total acceleration above [impactG] (a hard hit; road bumps on a phone mount stay
  *    well below this), or a **fall**: the phone in free fall (almost no acceleration) for
  *    [freeFallMs], then a landing above [landingG] within a second (a phone flying out of a pocket
  *    or off the mount, when the hit itself is soft).
- * 2. **No movement**: after a [settleMs] pause for the bike/phone to come to rest, the phone stays
- *    almost perfectly still for [stillWindowMs] (riding, walking or picking the phone up shake it).
+ * 2. Then, after a [settleMs] pause, a [windowMs] look at what happens next:
+ *    - **GPS says the bike moved on** (riding speed, or well away from where the hit was): a pothole
+ *      or a dropped phone while riding. Not a crash.
+ *    - **GPS says the bike stayed put**: a crash, even if the rider got up and walked around with the
+ *      phone (the owner's rule: a rider who gets up can still be hurt, and the countdown can be cancelled).
+ *    - **No GPS** (location off, tunnel, indoors): the phone must lie still, as before.
  *
- * There is no speed check: GPS speed is often missing or late, and it kept real tests from firing
- * (the owner's, Oct 2026). A phone dropped at a stop can start the countdown; the rider cancels it.
+ * GPS is only asked *after* the hit. An earlier rule ("was riding fast just before") kept real tests from
+ * firing (Oct 2026) and is gone. A phone dropped at a stop starts the countdown; the rider cancels it.
  *
- * Plain Kotlin with timestamps passed in, so it can be tested without a phone. [phase] and
+ * Plain Kotlin with timestamps passed in, so it can be tested without a phone. [phase], [reason] and
  * [peakG] say what it is doing, for the test screen.
  */
 class CrashLogic(
@@ -24,12 +28,15 @@ class CrashLogic(
     private val freeFallG: Float = 0.5f,
     private val freeFallMs: Long = 120,
     private val settleMs: Long = 2_000,
-    private val stillWindowMs: Long = 10_000,
+    private val windowMs: Long = 10_000,
     /** Std-dev of acceleration (m/s²) below which the phone counts as still. */
     private val stillStdDev: Float = 0.8f,
     private val cooldownMs: Long = 60_000,
 ) {
     enum class Phase { WAITING, SETTLING, STILL, MOVED, CRASH }
+
+    /** Why the last crash was called: the phone lay still, or GPS showed the bike had stopped. */
+    enum class Reason { STILL, STOPPED }
 
     /** What the logic is doing now. */
     var phase = Phase.WAITING
@@ -43,6 +50,12 @@ class CrashLogic(
     var impactPeakG = 0f
         private set
 
+    var reason: Reason? = null
+        private set
+
+    /** GPS has answered during the current watch (so the bike rule decides, not the phone's stillness). */
+    val gpsWatching: Boolean get() = impactAt != null && fixesInWindow > 0
+
     private var impactAt: Long? = null
     private var count = 0
     private var sum = 0.0
@@ -52,10 +65,34 @@ class CrashLogic(
     private var freeFallSince: Long? = null
     private var fellAt = Long.MIN_VALUE / 2
 
-    /** How far through the still window, 0..1 (only meaningful in [Phase.STILL]). */
+    private class Fix(val tMs: Long, val lat: Double, val lon: Double, val accuracyM: Float)
+    private var lastFix: Fix? = null
+    /** Where the bike was at the hit (the last good fix before it). */
+    private var hitFix: Fix? = null
+    private var fixesInWindow = 0
+    private var bikeMoved = false
+
+    /**
+     * A GPS fix. [speedMs] is null when the phone doesn't know it; fixes worse than [GOOD_FIX_M] are
+     * ignored (indoors GPS wanders tens of metres, which would look like riding off).
+     */
+    fun onLocation(tMs: Long, lat: Double, lon: Double, accuracyM: Float, speedMs: Float?) {
+        if (accuracyM > GOOD_FIX_M) return
+        val fix = Fix(tMs, lat, lon, accuracyM)
+        val impact = impactAt
+        if (impact != null && tMs >= impact + settleMs) {
+            fixesInWindow++
+            val from = hitFix ?: fix.also { hitFix = it }
+            val away = distanceM(from, fix)
+            if ((speedMs ?: 0f) >= RIDING_SPEED_MS || away > maxOf(MOVED_M, from.accuracyM + fix.accuracyM)) bikeMoved = true
+        }
+        lastFix = fix
+    }
+
+    /** How far through the watch after the hit, 0..1 (only meaningful in [Phase.STILL]). */
     fun stillProgress(tMs: Long): Float {
         val impact = impactAt ?: return 0f
-        return ((tMs - impact - settleMs).toFloat() / stillWindowMs).coerceIn(0f, 1f)
+        return ((tMs - impact - settleMs).toFloat() / windowMs).coerceIn(0f, 1f)
     }
 
     /** Feed one reading of total acceleration magnitude (m/s², gravity included). True = crash. */
@@ -70,7 +107,7 @@ class CrashLogic(
             return false
         }
         val windowStart = impact + settleMs
-        val windowEnd = windowStart + stillWindowMs
+        val windowEnd = windowStart + windowMs
         if (tMs < windowStart) {
             if (g > impactPeakG) impactPeakG = g
             return false
@@ -80,16 +117,20 @@ class CrashLogic(
             count++
             sum += magnitude
             sumSq += magnitude.toDouble() * magnitude
-            // Picked up or still riding: give up early instead of waiting out the window.
-            if (count >= MIN_SAMPLES && std() >= stillStdDev * 2) return moved()
+            // Rode on: no need to wait out the window.
+            if (bikeMoved) return moved()
             return false
         }
         // Window over: decide.
         impactAt = null
-        if (count < MIN_SAMPLES) return moved()
-        val crashed = std() < stillStdDev
-        if (!crashed) return moved()
+        val why = when {
+            bikeMoved -> null
+            fixesInWindow > 0 -> Reason.STOPPED
+            count >= MIN_SAMPLES && std() < stillStdDev -> Reason.STILL
+            else -> null
+        } ?: return moved()
         cooldownUntil = tMs + cooldownMs
+        reason = why
         phase = Phase.CRASH
         return true
     }
@@ -124,6 +165,10 @@ class CrashLogic(
     private fun startWatching(tMs: Long, g: Float) {
         impactAt = tMs
         impactPeakG = g
+        reason = null
+        hitFix = lastFix?.takeIf { tMs - it.tMs <= FIX_STALE_MS }
+        fixesInWindow = 0
+        bikeMoved = false
         phase = Phase.SETTLING
         count = 0
         sum = 0.0
@@ -142,6 +187,19 @@ class CrashLogic(
          * those give up without deciding.
          */
         private const val MIN_SAMPLES = 15
+        /** Faster than this (about 11 km/h) after the hit means riding on. Walking is well below. */
+        private const val RIDING_SPEED_MS = 3.0f
+        /** Further than this from the hit means the bike moved on (a crash slide stays shorter). */
+        private const val MOVED_M = 50f
+        private const val GOOD_FIX_M = 30f
+        private const val FIX_STALE_MS = 15_000L
+
+        private fun distanceM(a: Fix, b: Fix): Float {
+            val r = 6_371_000.0
+            val dLat = Math.toRadians(b.lat - a.lat)
+            val dLon = Math.toRadians(b.lon - a.lon) * kotlin.math.cos(Math.toRadians((a.lat + b.lat) / 2))
+            return (r * sqrt(dLat * dLat + dLon * dLon)).toFloat()
+        }
         private const val LANDING_WINDOW_MS = 1_000L
     }
 }

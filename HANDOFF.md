@@ -333,6 +333,10 @@ different brands → crash reports → test SOS/crash on purpose → fix → Pla
   **speed check is gone** entirely (no GPS in `CrashDetector`), the still window needs only 15 readings (phones that
   slow the sensor with the screen off), the fall is < 0.5 g for 0.12 s and the landing > 2 g. The ride's detector
   ignores hits while the test is open (no real SOS from a test throw mid-ride).
+- **The owner's rule (build #67):** "a rider who crashes and gets up should still trigger it: check whether the bike
+  moves". After the hit, GPS (every 2 s, fixes better than 30 m) decides for 10 s: riding speed (≥ 3 m/s) or 50 m
+  away = rode on, not a crash; GPS answering and the bike staying put = crash (`Reason.STOPPED`), however the
+  phone moves; no usable GPS = the phone must lie still (`Reason.STILL`). GPS is asked only after the hit.
 - **Battery savers** (`ride/BatteryGuard.kt`, `BatteryTips`): home card + Settings button, brand steps.
 - **First join in a dead zone** ended the ride at once: now ~1 minute of retries (`FIRST_JOIN_TRIES`), only a
   setting the rider must fix (`RidePassError.retryable = false`) ends it straight away.

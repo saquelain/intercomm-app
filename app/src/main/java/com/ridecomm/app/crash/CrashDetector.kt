@@ -5,6 +5,9 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.annotation.SuppressLint
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
@@ -12,6 +15,7 @@ import android.os.SystemClock
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.ride.RideManager
 import com.ridecomm.app.ride.RideStatus
+import com.ridecomm.app.sos.LocationHelper
 import com.ridecomm.app.sos.SosManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,8 +23,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlin.math.sqrt
 
 /**
- * Watches the accelerometer during a ride and starts the SOS countdown (15 s, cancellable) when
- * [CrashLogic] sees a hard impact (or a fall) followed by no movement.
+ * Watches the accelerometer (and GPS, when allowed) during a ride and starts the SOS countdown
+ * (15 s, cancellable) when [CrashLogic] sees a hard impact (or a fall) and then the bike staying put.
  */
 object CrashDetector {
     const val COUNTDOWN_SECONDS = 15
@@ -29,6 +33,8 @@ object CrashDetector {
      * second ("game" rate) often read either side of the peak and missed it.
      */
     private const val SAMPLING_US = 10_000
+    /** GPS every 2 s, to see whether the bike moved on after a hit. */
+    private const val GPS_MS = 2_000L
 
     private var appContext: Context? = null
     private var thread: HandlerThread? = null
@@ -49,6 +55,10 @@ object CrashDetector {
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
     }
 
+    private val gpsListener = LocationListener { l ->
+        logic.onLocation(SystemClock.elapsedRealtime(), l.latitude, l.longitude, l.accuracy, if (l.hasSpeed()) l.speed else null)
+    }
+
     val running: Boolean get() = thread != null
 
     /** Called when a ride starts. */
@@ -63,12 +73,14 @@ object CrashDetector {
         logic = CrashLogic()
         val handler = Handler(t.looper)
         sensors.registerListener(sensorListener, accelerometer, SAMPLING_US, handler)
+        startGps(app, gpsListener, t.looper)
     }
 
     /** Called when the ride ends. */
     fun stop() {
         val app = appContext ?: return
         app.getSystemService(SensorManager::class.java).unregisterListener(sensorListener)
+        app.getSystemService(LocationManager::class.java).removeUpdates(gpsListener)
         thread?.quitSafely()
         thread = null
     }
@@ -88,6 +100,17 @@ object CrashDetector {
         }
     }
 
+    @SuppressLint("MissingPermission") // checked by LocationHelper.hasPermission
+    private fun startGps(context: Context, listener: LocationListener, looper: Looper) {
+        if (!LocationHelper.hasPermission(context)) return
+        val lm = context.getSystemService(LocationManager::class.java) ?: return
+        if (!runCatching { lm.isProviderEnabled(LocationManager.GPS_PROVIDER) }.getOrDefault(false)) return
+        try {
+            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPS_MS, 0f, listener, looper)
+        } catch (_: SecurityException) {
+        }
+    }
+
     // ---- Test mode (Settings → Safety → Test crash detection): same logic, never sends ----
 
     /** What the test screen shows. */
@@ -98,6 +121,9 @@ object CrashDetector {
         val impactG: Float = 0f,
         val stillProgress: Float = 0f,
         val noSensor: Boolean = false,
+        /** GPS answered after the hit, so "did the bike stay put" decides. */
+        val gps: Boolean = false,
+        val reason: CrashLogic.Reason? = null,
     )
 
     private val _test = MutableStateFlow(TestState())
@@ -107,6 +133,10 @@ object CrashDetector {
     private var testLogic = CrashLogic()
     private var testShownAt = 0L
 
+    private val testGps = LocationListener { l ->
+        testLogic.onLocation(SystemClock.elapsedRealtime(), l.latitude, l.longitude, l.accuracy, if (l.hasSpeed()) l.speed else null)
+    }
+
     private val testListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
             val (x, y, z) = event.values
@@ -115,7 +145,10 @@ object CrashDetector {
             // The screen needs a few updates a second, not a hundred.
             if (crashed || now - testShownAt >= 150) {
                 testShownAt = now
-                _test.value = TestState(true, testLogic.phase, testLogic.peakG, testLogic.impactPeakG, testLogic.stillProgress(now))
+                _test.value = TestState(
+                    true, testLogic.phase, testLogic.peakG, testLogic.impactPeakG, testLogic.stillProgress(now),
+                    gps = testLogic.gpsWatching, reason = testLogic.reason,
+                )
             }
             if (crashed) main.post { appContext?.let { com.ridecomm.app.overlay.Haptics(it).sos() } }
         }
@@ -140,10 +173,12 @@ object CrashDetector {
         testThread = t
         _test.value = TestState(running = true)
         sensors.registerListener(testListener, accelerometer, SAMPLING_US, Handler(t.looper))
+        startGps(app, testGps, t.looper)
     }
 
     fun stopTest(context: Context) {
         context.applicationContext.getSystemService(SensorManager::class.java).unregisterListener(testListener)
+        context.applicationContext.getSystemService(LocationManager::class.java).removeUpdates(testGps)
         testThread?.quitSafely()
         testThread = null
         _test.value = _test.value.copy(running = false)

@@ -839,7 +839,7 @@ fun SettingsDialog(onClose: () -> Unit, onSaved: () -> Unit = {}, inRide: Boolea
                 }
                 SettingSwitch(
                     "Crash detection",
-                    "During a ride: after a hard hit or a fall, if the phone then lies still, starts a 15-second SOS countdown you can cancel",
+                    "During a ride: after a hard hit or a fall, if the bike doesn't move on (GPS), or the phone lies still, starts a 15-second SOS countdown you can cancel",
                     crashDetection,
                 ) { crashDetection = it }
                 GlassButton("Test crash detection", R.drawable.ms_car_crash, Modifier.fillMaxWidth(), height = 52.dp) { crashTest = true }
