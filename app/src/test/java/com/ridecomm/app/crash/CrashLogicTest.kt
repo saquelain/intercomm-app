@@ -22,6 +22,11 @@ class CrashLogicTest {
         return fired
     }
 
+    private val lat = 18.7546
+    private val lon = 73.4062
+    /** About [m] metres north of the start. */
+    private fun north(m: Double) = lat + m / 111_000.0
+
     private fun riding() = g + random.nextFloat() * 6f - 3f // road vibration, ±3 m/s²
     private fun still() = g + random.nextFloat() * 0.2f - 0.1f
 
@@ -93,8 +98,8 @@ class CrashLogicTest {
     }
 
     @Test
-    fun aDropAtAStopNowCountsToo() {
-        // No speed check any more: GPS speed kept real tests from firing. The rider cancels the countdown.
+    fun withoutGpsADropCountsToo() {
+        // No GPS: no way to tell riding from standing, so the hit gets the benefit of the doubt.
         val logic = CrashLogic()
         logic.onSample(60_000, 6 * g)
         assertTrue(logic.feed(60_020, 14_000) { still() })
@@ -115,21 +120,54 @@ class CrashLogicTest {
     }
 
     @Test
-    fun aSpinningThrowOntoABedCounts() {
-        // In the air the phone spins, so it reads a little above zero; a bed gives a soft 2.2 g landing.
+    fun aThrowOntoABedCounts() {
+        // A quarter of a second in the air (real free fall), a 2.7 g landing on the bed.
         val logic = CrashLogic()
         assertFalse(logic.feed(0, 1_000) { still() })
-        assertFalse(logic.feed(1_000, 200) { 0.4f * g })
-        assertFalse(logic.onSample(1_200, 2.2f * g))
-        assertTrue(logic.feed(1_220, 14_000) { still() })
+        assertFalse(logic.feed(1_000, 260) { 0.15f * g })
+        assertFalse(logic.onSample(1_260, 2.7f * g))
+        assertTrue(logic.byFall)
+        assertTrue(logic.feed(1_280, 14_000) { still() })
     }
 
-    // ---- GPS after the hit: did the bike stay put? ----
+    @Test
+    fun aSwingingHandIsNotAFall() {
+        // Walking with the phone in hand: brief dips to 0.4 g and 2.2 g steps. The old rule (0.5 g, 2 g) fired.
+        val logic = CrashLogic()
+        var t = 0L
+        repeat(20) {
+            logic.feed(t, 150) { 0.4f * g }
+            logic.onSample(t + 150, 2.2f * g)
+            t += 600
+        }
+        assertEquals(CrashLogic.Phase.WAITING, logic.phase)
+    }
 
-    private val lat = 18.7546
-    private val lon = 73.4062
-    /** About [m] metres north of the start. */
-    private fun north(m: Double) = lat + m / 111_000.0
+    @Test
+    fun withFallsOffOnlyAHardHitCounts() {
+        val logic = CrashLogic.tuned(CrashTuning(falls = false))
+        logic.feed(1_000, 300) { 0.1f * g }
+        logic.onSample(1_300, 3f * g)
+        assertEquals(CrashLogic.Phase.WAITING, logic.phase)
+    }
+
+    @Test
+    fun walkingAboutOnARideIsIgnored() {
+        // At a tea stop, GPS shows walking pace for minutes; the phone bangs on a table (6 g).
+        val logic = CrashLogic()
+        var t = 0L
+        while (t < 120_000) {
+            logic.onLocation(t, north(t / 1_000 * 1.2), lon, 6f, 1.2f)
+            t += 2_000
+        }
+        logic.onSample(120_500, 6 * g)
+        assertEquals(CrashLogic.Phase.WAITING, logic.phase)
+        // The test screen skips this check.
+        val test = CrashLogic(requireRiding = false)
+        test.onLocation(119_000, lat, lon, 6f, 1.2f)
+        test.onSample(120_500, 6 * g)
+        assertEquals(CrashLogic.Phase.SETTLING, test.phase)
+    }
 
     @Test
     fun riderGetsUpAndWalksAroundButTheBikeStaysIsACrash() {
@@ -168,7 +206,8 @@ class CrashLogicTest {
     fun ridingOffSlowlyWithoutASpeedReadingIsNotACrash() {
         // No speed from GPS, but 60 m away within the window: rode on.
         val logic = CrashLogic()
-        logic.onLocation(9_500, lat, lon, 8f, null)
+        logic.onLocation(8_500, north(-10.0), lon, 8f, null)
+        logic.onLocation(9_500, lat, lon, 8f, null) // 10 m in a second: riding
         logic.onSample(10_000, 5 * g)
         logic.onLocation(13_000, north(20.0), lon, 8f, null)
         logic.onLocation(17_000, north(60.0), lon, 8f, null)
@@ -211,7 +250,7 @@ class CrashLogicTest {
         // 80 m from the crash spot: "rode on" with the usual 50 m, "stayed put" with 120 m.
         fun run(t: CrashTuning): Boolean {
             val l = CrashLogic.tuned(t)
-            l.onLocation(9_500, lat, lon, 8f, 0f)
+            l.onLocation(9_500, lat, lon, 8f, 8f)
             l.onSample(10_000, 6 * g)
             l.onLocation(14_000, north(80.0), lon, 8f, 1f)
             return l.feed(10_020, 14_000) { still() }
@@ -222,7 +261,7 @@ class CrashLogicTest {
 
     @Test
     fun storedNumbersAreKeptSensible() {
-        assertEquals(CrashTuning(2f, 30, 200), CrashTuning(0.5f, 99, 5_000).safe())
+        assertEquals(CrashTuning(2f, 60, 500), CrashTuning(0.5f, 99, 5_000).safe())
         assertTrue(CrashTuning().isDefault)
     }
 }

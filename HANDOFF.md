@@ -340,6 +340,12 @@ different brands → crash reports → test SOS/crash on purpose → fix → Pla
 - **Fine-tune (build #68):** the owner asked to change the g value, the time and the distance to test. Sliders on
   the test screen (`CrashTuning`, Prefs `crash_g` / `crash_wait_s` / `crash_move_m`, `CrashLogic.tuned`), saved and
   used on rides too; the test restarts when a slider is let go.
+- **Walking set it off (build #69):** the fall rule (0.5 g for 0.12 s, then 2 g) fired on a swinging hand, the
+  g slider didn't touch it, and GPS read walking as "bike stayed put". Now a fall is < 0.3 g for 0.2 s and the
+  landing ≥ max(2.5 g, 60% of the hit strength); "Count falls" can be switched off; on rides, with fresh GPS, a hit
+  only counts after riding ≥ 10 km/h in the last minute (`requireRiding`; the test screen passes false);
+  sliders widened (2–12 g, 5–60 s, 10–500 m). No ML model: there's no crash data to train one, and Android
+  doesn't let apps use Google's own crash detection.
 - **Friends leaderboard (build #68, app + web):** `rc-score` now carries `total`; each phone keeps riding friends'
   latest level and points (`score/Friends`, Prefs `score_friends`; web `rc-web-friends`) and the Points page shows
   them with mine, best first. Web needs "publish the web".

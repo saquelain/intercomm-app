@@ -148,12 +148,13 @@ object Prefs {
             p.getFloat("crash_g", com.ridecomm.app.crash.CrashLogic.IMPACT_G),
             p.getInt("crash_wait_s", 10),
             p.getInt("crash_move_m", 50),
+            p.getBoolean("crash_falls", true),
         ).safe()
     }
 
     fun setCrashTuning(context: Context, t: com.ridecomm.app.crash.CrashTuning) {
         val s = t.safe()
-        prefs(context).edit().putFloat("crash_g", s.g).putInt("crash_wait_s", s.waitS).putInt("crash_move_m", s.moveM).apply()
+        prefs(context).edit().putFloat("crash_g", s.g).putInt("crash_wait_s", s.waitS).putInt("crash_move_m", s.moveM).putBoolean("crash_falls", s.falls).apply()
     }
 
     /** Start the SOS countdown automatically after a hard impact followed by no movement. */

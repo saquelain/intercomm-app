@@ -16,17 +16,21 @@ import kotlin.math.sqrt
  *      phone (the owner's rule: a rider who gets up can still be hurt, and the countdown can be cancelled).
  *    - **No GPS** (location off, tunnel, indoors): the phone must lie still, as before.
  *
- * GPS is only asked *after* the hit. An earlier rule ("was riding fast just before") kept real tests from
- * firing (Oct 2026) and is gone. A phone dropped at a stop starts the countdown; the rider cancels it.
+ * 3. **Was riding**: on a ride, when GPS is working, the hit only counts if I rode over 10 km/h in the last
+ *    minute (walking about with the phone set it off, Oct 2026). Without GPS it gets the benefit of the
+ *    doubt. The test screen skips this, so it can be tried at home.
  *
  * Plain Kotlin with timestamps passed in, so it can be tested without a phone. [phase], [reason] and
  * [peakG] say what it is doing, for the test screen.
  */
 class CrashLogic(
     private val impactG: Float = IMPACT_G,
-    private val landingG: Float = 2.0f,
-    private val freeFallG: Float = 0.5f,
-    private val freeFallMs: Long = 120,
+    /** A landing after a fall counts from this hard (a fall is real free fall, not a swinging hand). */
+    private val landingG: Float = maxOf(2.5f, impactG * 0.6f),
+    private val freeFallG: Float = 0.3f,
+    private val freeFallMs: Long = 200,
+    /** Count a fall followed by a landing as a hit (off: only a hit of [impactG] counts). */
+    private val falls: Boolean = true,
     private val settleMs: Long = 2_000,
     private val windowMs: Long = 10_000,
     /** Further than this (metres) from the hit means the bike moved on (a crash slide stays shorter). */
@@ -34,6 +38,11 @@ class CrashLogic(
     /** Std-dev of acceleration (m/s²) below which the phone counts as still. */
     private val stillStdDev: Float = 0.8f,
     private val cooldownMs: Long = 60_000,
+    /**
+     * On a ride: when GPS is working, a hit only counts if I was riding (over 10 km/h) in the last
+     * minute, so walking about at a tea stop never sets it off. The test screen turns this off.
+     */
+    private val requireRiding: Boolean = true,
 ) {
     enum class Phase { WAITING, SETTLING, STILL, MOVED, CRASH }
 
@@ -50,6 +59,10 @@ class CrashLogic(
 
     /** The biggest hit that started the current watch, in g. */
     var impactPeakG = 0f
+        private set
+
+    /** The current watch started from a fall and a landing, not a single hard hit. */
+    var byFall = false
         private set
 
     var reason: Reason? = null
@@ -73,6 +86,8 @@ class CrashLogic(
     private var hitFix: Fix? = null
     private var fixesInWindow = 0
     private var bikeMoved = false
+    /** Last time GPS showed riding speed. */
+    private var ridingAt = Long.MIN_VALUE / 2
 
     /**
      * A GPS fix. [speedMs] is null when the phone doesn't know it; fixes worse than [GOOD_FIX_M] are
@@ -81,6 +96,10 @@ class CrashLogic(
     fun onLocation(tMs: Long, lat: Double, lon: Double, accuracyM: Float, speedMs: Float?) {
         if (accuracyM > GOOD_FIX_M) return
         val fix = Fix(tMs, lat, lon, accuracyM)
+        // Riding: the speed GPS gives, or else worked out from the last fix.
+        val prev = lastFix
+        val speed = speedMs ?: prev?.takeIf { tMs - it.tMs in 1_000..FIX_STALE_MS }?.let { distanceM(it, fix) * 1_000f / (tMs - it.tMs) }
+        if ((speed ?: 0f) >= RIDING_SPEED_MS) ridingAt = tMs
         val impact = impactAt
         if (impact != null && tMs >= impact + settleMs) {
             fixesInWindow++
@@ -104,8 +123,9 @@ class CrashLogic(
         val impact = impactAt
         if (impact == null) {
             trackFall(tMs, g)
-            val hit = g >= impactG || (g >= landingG && tMs - fellAt <= LANDING_WINDOW_MS)
-            if (hit && tMs >= cooldownUntil) startWatching(tMs, g)
+            val fall = falls && g >= landingG && tMs - fellAt <= LANDING_WINDOW_MS
+            val hit = g >= impactG || fall
+            if (hit && tMs >= cooldownUntil && wasRiding(tMs)) startWatching(tMs, g, fall && g < impactG)
             return false
         }
         val windowStart = impact + settleMs
@@ -164,9 +184,18 @@ class CrashLogic(
         }
     }
 
-    private fun startWatching(tMs: Long, g: Float) {
+    /** No GPS (or none lately): given the benefit of the doubt. */
+    private fun wasRiding(tMs: Long): Boolean {
+        if (!requireRiding) return true
+        val fix = lastFix ?: return true
+        if (tMs - fix.tMs > FIX_STALE_MS) return true
+        return tMs - ridingAt <= RECENTLY_RIDING_MS
+    }
+
+    private fun startWatching(tMs: Long, g: Float, fromFall: Boolean) {
         impactAt = tMs
         impactPeakG = g
+        byFall = fromFall
         reason = null
         hitFix = lastFix?.takeIf { tMs - it.tMs <= FIX_STALE_MS }
         fixesInWindow = 0
@@ -185,7 +214,9 @@ class CrashLogic(
         const val IMPACT_G = 4.0f
 
         /** A detector with the rider's own settings (Settings → Safety → Test crash detection → Fine-tune). */
-        fun tuned(t: CrashTuning) = CrashLogic(impactG = t.g, windowMs = t.waitS * 1_000L, movedM = t.moveM.toFloat())
+        fun tuned(t: CrashTuning, requireRiding: Boolean = true) = CrashLogic(
+            impactG = t.g, windowMs = t.waitS * 1_000L, movedM = t.moveM.toFloat(), falls = t.falls, requireRiding = requireRiding,
+        )
         /**
          * Readings needed in the still window to judge it. Low on purpose: some phones slow the
          * sensor right down with the screen off (a few readings a second), and 50 used to make
@@ -195,7 +226,8 @@ class CrashLogic(
         /** Faster than this (about 11 km/h) after the hit means riding on. Walking is well below. */
         private const val RIDING_SPEED_MS = 3.0f
         private const val GOOD_FIX_M = 30f
-        private const val FIX_STALE_MS = 15_000L
+        private const val FIX_STALE_MS = 20_000L
+        private const val RECENTLY_RIDING_MS = 60_000L
 
         private fun distanceM(a: Fix, b: Fix): Float {
             val r = 6_371_000.0
@@ -211,18 +243,19 @@ class CrashLogic(
  * The three numbers a rider can change on the test screen to fit their phone and bike: how hard a
  * hit must be, how long to watch afterwards, and how far the bike may go and still count as stopped.
  */
-data class CrashTuning(val g: Float = CrashLogic.IMPACT_G, val waitS: Int = 10, val moveM: Int = 50) {
+data class CrashTuning(val g: Float = CrashLogic.IMPACT_G, val waitS: Int = 10, val moveM: Int = 50, val falls: Boolean = true) {
     /** Kept inside sensible limits whatever is stored. */
-    fun safe() = CrashTuning(g.coerceIn(G_MIN, G_MAX), waitS.coerceIn(WAIT_MIN, WAIT_MAX), moveM.coerceIn(MOVE_MIN, MOVE_MAX))
+    fun safe() = CrashTuning(g.coerceIn(G_MIN, G_MAX), waitS.coerceIn(WAIT_MIN, WAIT_MAX), moveM.coerceIn(MOVE_MIN, MOVE_MAX), falls)
 
     val isDefault: Boolean get() = this == CrashTuning()
 
     companion object {
         const val G_MIN = 2f
-        const val G_MAX = 8f
+        /** Most phones' sensors stop counting around 8–16 g per axis. */
+        const val G_MAX = 12f
         const val WAIT_MIN = 5
-        const val WAIT_MAX = 30
-        const val MOVE_MIN = 20
-        const val MOVE_MAX = 200
+        const val WAIT_MAX = 60
+        const val MOVE_MIN = 10
+        const val MOVE_MAX = 500
     }
 }

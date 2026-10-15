@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import com.ridecomm.app.Prefs
 import com.ridecomm.app.crash.CrashTuning
 import kotlin.math.roundToInt
@@ -84,12 +85,12 @@ fun CrashTestContent(
         state.noSensor -> Triple("No motion sensor", "This phone has no accelerometer, so crash detection can't work on it.", Palette.Stop)
         state.phase == CrashLogic.Phase.WAITING -> Triple(
             "Waiting for a hard hit…",
-            "A hit needs ${g(tuning.g)}, or a fall and a landing. Hardest so far: ${g(state.peakG)}.",
+            "A hit needs ${g(tuning.g)}" + (if (tuning.falls) ", or a real fall and a landing" else "") + ". Hardest so far: ${g(state.peakG)}.",
             Palette.TextSecondary,
         )
-        state.phase == CrashLogic.Phase.SETTLING -> Triple("Hit felt: ${g(state.impactG)}", "Checking what happens next…", Palette.Amber)
+        state.phase == CrashLogic.Phase.SETTLING -> Triple(hitTitle(state), "Checking what happens next…", Palette.Amber)
         state.phase == CrashLogic.Phase.STILL -> Triple(
-            "Hit felt: ${g(state.impactG)}",
+            hitTitle(state),
             (if (state.gps) "GPS: checking the bike stays put… " else "No GPS yet: keep the phone still… ") +
                 "${((1 - state.stillProgress) * tuning.waitS).toInt().coerceAtLeast(1)} s",
             Palette.Amber,
@@ -125,7 +126,8 @@ fun CrashTestContent(
     }
     Text(
         "On a ride it works the same way, with Crash detection on: after a hard hit, if the bike doesn't move on, " +
-            "the SOS countdown starts, even if you got up. A phone dropped at a stop can start it too: tap to cancel. " +
+            "the SOS countdown starts, even if you got up. On a ride it also needs you to have been riding in the " +
+            "last minute (when GPS works), so walking about at a stop never sets it off. This test skips that check. " +
             "With location off it falls back to the phone lying still.",
         style = MaterialTheme.typography.bodyMedium,
     )
@@ -161,6 +163,18 @@ private fun TuningCard(tuning: CrashTuning, onTune: (CrashTuning) -> Unit) {
             draft.moveM.toFloat(), CrashTuning.MOVE_MIN.toFloat()..CrashTuning.MOVE_MAX.toFloat(), steps = 0,
             onChange = { draft = draft.copy(moveM = (it / 10).roundToInt() * 10) }, onDone = { onTune(draft) },
         )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Count falls", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "The phone falling freely, then landing (off the mount, out of a pocket). Turn off if it fires too easily.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Palette.TextSecondary,
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Switch(checked = tuning.falls, onCheckedChange = { onTune(tuning.copy(falls = it)) }, colors = lookSwitchColors())
+        }
         if (!tuning.isDefault) {
             GlassButton("Back to the usual settings", R.drawable.ms_replay, Modifier.fillMaxWidth(), height = 48.dp) { onTune(CrashTuning()) }
         }
@@ -194,5 +208,7 @@ private fun TuneSlider(
         Text(hint, style = MaterialTheme.typography.labelSmall, color = Palette.TextSecondary)
     }
 }
+
+private fun hitTitle(state: CrashDetector.TestState) = "Hit felt: ${g(state.impactG)}" + if (state.byFall) " after a fall" else ""
 
 private fun g(value: Float) = String.format(Locale.US, "%.1f g", value)

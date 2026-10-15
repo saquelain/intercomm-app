@@ -110,7 +110,9 @@ between phones).
   When a rider drifts more than 1 km away everyone hears "Rahul is 1.2 kilometers behind" (again at each further
   kilometre), and "Rahul is back with the group" once they're within 500 m.
 - **Crash detection:** during a ride the accelerometer (100 readings a second) watches for a hard impact (over
-  4 g), or a fall (under 0.5 g for 0.12 s, then a landing over 2 g). For the next 10 s it checks GPS: if the bike
+  4 g), or a real fall (under 0.3 g for 0.2 s, then a landing over 60% of the hit strength, at least 2.5 g). With GPS
+  working it only counts if the rider rode over 10 km/h in the last minute (walking at a stop never sets it off). For
+  the next 10 s it checks GPS: if the bike
   stays put (no riding speed, not 50 m away), it's a crash **even if the rider got up and walked around**; if
   the bike moves on, it was a pothole. Without GPS the phone must lie still instead. A phone dropped at a stop
   can start the countdown too; the rider cancels it. It then starts a 15-second SOS countdown ("Crash detected", tap anywhere to cancel); others hear "Rahul may have crashed".
@@ -122,9 +124,10 @@ between phones).
   Oppo/Realme/OnePlus, Vivo, Huawei/Honor…).
 - **Friends leaderboard** (Points page): everyone you've ridden with who has Points & badges on, with their level
   (Rookie… Legend) and total points as of your last ride together, best first. Kept on the phone, updated each ride.
-- **Fine-tune crash detection** (on the test screen, also used on rides): hit strength (2–8 g, usually 4), how long
-  to watch after the hit (5–30 s, usually 10) and how far the bike may move and still count as stopped (20–200 m,
-  usually 50). "Back to the usual settings" undoes it.
+- **Fine-tune crash detection** (on the test screen, also used on rides): hit strength (2–12 g, usually 4), how long
+  to watch after the hit (5–60 s, usually 10), how far the bike may move and still count as stopped (10–500 m,
+  usually 50), and "Count falls" on/off. "Back to the usual settings" undoes it. The test screen skips the
+  "was riding" check so it can be tried at home, and says whether a hit came "after a fall".
 - **Report a problem:** at the bottom of Settings, and "Send report" after a crash: the phone's details (and the
   last crash) in a message the rider sends by email or any app. `Support.EMAIL` sets the developer's address.
 - **Profile:** name and photo are set once (first run, then Settings). Photos are shared with the ride and shown

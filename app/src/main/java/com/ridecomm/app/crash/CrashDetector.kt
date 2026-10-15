@@ -124,6 +124,8 @@ object CrashDetector {
         /** GPS answered after the hit, so "did the bike stay put" decides. */
         val gps: Boolean = false,
         val reason: CrashLogic.Reason? = null,
+        /** The hit was a fall and a landing, not one hard hit. */
+        val byFall: Boolean = false,
     )
 
     private val _test = MutableStateFlow(TestState())
@@ -147,7 +149,7 @@ object CrashDetector {
                 testShownAt = now
                 _test.value = TestState(
                     true, testLogic.phase, testLogic.peakG, testLogic.impactPeakG, testLogic.stillProgress(now),
-                    gps = testLogic.gpsWatching, reason = testLogic.reason,
+                    gps = testLogic.gpsWatching, reason = testLogic.reason, byFall = testLogic.byFall,
                 )
             }
             if (crashed) main.post { appContext?.let { com.ridecomm.app.overlay.Haptics(it).sos() } }
@@ -167,7 +169,7 @@ object CrashDetector {
             _test.value = TestState(noSensor = true)
             return
         }
-        testLogic = CrashLogic.tuned(Prefs.crashTuning(app))
+        testLogic = CrashLogic.tuned(Prefs.crashTuning(app), requireRiding = false)
         testing = true
         val t = HandlerThread("RideComm-crash-test").apply { start() }
         testThread = t
